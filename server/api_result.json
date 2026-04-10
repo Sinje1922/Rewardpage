@@ -1,0 +1,138 @@
+[
+  {
+    "id": "cmnsgtops000v135drdggktwu",
+    "title": "1",
+    "description": "1",
+    "status": "ACTIVE",
+    "creatorId": "cmns8tw6f0000b4bjwl94fkrm",
+    "startsAt": null,
+    "endsAt": null,
+    "winnerCount": 4,
+    "lotteryMode": "SIMPLE",
+    "autoApprove": true,
+    "createdAt": "2026-04-10T05:28:35.680Z",
+    "drawnAt": null,
+    "creator": {
+      "id": "cmns8tw6f0000b4bjwl94fkrm",
+      "email": "admin@demo.local"
+    },
+    "missions": [
+      {
+        "id": "cmnsgu5dk000x135d3oglwbjx"
+      }
+    ]
+  },
+  {
+    "id": "cmnsffif7000o135d5trxp1l5",
+    "title": "테스트",
+    "description": "1",
+    "status": "ACTIVE",
+    "creatorId": "cmns8tw6f0000b4bjwl94fkrm",
+    "startsAt": null,
+    "endsAt": null,
+    "winnerCount": 5,
+    "lotteryMode": "SIMPLE",
+    "autoApprove": true,
+    "createdAt": "2026-04-10T04:49:34.723Z",
+    "drawnAt": null,
+    "creator": {
+      "id": "cmns8tw6f0000b4bjwl94fkrm",
+      "email": "admin@demo.local"
+    },
+    "missions": [
+      {
+        "id": "cmnsfguwb000q135diz78m2jg"
+      }
+    ]
+  },
+  {
+    "id": "cmnsedt8t000h135dzmub8mky",
+    "title": "퀴즈",
+    "description": "2번",
+    "status": "ACTIVE",
+    "creatorId": "cmns8tw6f0000b4bjwl94fkrm",
+    "startsAt": null,
+    "endsAt": null,
+    "winnerCount": 6,
+    "lotteryMode": "SIMPLE",
+    "autoApprove": true,
+    "createdAt": "2026-04-10T04:20:15.821Z",
+    "drawnAt": null,
+    "creator": {
+      "id": "cmns8tw6f0000b4bjwl94fkrm",
+      "email": "admin@demo.local"
+    },
+    "missions": [
+      {
+        "id": "cmnseeown000j135du6hylrw2"
+      }
+    ]
+  },
+  {
+    "id": "cmnsdy55l000f135d4506pwoo",
+    "title": "1",
+    "description": "1",
+    "status": "ACTIVE",
+    "creatorId": "cmns8tw6f0000b4bjwl94fkrm",
+    "startsAt": null,
+    "endsAt": null,
+    "winnerCount": 1,
+    "lotteryMode": "SIMPLE",
+    "autoApprove": false,
+    "createdAt": "2026-04-10T04:08:04.761Z",
+    "drawnAt": null,
+    "creator": {
+      "id": "cmns8tw6f0000b4bjwl94fkrm",
+      "email": "admin@demo.local"
+    },
+    "missions": []
+  },
+  {
+    "id": "cmnsb76oy000d135dx2sruzcm",
+    "title": "테스트 미션",
+    "description": "1234",
+    "status": "ACTIVE",
+    "creatorId": "cmns8tw6f0000b4bjwl94fkrm",
+    "startsAt": null,
+    "endsAt": null,
+    "winnerCount": 5,
+    "lotteryMode": "SIMPLE",
+    "autoApprove": true,
+    "createdAt": "2026-04-10T02:51:07.811Z",
+    "drawnAt": null,
+    "creator": {
+      "id": "cmns8tw6f0000b4bjwl94fkrm",
+      "email": "admin@demo.local"
+    },
+    "missions": []
+  },
+  {
+    "id": "cmns8twe80004b4bjf93hw9m9",
+    "title": "데모 캠페인",
+    "description": "시드 데이터 — 링크·코드·퀴즈 미션 예시",
+    "status": "ACTIVE",
+    "creatorId": "cmns8twbz0001b4bj967bt4ro",
+    "startsAt": null,
+    "endsAt": null,
+    "winnerCount": 2,
+    "lotteryMode": "SIMPLE",
+    "autoApprove": true,
+    "createdAt": "2026-04-10T01:44:48.693Z",
+    "drawnAt": null,
+    "creator": {
+      "id": "cmns8twbz0001b4bj967bt4ro",
+      "email": "creator@demo.local"
+    },
+    "missions": [
+      {
+        "id": "cmns8twf90005b4bj8fe4n7hk"
+      },
+      {
+        "id": "cmns8twfa0006b4bj1b2a23rd"
+      },
+      {
+        "id": "cmns8twfa0007b4bjowcuorf5"
+      }
+    ]
+  }
+]

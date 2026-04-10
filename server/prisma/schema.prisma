@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  /// USER | CREATOR | MANAGER | ADMIN
+  role         String   @default("USER")
+  blocked      Boolean  @default(false)
+  pointBalance Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  campaignsCreated Campaign[]    @relation("CampaignCreator")
+  submissions    Submission[]
+  winners        Winner[]
+}
+
+model Campaign {
+  id          String    @id @default(cuid())
+  title       String
+  description String    @default("")
+  /// DRAFT | PENDING_ADMIN | ACTIVE | CLOSED | DRAWN
+  status      String    @default("DRAFT")
+  creatorId   String
+  startsAt    DateTime?
+  endsAt      DateTime?
+  winnerCount Int       @default(1)
+  /// SIMPLE | WEIGHTED
+  lotteryMode         String    @default("SIMPLE")
+  autoApprove         Boolean   @default(true)
+  totalRewardPoints   Int       @default(0)
+  createdAt           DateTime  @default(now())
+  drawnAt     DateTime?
+
+  creator  User      @relation("CampaignCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  missions Mission[]
+  winners  Winner[]
+}
+
+model Mission {
+  id          String   @id @default(cuid())
+  campaignId  String
+  /// LINK_VISIT | SURVEY | CODE | QUIZ | CHECKIN | FILE_UPLOAD
+  type        String
+  title       String
+  description String   @default("")
+  sortOrder   Int      @default(0)
+  /// JSON: { linkUrl, correctCode, quizQuestion, quizOptions[], correctIndex, minDwellSeconds, surveyNote }
+  config      String   @default("{}")
+  createdAt   DateTime @default(now())
+
+  campaign    Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+}
+
+model Submission {
+  id        String   @id @default(cuid())
+  userId    String
+  missionId String
+  /// PENDING | APPROVED | REJECTED
+  status    String   @default("PENDING")
+  /// JSON: { code, selectedIndex, dwellSeconds, note, fileUrl }
+  payload   String   @default("{}")
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, missionId])
+}
+
+model Winner {
+  id         String   @id @default(cuid())
+  campaignId String
+  userId     String
+  rank       Int
+  points     Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, userId])
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String?
+  meta      String   @default("{}")
+  createdAt DateTime @default(now())
+}
