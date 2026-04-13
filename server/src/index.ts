@@ -9,7 +9,12 @@ import meRouter from "./routes/me.js";
 import submissionsRouter from "./routes/submissions.js";
 
 const app = express();
-const corsOrigin = process.env.CORS_ORIGIN === "true" ? true : process.env.CORS_ORIGIN || true;
+
+const corsOrigin =
+  process.env.CORS_ORIGIN === "true"
+    ? true
+    : process.env.CORS_ORIGIN || true;
+
 app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(express.json());
 
@@ -23,6 +28,8 @@ app.use("/api/me", meRouter);
 app.use("/api/submissions", submissionsRouter);
 
 const port = Number(process.env.PORT ?? 4000);
-app.listen(port, () => {
-  console.log(`API http://localhost:${port}`);
+const host = "0.0.0.0";
+
+app.listen(port, host, () => {
+  console.log(`API listening on http://${host}:${port}`);
 });
