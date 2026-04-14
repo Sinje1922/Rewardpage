@@ -5,8 +5,8 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('Connecting to database...')
   try {
-    const result: any = await prisma.$queryRaw`SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'`
-    console.log('Tables in public schema:', result)
+    const users = await prisma.user.findMany()
+    console.log('Current users in DB:', users)
   } catch (e) {
     console.error('Connection failed:', e)
   } finally {
