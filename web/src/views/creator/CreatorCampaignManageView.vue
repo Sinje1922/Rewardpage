@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { api } from '../../api/client'
+import { api, getFileUrl } from '../../api/client'
 import { uploadCompanyLogo } from '../../api/upload'
 import MissionListEditor from '../../components/ops/MissionListEditor.vue'
 import {
@@ -292,7 +292,7 @@ async function openTab(t: TabId) {
     <div v-if="camp.companyLogoUrl || camp.companyName" style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem">
       <img
         v-if="camp.companyLogoUrl"
-        :src="camp.companyLogoUrl"
+        :src="getFileUrl(camp.companyLogoUrl)"
         alt=""
         style="width: 44px; height: 44px; border-radius: 10px; object-fit: cover; border: 1px solid var(--border)"
       />
@@ -340,7 +340,7 @@ async function openTab(t: TabId) {
       <div class="field">
         <label>회사 로고</label>
         <div class="logo-row">
-          <img v-if="draftCompanyLogo" :src="draftCompanyLogo" alt="" class="logo-preview" />
+          <img v-if="draftCompanyLogo" :src="getFileUrl(draftCompanyLogo)" alt="" class="logo-preview" />
           <div class="logo-actions">
             <input
               ref="logoFileInput"

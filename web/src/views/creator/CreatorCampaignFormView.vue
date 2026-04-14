@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { api } from '../../api/client'
+import { api, getFileUrl } from '../../api/client'
 import { uploadCompanyLogo } from '../../api/upload'
 import MissionListEditor from '../../components/ops/MissionListEditor.vue'
 import { emptyMissionRow, rowToPayload, validateRows, type MissionRowState } from '../../utils/missionRow'
@@ -93,7 +93,7 @@ async function save() {
         <div class="field">
           <label>회사 로고</label>
           <div class="logo-row">
-            <img v-if="companyLogoUrl" :src="companyLogoUrl" alt="" class="logo-preview" />
+            <img v-if="companyLogoUrl" :src="getFileUrl(companyLogoUrl)" alt="" class="logo-preview" />
             <div class="logo-actions">
               <input
                 ref="logoFileInput"

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import { api } from '../api/client'
+import { api, getFileUrl } from '../api/client'
 
 type Campaign = {
   id: string
@@ -90,7 +90,7 @@ const filteredList = computed(() => {
           >
             <img
               v-if="c.companyLogoUrl"
-              :src="c.companyLogoUrl"
+              :src="getFileUrl(c.companyLogoUrl)"
               alt=""
               style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border)"
             />

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { api } from '../api/client'
+import { api, getFileUrl } from '../api/client'
 import { useAuthStore } from '../stores/auth'
 
 type Mission = {
@@ -172,7 +172,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
       >
         <img
           v-if="camp.companyLogoUrl"
-          :src="camp.companyLogoUrl"
+          :src="getFileUrl(camp.companyLogoUrl)"
           alt=""
           style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover; border: 1px solid var(--border)"
         />
