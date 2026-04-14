@@ -4,12 +4,7 @@ import { useRouter } from 'vue-router'
 import { api } from '../../api/client'
 import { uploadCompanyLogo } from '../../api/upload'
 import MissionListEditor from '../../components/ops/MissionListEditor.vue'
-import {
-  emptyMissionRow,
-  rowToPayload,
-  validateRows,
-  type MissionRowState,
-} from '../../utils/missionRow'
+import { emptyMissionRow, rowToPayload, validateRows, type MissionRowState } from '../../utils/missionRow'
 
 const router = useRouter()
 const companyName = ref('')
@@ -24,6 +19,7 @@ const startsAt = ref('')
 const endsAt = ref('')
 const missionRows = ref<MissionRowState[]>([emptyMissionRow(0)])
 const err = ref('')
+
 const logoUploading = ref(false)
 const logoFileInput = ref<HTMLInputElement | null>(null)
 
@@ -116,7 +112,8 @@ async function save() {
         </div>
         <div class="field">
           <label>또는 로고 URL (선택)</label>
-          <input v-model="companyLogoUrl" type="url" placeholder="외부에 올린 이미지 주소를 쓸 때" />
+          <!-- type=url은 /uploads/... 상대경로를 '유효하지 않은 URL'로 판단하는 브라우저가 있어 text로 둡니다 -->
+          <input v-model="companyLogoUrl" type="text" placeholder="https://… 또는 /uploads/…" />
         </div>
       </section>
 
@@ -233,3 +230,4 @@ async function save() {
   color: var(--muted);
 }
 </style>
+

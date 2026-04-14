@@ -359,7 +359,8 @@ async function openTab(t: TabId) {
       </div>
       <div class="field">
         <label>또는 로고 URL (선택)</label>
-        <input v-model="draftCompanyLogo" type="url" placeholder="외부 이미지 주소" />
+        <!-- type=url은 /uploads/... 상대경로를 '유효하지 않은 URL'로 판단하는 브라우저가 있어 text로 둡니다 -->
+        <input v-model="draftCompanyLogo" type="text" placeholder="https://… 또는 /uploads/…" />
       </div>
 
       <h2 style="font-size: 1.05rem; color: var(--text-h); margin: 1.25rem 0 0.75rem">캠페인</h2>
