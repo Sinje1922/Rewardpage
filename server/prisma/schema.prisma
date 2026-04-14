@@ -26,6 +26,10 @@ model Campaign {
   id          String    @id @default(cuid())
   title       String
   description String    @default("")
+  /// 수주·노출용 클라이언트(회사) 이름
+  companyName    String @default("")
+  /// 로고 이미지 URL
+  companyLogoUrl String @default("")
   /// DRAFT | PENDING_ADMIN | ACTIVE | CLOSED | DRAWN
   status      String    @default("DRAFT")
   creatorId   String

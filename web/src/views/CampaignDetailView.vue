@@ -17,6 +17,8 @@ type CampaignDetail = {
   id: string
   title: string
   description: string
+  companyName: string
+  companyLogoUrl: string
   status: string
   winnerCount: number
   totalRewardPoints: number
@@ -164,6 +166,18 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
 <template>
   <div v-if="camp">
     <div style="margin-bottom: 2.5rem; text-align: center">
+      <div
+        v-if="camp.companyName || camp.companyLogoUrl"
+        style="display: flex; justify-content: center; align-items: center; gap: 0.65rem; margin-bottom: 0.75rem"
+      >
+        <img
+          v-if="camp.companyLogoUrl"
+          :src="camp.companyLogoUrl"
+          alt=""
+          style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover; border: 1px solid var(--border)"
+        />
+        <span v-if="camp.companyName" style="font-weight: 800; font-size: 1.05rem; color: var(--text-h)">{{ camp.companyName }}</span>
+      </div>
       <h1 class="page-title">{{ camp.title }}</h1>
       <p style="margin: 0 auto 1rem; max-width: 36rem; line-height: 1.6">{{ camp.description }}</p>
       <div style="display: flex; gap: 0.75rem; justify-content: center; align-items: center">

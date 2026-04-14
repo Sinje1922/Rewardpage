@@ -28,9 +28,19 @@ router.get("/", authOptional, async (req: AuthedRequest, res) => {
   res.json(list);
 });
 
-const createCampaignSchema = z.object({
+const missionInputSchema = z.object({
+  type: z.enum(["LINK_VISIT", "SURVEY", "CODE", "QUIZ", "CHECKIN", "FILE_UPLOAD"]),
   title: z.string().min(1),
   description: z.string().optional(),
+  sortOrder: z.number().int().optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
+});
+
+const campaignFieldsSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  companyName: z.string().optional(),
+  companyLogoUrl: z.string().optional(),
   winnerCount: z.number().int().positive().optional(),
   lotteryMode: z.enum(["SIMPLE", "WEIGHTED"]).optional(),
   autoApprove: z.boolean().optional(),
@@ -39,6 +49,36 @@ const createCampaignSchema = z.object({
   endsAt: z.string().datetime().optional().nullable(),
 });
 
+const createCampaignSchema = campaignFieldsSchema.extend({
+  missions: z.array(missionInputSchema).min(1, "미션을 1개 이상 구성해 주세요."),
+});
+
+const patchCampaignSchema = campaignFieldsSchema.partial().extend({
+  missions: z.array(missionInputSchema).optional(),
+});
+
+async function replaceCampaignMissions(campaignId: string, missions: z.infer<typeof missionInputSchema>[]) {
+  const subCount = await prisma.submission.count({
+    where: { mission: { campaignId } },
+  });
+  if (subCount > 0) {
+    throw new Error("SUBMISSIONS_EXIST");
+  }
+  await prisma.$transaction([
+    prisma.mission.deleteMany({ where: { campaignId } }),
+    prisma.mission.createMany({
+      data: missions.map((m, i) => ({
+        campaignId,
+        type: m.type,
+        title: m.title,
+        description: m.description ?? "",
+        sortOrder: m.sortOrder ?? i,
+        config: JSON.stringify(m.config ?? {}),
+      })),
+    }),
+  ]);
+}
+
 router.post("/", authRequired, requireRoles("MANAGER", "ADMIN"), async (req: AuthedRequest, res) => {
   const parsed = createCampaignSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -46,24 +86,49 @@ router.post("/", authRequired, requireRoles("MANAGER", "ADMIN"), async (req: Aut
     return;
   }
   const b = parsed.data;
-  const c = await prisma.campaign.create({
-    data: {
-      title: b.title,
-      description: b.description ?? "",
-      creatorId: req.user!.id,
-      winnerCount: b.winnerCount ?? 1,
-      totalRewardPoints: b.totalRewardPoints ?? 0,
-      lotteryMode: b.lotteryMode ?? "SIMPLE",
-      autoApprove: b.autoApprove ?? true,
-      startsAt: b.startsAt ? new Date(b.startsAt) : null,
-      endsAt: b.endsAt ? new Date(b.endsAt) : null,
-      status: req.user!.role === "ADMIN" ? "ACTIVE" : "DRAFT",
-    },
-  });
-  res.status(201).json(c);
+  try {
+    const camp = await prisma.$transaction(async (tx) => {
+      const row = await tx.campaign.create({
+        data: {
+          title: b.title,
+          description: b.description ?? "",
+          companyName: b.companyName ?? "",
+          companyLogoUrl: b.companyLogoUrl ?? "",
+          creatorId: req.user!.id,
+          winnerCount: b.winnerCount ?? 1,
+          totalRewardPoints: b.totalRewardPoints ?? 0,
+          lotteryMode: b.lotteryMode ?? "SIMPLE",
+          autoApprove: b.autoApprove ?? true,
+          startsAt: b.startsAt ? new Date(b.startsAt) : null,
+          endsAt: b.endsAt ? new Date(b.endsAt) : null,
+          status: req.user!.role === "ADMIN" ? "ACTIVE" : "DRAFT",
+        },
+      });
+      await tx.mission.createMany({
+        data: b.missions.map((m, i) => ({
+          campaignId: row.id,
+          type: m.type,
+          title: m.title,
+          description: m.description ?? "",
+          sortOrder: m.sortOrder ?? i,
+          config: JSON.stringify(m.config ?? {}),
+        })),
+      });
+      return row;
+    });
+    const full = await prisma.campaign.findUnique({
+      where: { id: camp.id },
+      include: {
+        missions: { orderBy: { sortOrder: "asc" } },
+        creator: { select: { id: true, email: true } },
+      },
+    });
+    res.status(201).json(full);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "캠페인 생성에 실패했습니다." });
+  }
 });
-
-const patchCampaignSchema = createCampaignSchema.partial();
 
 router.patch("/:id", authRequired, async (req: AuthedRequest, res) => {
   const cid = String(req.params.id);
@@ -82,28 +147,67 @@ router.patch("/:id", authRequired, async (req: AuthedRequest, res) => {
     return;
   }
   const b = parsed.data;
-  const updated = await prisma.campaign.update({
+
+  if (b.missions !== undefined) {
+    if (c.status !== "DRAFT" && c.status !== "PENDING_ADMIN") {
+      res.status(400).json({
+        error: "초안(DRAFT) 또는 검수 대기(PENDING_ADMIN) 상태에서만 미션을 일괄 수정할 수 있습니다.",
+      });
+      return;
+    }
+    if (b.missions.length === 0) {
+      res.status(400).json({ error: "미션은 1개 이상이어야 합니다." });
+      return;
+    }
+    try {
+      await replaceCampaignMissions(c.id, b.missions);
+    } catch (e) {
+      if (e instanceof Error && e.message === "SUBMISSIONS_EXIST") {
+        res.status(400).json({ error: "이미 참여 제출이 있어 미션을 일괄 바꿀 수 없습니다." });
+        return;
+      }
+      throw e;
+    }
+  }
+
+  const hasMeta =
+    b.title !== undefined ||
+    b.description !== undefined ||
+    b.companyName !== undefined ||
+    b.companyLogoUrl !== undefined ||
+    b.winnerCount !== undefined ||
+    b.lotteryMode !== undefined ||
+    b.autoApprove !== undefined ||
+    b.totalRewardPoints !== undefined ||
+    b.startsAt !== undefined ||
+    b.endsAt !== undefined;
+
+  if (hasMeta) {
+    await prisma.campaign.update({
+      where: { id: c.id },
+      data: {
+        ...(b.title !== undefined && { title: b.title }),
+        ...(b.description !== undefined && { description: b.description }),
+        ...(b.companyName !== undefined && { companyName: b.companyName }),
+        ...(b.companyLogoUrl !== undefined && { companyLogoUrl: b.companyLogoUrl }),
+        ...(b.winnerCount !== undefined && { winnerCount: b.winnerCount }),
+        ...(b.lotteryMode !== undefined && { lotteryMode: b.lotteryMode }),
+        ...(b.autoApprove !== undefined && { autoApprove: b.autoApprove }),
+        ...(b.totalRewardPoints !== undefined && { totalRewardPoints: b.totalRewardPoints }),
+        ...(b.startsAt !== undefined && { startsAt: b.startsAt ? new Date(b.startsAt) : null }),
+        ...(b.endsAt !== undefined && { endsAt: b.endsAt ? new Date(b.endsAt) : null }),
+      },
+    });
+  }
+
+  const full = await prisma.campaign.findUnique({
     where: { id: c.id },
-    data: {
-      ...(b.title !== undefined && { title: b.title }),
-      ...(b.description !== undefined && { description: b.description }),
-      ...(b.winnerCount !== undefined && { winnerCount: b.winnerCount }),
-      ...(b.lotteryMode !== undefined && { lotteryMode: b.lotteryMode }),
-      ...(b.autoApprove !== undefined && { autoApprove: b.autoApprove }),
-      ...(b.totalRewardPoints !== undefined && { totalRewardPoints: b.totalRewardPoints }),
-      ...(b.startsAt !== undefined && { startsAt: b.startsAt ? new Date(b.startsAt) : null }),
-      ...(b.endsAt !== undefined && { endsAt: b.endsAt ? new Date(b.endsAt) : null }),
+    include: {
+      missions: { orderBy: { sortOrder: "asc" } },
+      creator: { select: { id: true, email: true } },
     },
   });
-  res.json(updated);
-});
-
-const missionSchema = z.object({
-  type: z.enum(["LINK_VISIT", "SURVEY", "CODE", "QUIZ", "CHECKIN", "FILE_UPLOAD"]),
-  title: z.string().min(1),
-  description: z.string().optional(),
-  sortOrder: z.number().int().optional(),
-  config: z.record(z.string(), z.unknown()).optional(),
+  res.json(full);
 });
 
 router.post("/:id/missions", authRequired, async (req: AuthedRequest, res) => {
@@ -117,7 +221,7 @@ router.post("/:id/missions", authRequired, async (req: AuthedRequest, res) => {
     res.status(403).json({ error: "운영자만 미션을 만들 수 있습니다." });
     return;
   }
-  const parsed = missionSchema.safeParse(req.body);
+  const parsed = missionInputSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.flatten() });
     return;

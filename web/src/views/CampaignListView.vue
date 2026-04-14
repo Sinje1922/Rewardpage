@@ -7,6 +7,8 @@ type Campaign = {
   id: string
   title: string
   description: string
+  companyName: string
+  companyLogoUrl: string
   status: string
   winnerCount: number
   totalRewardPoints: number
@@ -31,8 +33,10 @@ onMounted(async () => {
 
 const filteredList = computed(() => {
   return list.value.filter(c => {
-    const matchesSearch = c.title.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
-                          c.description.toLowerCase().includes(searchQuery.value.toLowerCase())
+    const matchesSearch =
+      c.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      c.description.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      (c.companyName && c.companyName.toLowerCase().includes(searchQuery.value.toLowerCase()))
     const matchesStatus = filterStatus.value === 'ALL' || c.status === filterStatus.value
     return matchesSearch && matchesStatus
   })
@@ -80,6 +84,18 @@ const filteredList = computed(() => {
         </div>
         
         <RouterLink :to="`/campaigns/${c.id}`" style="display: block">
+          <div
+            v-if="c.companyName || c.companyLogoUrl"
+            style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem"
+          >
+            <img
+              v-if="c.companyLogoUrl"
+              :src="c.companyLogoUrl"
+              alt=""
+              style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border)"
+            />
+            <span v-if="c.companyName" style="font-size: 0.85rem; font-weight: 800; color: var(--muted)">{{ c.companyName }}</span>
+          </div>
           <h2 style="margin: 0 0 0.50rem; font-size: 1.35rem; color: var(--text-h); line-height: 1.3">{{ c.title }}</h2>
         </RouterLink>
 

@@ -67,6 +67,8 @@ async function main() {
       data: {
         title: "데모 캠페인",
         description: "시드 데이터 — 링크·코드·퀴즈 미션 예시",
+        companyName: "데모 주식회사",
+        companyLogoUrl: "https://api.dicebear.com/7.x/shapes/svg?seed=demo",
         status: "ACTIVE",
         creatorId: admin.id,
         winnerCount: 2,
