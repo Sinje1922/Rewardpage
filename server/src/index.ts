@@ -41,4 +41,5 @@ const host = "0.0.0.0";
 
 app.listen(port, host, () => {
   console.log(`API listening on http://${host}:${port}`);
+  startLotteryWorker();
 });

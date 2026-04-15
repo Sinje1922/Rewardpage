@@ -50,10 +50,16 @@ router.post("/campaigns/:id/approve", async (req, res) => {
   res.json(c);
 });
 
-router.get("/users", async (_req, res) => {
+router.get("/users", async (req, res) => {
+  const query = req.query.q ? String(req.query.q).trim() : "";
   const users = await prisma.user.findMany({
+    where: query
+      ? {
+          email: { contains: query, mode: "insensitive" },
+        }
+      : {},
     orderBy: { createdAt: "desc" },
-    select: { id: true, email: true, role: true, blocked: true, createdAt: true },
+    select: { id: true, email: true, role: true, blocked: true, pointBalance: true, createdAt: true },
   });
   res.json(users);
 });

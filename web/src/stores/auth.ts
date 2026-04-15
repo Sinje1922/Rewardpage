@@ -4,7 +4,7 @@ import { api, setAuthToken } from '../api/client'
 
 const TOKEN_KEY = 'rp_token'
 
-export type User = { id: string; email: string; role: string }
+export type User = { id: string; email: string; role: string; pointBalance: number }
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem(TOKEN_KEY))

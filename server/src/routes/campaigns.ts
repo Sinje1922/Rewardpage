@@ -299,91 +299,26 @@ router.get("/:id/stats", authRequired, async (req: AuthedRequest, res) => {
   });
 });
 
+import { runCampaignDraw } from "../services/lotteryService.js";
+
 router.post("/:id/draw", authRequired, async (req: AuthedRequest, res) => {
   const cid = String(req.params.id);
   const c = await prisma.campaign.findUnique({
     where: { id: cid },
-    include: { missions: true, winners: true },
+    include: { creator: true }
   });
-  if (!c) {
-    res.status(404).json({ error: "Not found" });
-    return;
-  }
-  if (!isOperator(req.user!.role)) {
-    res.status(403).json({ error: "운영자만 추첨할 수 있습니다." });
-    return;
-  }
-  if (c.winners.length > 0) {
-    res.status(400).json({ error: "이미 추첨이 완료되었습니다." });
-    return;
-  }
-  const missionIds = c.missions.map((m) => m.id);
-  if (missionIds.length === 0) {
-    res.status(400).json({ error: "미션이 없습니다." });
-    return;
-  }
-
-  const approved = await prisma.submission.findMany({
-    where: { missionId: { in: missionIds }, status: "APPROVED" },
-    select: { userId: true, missionId: true },
-  });
-
-  const byUser = new Map<string, Set<string>>();
-  for (const s of approved) {
-    if (!byUser.has(s.userId)) byUser.set(s.userId, new Set());
-    byUser.get(s.userId)!.add(s.missionId);
-  }
-
-  const completedAll: string[] = [];
-  const weightsUser: string[] = [];
-  const weightsVal: number[] = [];
-  for (const [userId, set] of byUser) {
-    const n = set.size;
-    if (n >= missionIds.length) completedAll.push(userId);
-    if (c.lotteryMode === "WEIGHTED" && n > 0) {
-      weightsUser.push(userId);
-      weightsVal.push(n);
-    }
-  }
-
-  let picked: string[] = [];
-  if (c.lotteryMode === "WEIGHTED") {
-    picked = pickWeightedUnique(weightsUser, weightsVal, c.winnerCount);
-  } else {
-    picked = pickUniformUnique(completedAll, c.winnerCount);
-  }
-
-  if (picked.length === 0) {
-    res.status(400).json({ error: "추첨 대상 참여자가 없습니다." });
-    return;
-  }
-
-  const pointsPerPerson = c.totalRewardPoints > 0 ? Math.floor(c.totalRewardPoints / picked.length) : 0;
   
-  await prisma.$transaction([
-    ...picked.map((userId, i) =>
-      prisma.winner.create({
-        data: { campaignId: c.id, userId, rank: i + 1, points: pointsPerPerson },
-      })
-    ),
-    ...picked.map((userId) =>
-      prisma.user.update({
-        where: { id: userId },
-        data: { pointBalance: { increment: pointsPerPerson } },
-      })
-    ),
-    prisma.campaign.update({
-      where: { id: c.id },
-      data: { status: "DRAWN", drawnAt: new Date() },
-    }),
-  ]);
+  if (!c) return res.status(404).json({ error: "Not found" });
+  if (!isOperator(req.user!.role)) {
+    return res.status(403).json({ error: "운영자만 추첨할 수 있습니다." });
+  }
 
-  const winners = await prisma.winner.findMany({
-    where: { campaignId: c.id },
-    include: { user: { select: { id: true, email: true } } },
-    orderBy: { rank: "asc" },
-  });
-  res.json({ winners });
+  try {
+    const result = await runCampaignDraw(cid);
+    res.json(result);
+  } catch (e: any) {
+    res.status(400).json({ error: e.message || "추첨 실패" });
+  }
 });
 
 router.get("/:id/participants", authOptional, async (req: AuthedRequest, res) => {

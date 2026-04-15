@@ -1,8 +1,13 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 
 const auth = useAuthStore()
+
+onMounted(() => {
+  if (auth.token) auth.loadMe()
+})
 </script>
 
 <template>
@@ -20,6 +25,13 @@ const auth = useAuthStore()
         <RouterLink v-if="auth.token" to="/me" class="nav-link">내 참여</RouterLink>
         <RouterLink v-if="auth.isOperator" to="/ops" class="nav-link">운영</RouterLink>
         <RouterLink v-if="auth.isAdmin" to="/admin" class="nav-link">관리자</RouterLink>
+        
+        <div v-if="auth.user" class="nav-points">
+          <span class="coin">🪙</span>
+          <span class="balance">{{ auth.user.pointBalance.toLocaleString() }}</span>
+          <span class="unit">P</span>
+        </div>
+
         <RouterLink v-if="!auth.token" to="/login" class="nav-link nav-cta">로그인</RouterLink>
         <button v-else type="button" class="nav-link linkish" @click="auth.logout()">로그아웃</button>
       </nav>
@@ -137,6 +149,31 @@ const auth = useAuthStore()
 }
 .nav-cta:hover {
   background: var(--accent-bright);
+}
+
+.nav-points {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: 99px;
+  margin: 0 0.5rem;
+}
+.nav-points .coin {
+  font-size: 1rem;
+}
+.nav-points .balance {
+  font-weight: 800;
+  color: var(--accent);
+  font-size: 0.95rem;
+}
+.nav-points .unit {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  opacity: 0.8;
 }
 
 .main {

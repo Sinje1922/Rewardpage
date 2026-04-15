@@ -29,7 +29,7 @@ router.post("/register", async (req, res) => {
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
     data: { email, passwordHash, role: "USER" },
-    select: { id: true, email: true, role: true },
+    select: { id: true, email: true, role: true, pointBalance: true },
   });
   const token = signToken({ sub: user.id, email: user.email, role: user.role });
   res.json({ user, token });
@@ -58,7 +58,7 @@ router.post("/login", async (req, res) => {
   }
   const token = signToken({ sub: user.id, email: user.email, role: user.role });
   res.json({
-    user: { id: user.id, email: user.email, role: user.role },
+    user: { id: user.id, email: user.email, role: user.role, pointBalance: user.pointBalance },
     token,
   });
 });
@@ -104,7 +104,7 @@ router.post("/google", async (req, res) => {
 
     const token = signToken({ sub: user.id, email: user.email, role: user.role });
     res.json({
-      user: { id: user.id, email: user.email, role: user.role },
+      user: { id: user.id, email: user.email, role: user.role, pointBalance: user.pointBalance },
       token,
     });
   } catch (err) {
@@ -116,7 +116,7 @@ router.post("/google", async (req, res) => {
 router.get("/me", authRequired, async (req: AuthedRequest, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user!.id },
-    select: { id: true, email: true, role: true, blocked: true, createdAt: true },
+    select: { id: true, email: true, role: true, blocked: true, pointBalance: true, createdAt: true },
   });
   if (!user) {
     res.status(404).json({ error: "Not found" });
