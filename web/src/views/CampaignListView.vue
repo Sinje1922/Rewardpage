@@ -32,13 +32,28 @@ onMounted(async () => {
 })
 
 const filteredList = computed(() => {
-  return list.value.filter(c => {
+  const filtered = list.value.filter(c => {
     const matchesSearch =
       c.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       c.description.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       (c.companyName && c.companyName.toLowerCase().includes(searchQuery.value.toLowerCase()))
     const matchesStatus = filterStatus.value === 'ALL' || c.status === filterStatus.value
     return matchesSearch && matchesStatus
+  })
+
+  // 진행 중(ACTIVE)인 캠페인을 우선순위 0으로 두고, 나머지는 우선순위 1~2로 정렬합니다.
+  const statusScore: Record<string, number> = {
+    ACTIVE: 0,
+    CLOSED: 1,
+    DRAWN: 2,
+  }
+
+  return [...filtered].sort((a, b) => {
+    const scoreA = statusScore[a.status] ?? 99
+    const scoreB = statusScore[b.status] ?? 99
+    if (scoreA !== scoreB) return scoreA - scoreB
+    // 같은 상태라면 최신순
+    return new Date(b.startsAt || 0).getTime() - new Date(a.startsAt || 0).getTime()
   })
 })
 </script>
@@ -65,10 +80,24 @@ const filteredList = computed(() => {
     <p v-if="err" class="err">{{ err }}</p>
     
     <div class="grid">
-      <div v-for="c in filteredList" :key="c.id" class="card" style="display: flex; flex-direction: column; min-height: 380px">
+      <div 
+        v-for="c in filteredList" 
+        :key="c.id" 
+        class="card" 
+        :style="{
+          display: 'flex', 
+          flexDirection: 'column', 
+          minHeight: '380px',
+          opacity: c.status !== 'ACTIVE' ? 0.7 : 1,
+          filter: c.status !== 'ACTIVE' ? 'grayscale(0.6)' : 'none',
+          background: c.status !== 'ACTIVE' ? 'var(--bg-deep)' : 'var(--panel)'
+        }"
+      >
         <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem">
           <div style="display: flex; flex-wrap: wrap; gap: 0.4rem">
-            <span class="badge" :style="c.status === 'ACTIVE' ? 'background: var(--mint-soft); color: var(--mint)' : ''">{{ c.status }}</span>
+            <span class="badge" :style="c.status === 'ACTIVE' ? 'background: var(--mint-soft); color: var(--mint)' : ''">
+              {{ c.status === 'ACTIVE' ? '진행 중' : c.status === 'CLOSED' ? '종료됨' : '추첨 완료' }}
+            </span>
             <span style="font-size: 0.8rem; font-weight: 600; color: var(--muted); background: var(--bg-deep); padding: 0.25rem 0.6rem; border-radius: 0.5rem">
               미션 {{ c.missions?.length ?? 0 }}
             </span>
@@ -83,7 +112,7 @@ const filteredList = computed(() => {
           </div>
         </div>
         
-        <RouterLink :to="`/campaigns/${c.id}`" style="display: block">
+        <RouterLink :to="`/campaigns/${c.id}`" style="display: block; flex: 1">
           <div
             v-if="c.companyName || c.companyLogoUrl"
             style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem"
@@ -97,19 +126,22 @@ const filteredList = computed(() => {
             <span v-if="c.companyName" style="font-size: 0.85rem; font-weight: 800; color: var(--muted)">{{ c.companyName }}</span>
           </div>
           <h2 style="margin: 0 0 0.50rem; font-size: 1.35rem; color: var(--text-h); line-height: 1.3">{{ c.title }}</h2>
+          <p style="margin: 0; font-size: 0.95rem; line-height: 1.6; color: var(--text); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical">
+            {{ c.description }}
+          </p>
         </RouterLink>
 
-        <div v-if="c.startsAt || c.endsAt" style="font-size: 0.8rem; color: var(--muted); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem">
+        <div v-if="c.startsAt || c.endsAt" style="font-size: 0.8rem; color: var(--muted); margin: 1rem 0 0; display: flex; align-items: center; gap: 0.4rem">
           📅 {{ c.startsAt ? new Date(c.startsAt).toLocaleDateString() : '언제나' }} ~ {{ c.endsAt ? new Date(c.endsAt).toLocaleDateString() : '종료 시까지' }}
         </div>
         
-        <p style="margin: 0; font-size: 0.95rem; line-height: 1.6; color: var(--text); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; flex: 1">
-          {{ c.description }}
-        </p>
-
-        <div style="margin-top: 1.75rem; width: 100%">
-          <RouterLink :to="`/campaigns/${c.id}`" class="btn primary" style="width: 100%; box-sizing: border-box; display: flex">
-            참여하기
+        <div style="margin-top: 1.25rem; width: 100%">
+          <RouterLink 
+            :to="`/campaigns/${c.id}`" 
+            :class="['btn', c.status === 'ACTIVE' ? 'primary' : '']" 
+            :style="{ width: '100%', boxSizing: 'border-box', display: 'flex', background: c.status !== 'ACTIVE' ? 'var(--border)' : '' }"
+          >
+            {{ c.status === 'ACTIVE' ? '참여하기' : '상세보기' }}
           </RouterLink>
         </div>
       </div>
