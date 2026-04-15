@@ -2,6 +2,7 @@ type MissionConfig = {
   linkUrl?: string;
   correctCode?: string;
   surveyNote?: string;
+  surveyQuestion?: string;
   quizQuestion?: string;
   quizOptions?: string[];
   correctIndex?: number;
@@ -33,9 +34,19 @@ export function evaluateMission(
     case "SURVEY": {
       const code = String(payload.code ?? "").trim();
       const expected = String(config.correctCode ?? "").trim();
-      if (!expected) return { ok: true };
-      if (!code || code.toLowerCase() !== expected.toLowerCase()) {
-        return { ok: false, reason: "제출 코드가 일치하지 않습니다." };
+      const question = String(config.surveyQuestion ?? "").trim();
+
+      // 질문이 있고 정답 코드가 지정되어 있지 않은 경우 -> 답변 유무만 체크
+      if (question && !expected) {
+        if (!code) return { ok: false, reason: "답변을 입력해 주세요." };
+        return { ok: true };
+      }
+
+      // 정답 코드가 지정되어 있는 경우 (기존 방식 하위 호환 포함)
+      if (expected) {
+        if (!code || code.toLowerCase() !== expected.toLowerCase()) {
+          return { ok: false, reason: "제출 코드가 일치하지 않습니다." };
+        }
       }
       return { ok: true };
     }

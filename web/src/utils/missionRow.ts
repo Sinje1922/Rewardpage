@@ -8,6 +8,7 @@ export type MissionRowState = {
   minDwellSeconds: number
   correctCode: string
   surveyNote: string
+  surveyQuestion: string
   quizQuestion: string
   quizOptions: string[]
   quizCorrectIndex: number
@@ -33,6 +34,7 @@ export function emptyMissionRow(order = 0): MissionRowState {
     minDwellSeconds: 0,
     correctCode: '',
     surveyNote: '',
+    surveyQuestion: '',
     quizQuestion: '',
     quizOptions: ['', ''],
     quizCorrectIndex: 0,
@@ -46,11 +48,11 @@ function buildConfig(row: MissionRowState): Record<string, unknown> {
       return { linkUrl: row.linkUrl, minDwellSeconds: row.minDwellSeconds }
     case 'CODE':
       return { correctCode: row.correctCode }
-    case 'SURVEY':
       return {
         linkUrl: row.linkUrl,
         correctCode: row.correctCode,
         surveyNote: row.surveyNote,
+        surveyQuestion: row.surveyQuestion,
       }
     case 'QUIZ': {
       const pairs = row.quizOptions
@@ -106,6 +108,7 @@ export function apiMissionToRow(m: {
     minDwellSeconds: Number(cfg.minDwellSeconds ?? 0),
     correctCode: String(cfg.correctCode ?? ''),
     surveyNote: String(cfg.surveyNote ?? ''),
+    surveyQuestion: String(cfg.surveyQuestion ?? ''),
     quizQuestion: String(cfg.quizQuestion ?? ''),
     quizOptions: opts.length >= 2 ? opts : [...opts, '', ''].slice(0, Math.max(2, opts.length)),
     quizCorrectIndex: Number(cfg.correctIndex ?? 0),

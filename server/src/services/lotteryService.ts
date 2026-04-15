@@ -13,7 +13,7 @@ export async function runCampaignDraw(campaignId: string) {
 
   if (!c) throw new Error("CAMPAIGN_NOT_FOUND");
   if (c.winners.length > 0) throw new Error("ALREADY_DRAWN");
-  
+
   const missionIds = c.missions.map((m) => m.id);
   if (missionIds.length === 0) throw new Error("NO_MISSIONS");
 
@@ -32,7 +32,7 @@ export async function runCampaignDraw(campaignId: string) {
   const completedAll: string[] = [];
   const weightsUser: string[] = [];
   const weightsVal: number[] = [];
-  
+
   for (const [userId, set] of byUser) {
     const n = set.size;
     if (n >= missionIds.length) completedAll.push(userId);
@@ -49,23 +49,34 @@ export async function runCampaignDraw(campaignId: string) {
     picked = pickUniformUnique(completedAll, c.winnerCount);
   }
 
-  if (picked.length === 0) return { winners: [], msg: "NO_ELIGIBLE_PARTICIPANTS" };
+  if (picked.length === 0)
+    return { winners: [], msg: "NO_ELIGIBLE_PARTICIPANTS" };
 
-  const pointsPerPerson = c.totalRewardPoints > 0 ? Math.floor(c.totalRewardPoints / picked.length) : 0;
-  
-  console.log(`[LotteryService] Distributing ${c.totalRewardPoints} points to ${picked.length} winners (${pointsPerPerson}P each) for campaign: ${c.title}`);
+  const pointsPerPerson =
+    c.totalRewardPoints > 0
+      ? Math.floor(c.totalRewardPoints / picked.length)
+      : 0;
+
+  console.log(
+    `[LotteryService] Distributing ${c.totalRewardPoints} points to ${picked.length} winners (${pointsPerPerson}P each) for campaign: ${c.title}`,
+  );
 
   await prisma.$transaction([
     ...picked.map((userId, i) =>
       prisma.winner.create({
-        data: { campaignId: c.id, userId, rank: i + 1, points: pointsPerPerson },
-      })
+        data: {
+          campaignId: c.id,
+          userId,
+          rank: i + 1,
+          points: pointsPerPerson,
+        },
+      }),
     ),
     ...picked.map((userId) =>
       prisma.user.update({
         where: { id: userId },
         data: { pointBalance: { increment: pointsPerPerson } },
-      })
+      }),
     ),
     prisma.campaign.update({
       where: { id: c.id },

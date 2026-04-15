@@ -99,15 +99,19 @@ function removeQuizOption(mi: number, oi: number) {
 
         <template v-else-if="row.type === 'SURVEY'">
           <div class="field">
-            <label>설문/폼 링크</label>
-            <input :value="row.linkUrl" type="url" @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
+            <label>질문 내용 (미션 카드에서 바로 응답)</label>
+            <textarea :value="row.surveyQuestion" rows="2" placeholder="예: 우리 서비스를 사용해본 소감을 적어주세요." @input="updateRow(i, { surveyQuestion: ($event.target as HTMLTextAreaElement).value })" />
           </div>
           <div class="field">
-            <label>제출 코드 (정답)</label>
-            <input :value="row.correctCode" @input="updateRow(i, { correctCode: ($event.target as HTMLInputElement).value })" />
+            <label>설문/폼 링크 (추가 정보 제공용 - 선택)</label>
+            <input :value="row.linkUrl" type="url" placeholder="https://..." @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
           </div>
           <div class="field">
-            <label>안내 문구</label>
+            <label>제출 코드 (특정 정답이 필요한 경우에만 입력)</label>
+            <input :value="row.correctCode" placeholder="비워두면 모든 답변이 통과됩니다" @input="updateRow(i, { correctCode: ($event.target as HTMLInputElement).value })" />
+          </div>
+          <div class="field">
+            <label>하단 안내 문구</label>
             <textarea :value="row.surveyNote" rows="2" @input="updateRow(i, { surveyNote: ($event.target as HTMLTextAreaElement).value })" />
           </div>
         </template>

@@ -239,18 +239,33 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
             </div>
           </template>
 
-          <template v-else-if="m.type === 'CODE' || m.type === 'SURVEY'">
-            <div v-if="m.type === 'SURVEY' && parseCfg(m.config).linkUrl" style="margin-bottom: 1.25rem">
-              <button type="button" class="btn primary" style="width: 100%; border-radius: 12px; height: 3rem" @click="logVisit(m)">
-                📋 설문 응답하기
+          <template v-else-if="m.type === 'SURVEY'">
+            <div 
+              v-if="parseCfg(m.config).surveyQuestion" 
+              style="margin-bottom: 1.25rem; background: var(--bg-deep); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border)"
+            >
+              <p style="margin: 0; font-weight: 700; color: var(--text-h); line-height: 1.5">
+                💬 {{ parseCfg(m.config).surveyQuestion }}
+              </p>
+            </div>
+            
+            <div v-if="parseCfg(m.config).linkUrl" style="margin-bottom: 1.25rem">
+              <button type="button" class="btn" style="width: 100%; border-radius: 12px" @click="logVisit(m)">
+                🔗 관련 링크/설문 열기
               </button>
             </div>
-            <div v-if="m.type === 'SURVEY' && parseCfg(m.config).surveyNote" style="font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; border-left: 3px solid var(--border); padding-left: 0.75rem">
+
+            <div v-if="parseCfg(m.config).surveyNote" style="font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; border-left: 3px solid var(--border); padding-left: 0.75rem; line-height: 1.4">
               {{ parseCfg(m.config).surveyNote }}
             </div>
+
             <div class="field">
-              <label>{{ m.type === 'CODE' ? '정답 코드' : '설문 확인 코드' }}</label>
-              <input v-model="codeInput[m.id]" type="text" placeholder="코드를 입력하세요" style="width: 100%; box-sizing: border-box" />
+              <label>{{ parseCfg(m.config).surveyQuestion ? '답변 입력' : '제출 코드 입력' }}</label>
+              <textarea 
+                v-model="codeInput[m.id]" 
+                :placeholder="parseCfg(m.config).surveyQuestion ? '질문에 대한 답변을 입력해 주세요' : '코드를 입력하세요'"
+                style="width: 100%; box-sizing: border-box; min-height: 80px; padding: 0.75rem"
+              />
             </div>
           </template>
 
