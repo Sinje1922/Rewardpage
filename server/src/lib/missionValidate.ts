@@ -3,6 +3,12 @@ type MissionConfig = {
   correctCode?: string;
   surveyNote?: string;
   surveyQuestion?: string;
+  surveyQuestions?: {
+    id: string;
+    type: "SUBJECTIVE" | "OBJECTIVE";
+    question: string;
+    options?: string[];
+  }[];
   quizQuestion?: string;
   quizOptions?: string[];
   correctIndex?: number;
@@ -32,20 +38,36 @@ export function evaluateMission(
       return { ok: true };
     }
     case "SURVEY": {
-      const code = String(payload.code ?? "").trim();
-      const expected = String(config.correctCode ?? "").trim();
-      const question = String(config.surveyQuestion ?? "").trim();
-
-      // 질문이 있고 정답 코드가 지정되어 있지 않은 경우 -> 답변 유무만 체크
-      if (question && !expected) {
-        if (!code) return { ok: false, reason: "답변을 입력해 주세요." };
+      const qs = config.surveyQuestions || [];
+      if (qs.length === 0) {
+        // Fallback to legacy single question or code check
+        const code = String(payload.code ?? "").trim();
+        const expected = String(config.correctCode ?? "").trim();
+        const question = String(config.surveyQuestion ?? "").trim();
+        if (question && !expected) {
+          if (!code) return { ok: false, reason: "답변을 입력해 주세요." };
+          return { ok: true };
+        }
+        if (expected) {
+          if (!code || code.toLowerCase() !== expected.toLowerCase()) {
+            return { ok: false, reason: "제출 코드가 일치하지 않습니다." };
+          }
+        }
         return { ok: true };
       }
 
-      // 정답 코드가 지정되어 있는 경우 (기존 방식 하위 호환 포함)
-      if (expected) {
-        if (!code || code.toLowerCase() !== expected.toLowerCase()) {
-          return { ok: false, reason: "제출 코드가 일치하지 않습니다." };
+      // New multi-question validation
+      const answers = (payload.answers as Record<string, any>) || {};
+      for (const q of qs) {
+        const ans = answers[q.id];
+        if (ans === undefined || ans === null || String(ans).trim() === "") {
+          return { ok: false, reason: `[${q.question}] 질문에 답해 주세요.` };
+        }
+        if (q.type === "OBJECTIVE") {
+          const optIdx = Number(ans);
+          if (isNaN(optIdx) || !q.options || optIdx < 0 || optIdx >= q.options.length) {
+            return { ok: false, reason: `[${q.question}] 올바른 보기를 선택해 주세요.` };
+          }
         }
       }
       return { ok: true };

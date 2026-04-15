@@ -63,6 +63,7 @@ const myStatus = (mid: string) => camp.value?.mySubmissions?.find((s) => s.missi
 const codeInput = ref<Record<string, string>>({})
 const dwellInput = ref<Record<string, number>>({})
 const quizPick = ref<Record<string, number>>({})
+const surveyAnswers = ref<Record<string, Record<string, string | number>>>({})
 const checkConfirm = ref<Record<string, boolean>>({})
 
 const showCopyMsg = ref(false)
@@ -135,8 +136,17 @@ async function submitMission(m: Mission) {
   let payload: Record<string, unknown> = {}
   if (m.type === 'LINK_VISIT') {
     payload = { dwellSeconds: Number(dwellInput.value[m.id] ?? 0) }
-  } else if (m.type === 'CODE' || m.type === 'SURVEY') {
+  } else if (m.type === 'CODE') {
     payload = { code: codeInput.value[m.id] ?? '' }
+  } else if (m.type === 'SURVEY') {
+    const cfg = parseCfg(m.config)
+    const qs = (cfg.surveyQuestions as any[]) || []
+    if (qs.length === 0) {
+      // Legacy support
+      payload = { code: codeInput.value[m.id] ?? '' }
+    } else {
+      payload = { answers: surveyAnswers.value[m.id] || {} }
+    }
   } else if (m.type === 'QUIZ') {
     payload = { selectedIndex: quizPick.value[m.id] }
   } else if (m.type === 'CHECKIN') {
@@ -240,32 +250,54 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
           </template>
 
           <template v-else-if="m.type === 'SURVEY'">
-            <div 
-              v-if="parseCfg(m.config).surveyQuestion" 
-              style="margin-bottom: 1.25rem; background: var(--bg-deep); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border)"
-            >
-              <p style="margin: 0; font-weight: 700; color: var(--text-h); line-height: 1.5">
-                💬 {{ parseCfg(m.config).surveyQuestion }}
-              </p>
-            </div>
-            
-            <div v-if="parseCfg(m.config).linkUrl" style="margin-bottom: 1.25rem">
-              <button type="button" class="btn" style="width: 100%; border-radius: 12px" @click="logVisit(m)">
-                🔗 관련 링크/설문 열기
-              </button>
-            </div>
-
-            <div v-if="parseCfg(m.config).surveyNote" style="font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; border-left: 3px solid var(--border); padding-left: 0.75rem; line-height: 1.4">
+            <div v-if="parseCfg(m.config).surveyNote" style="font-size: 0.85rem; color: var(--muted); margin-bottom: 1.5rem; border-left: 3px solid var(--accent); padding-left: 0.75rem; line-height: 1.5">
               {{ parseCfg(m.config).surveyNote }}
             </div>
 
-            <div class="field">
-              <label>{{ parseCfg(m.config).surveyQuestion ? '답변 입력' : '제출 코드 입력' }}</label>
-              <textarea 
-                v-model="codeInput[m.id]" 
-                :placeholder="parseCfg(m.config).surveyQuestion ? '질문에 대한 답변을 입력해 주세요' : '코드를 입력하세요'"
-                style="width: 100%; box-sizing: border-box; min-height: 80px; padding: 0.75rem"
-              />
+            <!-- 다중 질문 리스트 -->
+            <div v-if="(parseCfg(m.config).surveyQuestions as any[])?.length" style="display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 1.5rem">
+              <div v-for="(qs, qi) in (parseCfg(m.config).surveyQuestions as any[])" :key="qs.id" class="survey-field">
+                <p style="margin: 0 0 0.75rem; font-weight: 700; color: var(--text-h); line-height: 1.4">
+                  {{ qi + 1 }}. {{ qs.question }}
+                </p>
+                
+                <template v-if="qs.type === 'SUBJECTIVE'">
+                  <textarea 
+                    v-model="(surveyAnswers[m.id] = surveyAnswers[m.id] || {})[qs.id]"
+                    placeholder="답변을 입력해 주세요"
+                    style="width: 100%; min-height: 80px; padding: 0.75rem; border-radius: 8px"
+                  />
+                </template>
+                
+                <template v-else-if="qs.type === 'OBJECTIVE'">
+                  <div style="display: flex; flex-direction: column; gap: 0.5rem">
+                    <label v-for="(opt, oi) in qs.options" :key="oi" style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-size: 0.95rem">
+                      <input 
+                        type="radio" 
+                        :name="'survey-' + m.id + '-' + qs.id" 
+                        :value="oi"
+                        @change="(surveyAnswers[m.id] = surveyAnswers[m.id] || {})[qs.id] = oi"
+                      />
+                      <span>{{ opt }}</span>
+                    </label>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- 레거시 지원 (질문 리스트가 없는 경우) -->
+            <template v-else>
+              <div v-if="parseCfg(m.config).surveyQuestion" style="margin-bottom: 1rem; background: var(--bg-deep); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border)">
+                <p style="margin: 0; font-weight: 700; color: var(--text-h)">💬 {{ parseCfg(m.config).surveyQuestion }}</p>
+              </div>
+              <div class="field">
+                <label>답변 입력</label>
+                <textarea v-model="codeInput[m.id]" placeholder="답변을 입력해 주세요" style="width: 100%; min-height: 80px" />
+              </div>
+            </template>
+            
+            <div v-if="parseCfg(m.config).linkUrl" style="margin-top: 1.25rem">
+              <button type="button" class="btn btn-sm" style="width: 100%" @click="logVisit(m)">🔗 추가 링크 열기</button>
             </div>
           </template>
 

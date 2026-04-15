@@ -33,6 +33,38 @@ function removeQuizOption(mi: number, oi: number) {
   else if (oi < r.quizCorrectIndex) quizCorrectIndex = r.quizCorrectIndex - 1
   updateRow(mi, { quizOptions, quizCorrectIndex })
 }
+
+function addSurveyQuestion(mi: number) {
+  const r = rows.value[mi]
+  if (!r) return
+  const nextQs = [
+    ...r.surveyQuestions,
+    { id: crypto.randomUUID(), type: 'SUBJECTIVE' as const, question: '', options: [] }
+  ]
+  updateRow(mi, { surveyQuestions: nextQs })
+}
+
+function removeSurveyQuestion(mi: number, qi: number) {
+  const r = rows.value[mi]
+  if (!r) return
+  updateRow(mi, { surveyQuestions: r.surveyQuestions.filter((_, j) => j !== qi) })
+}
+
+function addSurveyOption(mi: number, qi: number) {
+  const r = rows.value[mi]
+  if (!r) return
+  const nextQs = [...r.surveyQuestions]
+  nextQs[qi] = { ...nextQs[qi], options: [...nextQs[qi].options, ''] }
+  updateRow(mi, { surveyQuestions: nextQs })
+}
+
+function removeSurveyOption(mi: number, qi: number, oi: number) {
+  const r = rows.value[mi]
+  if (!r) return
+  const nextQs = [...r.surveyQuestions]
+  nextQs[qi] = { ...nextQs[qi], options: nextQs[qi].options.filter((_, j) => j !== oi) }
+  updateRow(mi, { surveyQuestions: nextQs })
+}
 </script>
 
 <template>
@@ -99,20 +131,64 @@ function removeQuizOption(mi: number, oi: number) {
 
         <template v-else-if="row.type === 'SURVEY'">
           <div class="field">
-            <label>질문 내용 (미션 카드에서 바로 응답)</label>
-            <textarea :value="row.surveyQuestion" rows="2" placeholder="예: 우리 서비스를 사용해본 소감을 적어주세요." @input="updateRow(i, { surveyQuestion: ($event.target as HTMLTextAreaElement).value })" />
+            <label>설문 질문 리스트</label>
+            <div v-for="(qs, qi) in row.surveyQuestions" :key="qs.id" class="survey-q-box">
+              <div class="survey-q-head">
+                <span class="q-idx">질문 {{ qi + 1 }}</span>
+                <div class="q-ctrls">
+                  <select :value="qs.type" @change="(e) => {
+                    const nextQs = [...row.surveyQuestions];
+                    nextQs[qi] = { ...nextQs[qi], type: (e.target as HTMLSelectElement).value as any };
+                    if (nextQs[qi].type === 'OBJECTIVE' && nextQs[qi].options.length === 0) {
+                      nextQs[qi].options = ['보기 1', '보기 2'];
+                    }
+                    updateRow(i, { surveyQuestions: nextQs });
+                  }">
+                    <option value="SUBJECTIVE">주관식</option>
+                    <option value="OBJECTIVE">객관식</option>
+                  </select>
+                  <button type="button" class="btn btn-sm" @click="removeSurveyQuestion(i, qi)">삭제</button>
+                </div>
+              </div>
+              
+              <input 
+                :value="qs.question" 
+                placeholder="질문 내용을 입력하세요" 
+                @input="(e) => {
+                  const nextQs = [...row.surveyQuestions];
+                  nextQs[qi] = { ...nextQs[qi], question: (e.target as HTMLInputElement).value };
+                  updateRow(i, { surveyQuestions: nextQs });
+                }"
+              />
+
+              <div v-if="qs.type === 'OBJECTIVE'" class="survey-opt-list">
+                <div v-for="(_, oi) in qs.options" :key="oi" class="survey-opt-row">
+                  <input 
+                    :value="qs.options[oi]" 
+                    :placeholder="'보기 ' + (oi + 1)"
+                    @input="(e) => {
+                      const nextQs = [...row.surveyQuestions];
+                      const nextOpts = [...nextQs[qi].options];
+                      nextOpts[oi] = (e.target as HTMLInputElement).value;
+                      nextQs[qi] = { ...nextQs[qi], options: nextOpts };
+                      updateRow(i, { surveyQuestions: nextQs });
+                    }"
+                  />
+                  <button type="button" class="btn btn-sm" @click="removeSurveyOption(i, qi, oi)">x</button>
+                </div>
+                <button type="button" class="btn btn-sm" @click="addSurveyOption(i, qi)">+ 보기 추가</button>
+              </div>
+            </div>
+            <button type="button" class="btn btn-sm" style="width: 100%; margin-top: 0.5rem" @click="addSurveyQuestion(i)">+ 질문 추가</button>
+          </div>
+
+          <div class="field" style="margin-top: 1rem">
+            <label>공통 안내 문구 (선택)</label>
+            <textarea :value="row.surveyNote" rows="2" placeholder="설문 시작 전 안내할 내용을 적어주세요." @input="updateRow(i, { surveyNote: ($event.target as HTMLTextAreaElement).value })" />
           </div>
           <div class="field">
-            <label>설문/폼 링크 (추가 정보 제공용 - 선택)</label>
+            <label>추가 링크 (필요 시)</label>
             <input :value="row.linkUrl" type="url" placeholder="https://..." @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
-          </div>
-          <div class="field">
-            <label>제출 코드 (특정 정답이 필요한 경우에만 입력)</label>
-            <input :value="row.correctCode" placeholder="비워두면 모든 답변이 통과됩니다" @input="updateRow(i, { correctCode: ($event.target as HTMLInputElement).value })" />
-          </div>
-          <div class="field">
-            <label>하단 안내 문구</label>
-            <textarea :value="row.surveyNote" rows="2" @input="updateRow(i, { surveyNote: ($event.target as HTMLTextAreaElement).value })" />
           </div>
         </template>
 
@@ -204,5 +280,47 @@ function removeQuizOption(mi: number, oi: number) {
   margin: 0;
   font-size: 0.9rem;
   color: var(--muted);
+}
+.survey-q-box {
+  background: color-mix(in srgb, var(--bg-deep) 90%, var(--panel));
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  margin-bottom: 0.75rem;
+}
+.survey-q-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.q-idx {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.q-ctrls {
+  display: flex;
+  gap: 0.4rem;
+}
+.q-ctrls select {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.8rem;
+}
+.survey-opt-list {
+  margin-top: 0.5rem;
+  padding-left: 0.5rem;
+  border-left: 2px solid var(--border);
+}
+.survey-opt-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+.survey-opt-row input {
+  flex: 1;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
 }
 </style>

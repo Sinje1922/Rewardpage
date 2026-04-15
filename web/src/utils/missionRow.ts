@@ -1,3 +1,10 @@
+export interface SurveyQuestion {
+  id: string
+  type: 'SUBJECTIVE' | 'OBJECTIVE'
+  question: string
+  options: string[]
+}
+
 export type MissionRowState = {
   key: string
   type: string
@@ -9,6 +16,7 @@ export type MissionRowState = {
   correctCode: string
   surveyNote: string
   surveyQuestion: string
+  surveyQuestions: SurveyQuestion[]
   quizQuestion: string
   quizOptions: string[]
   quizCorrectIndex: number
@@ -35,6 +43,7 @@ export function emptyMissionRow(order = 0): MissionRowState {
     correctCode: '',
     surveyNote: '',
     surveyQuestion: '',
+    surveyQuestions: [],
     quizQuestion: '',
     quizOptions: ['', ''],
     quizCorrectIndex: 0,
@@ -48,11 +57,18 @@ function buildConfig(row: MissionRowState): Record<string, unknown> {
       return { linkUrl: row.linkUrl, minDwellSeconds: row.minDwellSeconds }
     case 'CODE':
       return { correctCode: row.correctCode }
+    case 'SURVEY':
       return {
         linkUrl: row.linkUrl,
         correctCode: row.correctCode,
         surveyNote: row.surveyNote,
         surveyQuestion: row.surveyQuestion,
+        surveyQuestions: row.surveyQuestions.map(q => ({
+          id: q.id,
+          type: q.type,
+          question: q.question.trim(),
+          options: q.type === 'OBJECTIVE' ? q.options.map(o => o.trim()).filter(Boolean) : []
+        }))
       }
     case 'QUIZ': {
       const pairs = row.quizOptions
@@ -109,6 +125,7 @@ export function apiMissionToRow(m: {
     correctCode: String(cfg.correctCode ?? ''),
     surveyNote: String(cfg.surveyNote ?? ''),
     surveyQuestion: String(cfg.surveyQuestion ?? ''),
+    surveyQuestions: Array.isArray(cfg.surveyQuestions) ? (cfg.surveyQuestions as SurveyQuestion[]) : [],
     quizQuestion: String(cfg.quizQuestion ?? ''),
     quizOptions: opts.length >= 2 ? opts : [...opts, '', ''].slice(0, Math.max(2, opts.length)),
     quizCorrectIndex: Number(cfg.correctIndex ?? 0),
