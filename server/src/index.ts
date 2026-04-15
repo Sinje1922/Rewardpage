@@ -10,6 +10,7 @@ import adminRouter from "./routes/admin.js";
 import meRouter from "./routes/me.js";
 import submissionsRouter from "./routes/submissions.js";
 import uploadRouter from "./routes/upload.js";
+import { startLotteryWorker } from "./workers/lotteryWorker.js";
 
 const app = express();
 
