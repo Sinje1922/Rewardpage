@@ -1,11 +1,16 @@
-<script setup lang="ts">
-import { onMounted } from 'vue'
-import { RouterLink, RouterView } from 'vue-router'
+import { onMounted, watch } from 'vue'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/auth'
 
 const auth = useAuthStore()
+const route = useRoute()
 
 onMounted(() => {
+  if (auth.token) auth.loadMe()
+})
+
+// 페이지를 이동할 때마다 (예: 리스트에서 상세로, 마이페이지로 등) 유저 정보를 갱신하여 최신 포인트를 보여줍니다.
+watch(() => route.path, () => {
   if (auth.token) auth.loadMe()
 })
 </script>

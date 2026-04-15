@@ -53,6 +53,8 @@ export async function runCampaignDraw(campaignId: string) {
 
   const pointsPerPerson = c.totalRewardPoints > 0 ? Math.floor(c.totalRewardPoints / picked.length) : 0;
   
+  console.log(`[LotteryService] Distributing ${c.totalRewardPoints} points to ${picked.length} winners (${pointsPerPerson}P each) for campaign: ${c.title}`);
+
   await prisma.$transaction([
     ...picked.map((userId, i) =>
       prisma.winner.create({
