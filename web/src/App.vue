@@ -1,3 +1,4 @@
+<script setup lang="ts">
 import { onMounted, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/auth'
