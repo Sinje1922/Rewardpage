@@ -17,10 +17,10 @@ const app = express();
 const uploadsRoot = path.join(process.cwd(), "uploads");
 fs.mkdirSync(uploadsRoot, { recursive: true });
 
-const corsOrigin =
-  process.env.CORS_ORIGIN === "true"
-    ? true
-    : process.env.CORS_ORIGIN || true;
+const rawCorsOrigin = process.env.CORS_ORIGIN;
+const corsOrigin = rawCorsOrigin
+  ? rawCorsOrigin.split(",").map((o) => o.trim())
+  : ["http://localhost:5173", "https://rewardpage-5nmq.vercel.app"];
 
 app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(express.json());
