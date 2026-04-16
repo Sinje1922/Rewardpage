@@ -20,7 +20,6 @@ type DashboardData = {
 
 const { t } = useI18n()
 const tab = ref<'dashboard' | 'users'>('dashboard')
-const overview = ref<{ users: number; campaigns: number; submissions: number } | null>(null)
 const dashboard = ref<DashboardData | null>(null)
 const users = ref<UserRow[]>([])
 const err = ref('')
@@ -37,7 +36,6 @@ async function refresh() {
     ])
     users.value = u.data
     dashboard.value = d.data
-    // overview는 dashboard.summary 데이터로 대체 가능
   } finally {
     loading.value = false
   }
