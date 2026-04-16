@@ -31,14 +31,13 @@ const userSearchQuery = ref('')
 async function refresh() {
   loading.value = true
   try {
-    const [o, u, d] = await Promise.all([
-      api.get<{ users: number; campaigns: number; submissions: number }>('/admin/overview'),
+    const [u, d] = await Promise.all([
       api.get<UserRow[]>('/admin/users', { params: { q: userSearchQuery.value } }),
       api.get<DashboardData>('/admin/dashboard'),
     ])
-    overview.value = o.data
     users.value = u.data
     dashboard.value = d.data
+    // overview는 dashboard.summary 데이터로 대체 가능
   } finally {
     loading.value = false
   }
