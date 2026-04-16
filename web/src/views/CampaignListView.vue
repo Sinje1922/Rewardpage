@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { api, getFileUrl } from '../api/client'
 
 type Campaign = {
@@ -17,6 +18,7 @@ type Campaign = {
   missions?: { id: string }[]
 }
 
+const { t } = useI18n()
 const list = ref<Campaign[]>([])
 const err = ref('')
 const searchQuery = ref('')
@@ -27,7 +29,7 @@ onMounted(async () => {
     const { data } = await api.get<Campaign[]>('/campaigns')
     list.value = data
   } catch {
-    err.value = '목록을 불러오지 못했습니다.'
+    err.value = t('campaign.errorLoad')
   }
 })
 
@@ -59,20 +61,20 @@ const filteredList = computed(() => {
 </script>
 
 <template>
-  <div style="max-width: 1200px; margin: 0 auto">
+  <div style="margin: 0 auto">
     <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap">
       <div>
-        <h1 class="page-title" style="margin-bottom: 0.5rem">모든 캠페인</h1>
-        <p style="color: var(--muted); margin: 0">진행 중인 리워드 캠페인을 확인하고 참여해 보세요.</p>
+        <h1 class="page-title" style="margin-bottom: 0.5rem">{{ $t('campaign.listTitle') }}</h1>
+        <p style="color: var(--muted); margin: 0">{{ $t('campaign.listLead') }}</p>
       </div>
       
       <div class="search-bar" style="margin-bottom: 0; min-width: 320px">
-        <input v-model="searchQuery" type="text" placeholder="캠페인 제목이나 설명 검색..." />
+        <input v-model="searchQuery" type="text" :placeholder="$t('campaign.searchPlaceholder')" />
         <select v-model="filterStatus" class="btn" style="border-radius: 999px; padding-right: 2.2rem">
-          <option value="ALL">모든 상태</option>
-          <option value="ACTIVE">진행 중</option>
-          <option value="CLOSED">종료됨</option>
-          <option value="DRAWN">추첨 완료</option>
+          <option value="ALL">{{ $t('campaign.filterAll') }}</option>
+          <option value="ACTIVE">{{ $t('campaign.statusActive') }}</option>
+          <option value="CLOSED">{{ $t('campaign.statusClosed') }}</option>
+          <option value="DRAWN">{{ $t('campaign.statusDrawn') }}</option>
         </select>
       </div>
     </div>
@@ -96,18 +98,18 @@ const filteredList = computed(() => {
         <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem">
           <div style="display: flex; flex-wrap: wrap; gap: 0.4rem">
             <span class="badge" :style="c.status === 'ACTIVE' ? 'background: var(--mint-soft); color: var(--mint)' : ''">
-              {{ c.status === 'ACTIVE' ? '진행 중' : c.status === 'CLOSED' ? '종료됨' : '추첨 완료' }}
+              {{ c.status === 'ACTIVE' ? $t('campaign.statusActive') : c.status === 'CLOSED' ? $t('campaign.statusClosed') : $t('campaign.statusDrawn') }}
             </span>
             <span style="font-size: 0.8rem; font-weight: 600; color: var(--muted); background: var(--bg-deep); padding: 0.25rem 0.6rem; border-radius: 0.5rem">
-              미션 {{ c.missions?.length ?? 0 }}
+              {{ $t('campaign.missionCount', { count: c.missions?.length ?? 0 }) }}
             </span>
           </div>
           <div style="text-align: right">
             <div style="font-weight: 800; color: var(--accent); font-size: 1.25rem; line-height: 1">
-              💰 {{ (c.totalRewardPoints || 0).toLocaleString() }}P
+              💰 {{ $t('campaign.totalReward', { points: (c.totalRewardPoints || 0).toLocaleString() }) }}
             </div>
             <div style="font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem">
-              인당 {{ Math.floor((c.totalRewardPoints || 0) / (c.winnerCount || 1)).toLocaleString() }}P
+              {{ $t('campaign.rewardPerPerson', { points: Math.floor((c.totalRewardPoints || 0) / (c.winnerCount || 1)).toLocaleString() }) }}
             </div>
           </div>
         </div>
@@ -131,8 +133,11 @@ const filteredList = computed(() => {
           </p>
         </RouterLink>
 
-        <div v-if="c.startsAt || c.endsAt" style="font-size: 0.8rem; color: var(--muted); margin: 1rem 0 0; display: flex; align-items: center; gap: 0.4rem">
-          📅 {{ c.startsAt ? new Date(c.startsAt).toLocaleDateString() : '언제나' }} ~ {{ c.endsAt ? new Date(c.endsAt).toLocaleDateString() : '종료 시까지' }}
+        <div style="v-if='c.startsAt || c.endsAt' style='font-size: 0.8rem; color: var(--muted); margin: 1rem 0 0; display: flex; align-items: center; gap: 0.4rem'">
+          {{ $t('campaign.duration', {
+            start: c.startsAt ? new Date(c.startsAt).toLocaleDateString() : $t('campaign.durationAlways'),
+            end: c.endsAt ? new Date(c.endsAt).toLocaleDateString() : $t('campaign.durationUntilEnd')
+          }) }}
         </div>
         
         <div style="margin-top: 1.25rem; width: 100%">
@@ -141,14 +146,14 @@ const filteredList = computed(() => {
             :class="['btn', c.status === 'ACTIVE' ? 'primary' : '']" 
             :style="{ width: '100%', boxSizing: 'border-box', display: 'flex', background: c.status !== 'ACTIVE' ? 'var(--border)' : '' }"
           >
-            {{ c.status === 'ACTIVE' ? '참여하기' : '상세보기' }}
+            {{ c.status === 'ACTIVE' ? $t('campaign.join') : $t('campaign.viewDetail') }}
           </RouterLink>
         </div>
       </div>
     </div>
 
     <p v-if="!err && filteredList.length === 0" style="color: var(--muted); text-align: center; margin-top: 5rem; padding-bottom: 5rem">
-      조건에 맞는 캠페인이 없습니다.
+      {{ $t('campaign.noCampaigns') }}
     </p>
   </div>
 </template>

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { GoogleSignInButton, type CredentialResponse } from 'vue3-google-signin'
 import { useAuthStore } from '../stores/auth'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
@@ -20,7 +22,7 @@ async function onSubmit() {
     const r = route.query.redirect as string | undefined
     await router.replace(r || '/campaigns')
   } catch (e: unknown) {
-    err.value = '로그인에 실패했습니다.'
+    err.value = t('auth.loginFail')
   } finally {
     loading.value = false
   }
@@ -35,33 +37,33 @@ async function handleGoogleSuccess(response: CredentialResponse) {
     const r = route.query.redirect as string | undefined
     await router.replace(r || '/campaigns')
   } catch (e: unknown) {
-    err.value = 'Google 로그인에 실패했습니다.'
+    err.value = t('auth.googleLoginFail')
   } finally {
     loading.value = false
   }
 }
 
 const handleGoogleError = () => {
-  err.value = 'Google 로그인 중 오류가 발생했습니다.'
+  err.value = t('auth.googleAuthError')
 }
 </script>
 
 <template>
   <div>
-    <h1 class="page-title">로그인</h1>
+    <h1 class="page-title">{{ $t('auth.login') }}</h1>
     <form class="card" style="max-width: 22rem" @submit.prevent="onSubmit">
       <div class="field">
-        <label for="em">이메일</label>
+        <label for="em">{{ $t('auth.email') }}</label>
         <input id="em" v-model="email" type="email" required autocomplete="username" />
       </div>
       <div class="field">
-        <label for="pw">비밀번호</label>
+        <label for="pw">{{ $t('auth.password') }}</label>
         <input id="pw" v-model="password" type="password" required autocomplete="current-password" />
       </div>
       <p v-if="err" class="err">{{ err }}</p>
-      <button class="btn primary" type="submit" :disabled="loading">로그인</button>
+      <button class="btn primary" type="submit" :disabled="loading">{{ $t('auth.login') }}</button>
 
-      <div class="divider">또는</div>
+      <div class="divider">{{ $t('auth.or') }}</div>
 
       <div style="display: flex; justify-content: center">
         <GoogleSignInButton @success="handleGoogleSuccess" @error="handleGoogleError" />

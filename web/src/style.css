@@ -35,22 +35,21 @@
   -webkit-font-smoothing: antialiased;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #cbd5e1;
-    --text-h: #f8fafc;
-    --muted: #94a3b8;
-    --bg: #0f172a;
-    --bg-deep: #020617;
-    --panel: rgba(30, 41, 59, 0.7);
-    --border: rgba(51, 65, 85, 0.5);
-    --code-bg: #1e293b;
-    --accent: #818cf8;
-    --accent-bright: #a5b4fc;
-    --accent-soft: rgba(129, 140, 248, 0.15);
-    --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    --shadow-hover: 0 12px 48px rgba(0, 0, 0, 0.5);
-  }
+/* Dark Mode Variables - Based on .dark class on html/root */
+:root.dark {
+  --text: #cbd5e1;
+  --text-h: #f8fafc;
+  --muted: #94a3b8;
+  --bg: #0f172a;
+  --bg-deep: #020617;
+  --panel: rgba(30, 41, 59, 0.7);
+  --border: rgba(51, 65, 85, 0.5);
+  --code-bg: #1e293b;
+  --accent: #818cf8;
+  --accent-bright: #a5b4fc;
+  --accent-soft: rgba(129, 140, 248, 0.15);
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-hover: 0 12px 48px rgba(0, 0, 0, 0.5);
 }
 
 body {
@@ -63,12 +62,10 @@ body {
     linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background: 
-      radial-gradient(at 0% 0%, rgba(129, 140, 248, 0.1) 0px, transparent 50%),
-      linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
-  }
+:root.dark body {
+  background: 
+    radial-gradient(at 0% 0%, rgba(129, 140, 248, 0.1) 0px, transparent 50%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
 }
 
 .page-title {
@@ -158,10 +155,8 @@ body {
   transition: all 0.2s ease;
 }
 
-@media (prefers-color-scheme: dark) {
-  .field input, .field select, .field textarea {
-    background: rgba(15, 23, 42, 0.4);
-  }
+:root.dark .field input, :root.dark .field select, :root.dark .field textarea {
+  background: rgba(15, 23, 42, 0.4);
 }
 
 .field input:focus, .field select:focus, .field textarea:focus {

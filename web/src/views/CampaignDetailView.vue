@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { api, getFileUrl } from '../api/client'
 import { useAuthStore } from '../stores/auth'
 
@@ -32,6 +33,7 @@ type Participant = { email: string }
 
 type WinnerRow = { rank: number; points: number; user: { email: string } }
 
+const { t } = useI18n()
 const route = useRoute()
 const auth = useAuthStore()
 const camp = ref<CampaignDetail | null>(null)
@@ -107,7 +109,7 @@ onMounted(async () => {
     
     await loadParticipants()
   } catch {
-    err.value = '캠페인을 불러오지 못했습니다.'
+    err.value = t('common.errorLoad')
   }
 })
 
@@ -151,7 +153,7 @@ async function submitMission(m: Mission) {
     payload = { selectedIndex: quizPick.value[m.id] }
   } else if (m.type === 'CHECKIN') {
     if (!checkConfirm.value[m.id]) {
-      err.value = '확인에 체크해 주세요.'
+      err.value = t('common.checkRequired')
       return
     }
     payload = {}
@@ -160,13 +162,13 @@ async function submitMission(m: Mission) {
   }
   try {
     await api.post(`/missions/${m.id}/submit`, { payload })
-    msg.value = '제출되었습니다.'
+    msg.value = t('common.submitSuccess')
     const { data } = await api.get<CampaignDetail>(`/campaigns/${route.params.id}`)
     camp.value = data
     await loadParticipants()
   } catch (e: unknown) {
     const ax = e as { response?: { data?: { error?: string } } }
-    err.value = ax.response?.data?.error ?? '제출에 실패했습니다.'
+    err.value = ax.response?.data?.error ?? t('common.submitFail')
   }
 }
 
@@ -191,28 +193,31 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
       <h1 class="page-title">{{ camp.title }}</h1>
       <p style="margin: 0 auto 1rem; max-width: 36rem; line-height: 1.6">{{ camp.description }}</p>
       <div style="display: flex; gap: 0.75rem; justify-content: center; align-items: center">
-        <span class="badge">상태: {{ camp.status }}</span>
-        <span v-if="camp.missions" style="font-size: 0.9rem; color: var(--muted)">미션 {{ camp.missions.length }}개</span>
+        <span class="badge">{{ $t('detail.statusLabel', { status: camp.status }) }}</span>
+        <span v-if="camp.missions" style="font-size: 0.9rem; color: var(--muted)">{{ $t('detail.missionsCountLabel', { count: camp.missions.length }) }}</span>
         <span v-if="camp.totalRewardPoints > 0" class="badge" style="background: var(--accent); color: white">
-          💰 {{ camp.totalRewardPoints.toLocaleString() }}P 보상
+          {{ $t('detail.rewardLabel', { points: camp.totalRewardPoints.toLocaleString() }) }}
         </span>
         <button type="button" class="btn" style="padding: 0.35rem 0.8rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; border-radius: 99px" @click="copyLink">
-          🔗 {{ showCopyMsg ? '복사됨!' : '공유하기' }}
+          🔗 {{ showCopyMsg ? $t('detail.copied') : $t('detail.copyLink') }}
         </button>
       </div>
       <p v-if="camp.totalRewardPoints > 0" style="font-size: 0.85rem; color: var(--muted); margin-top: 0.5rem">
-        당첨 시 인당 {{ Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }}P 지급
+        {{ $t('detail.rewardPerWinner', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }}
       </p>
       <div v-if="camp.startsAt || camp.endsAt" style="margin-top: 0.75rem; font-size: 0.9rem; color: var(--muted); font-weight: 600">
-        📅 기간: {{ camp.startsAt ? new Date(camp.startsAt).toLocaleString() : '상시 진행' }} ~ {{ camp.endsAt ? new Date(camp.endsAt).toLocaleString() : '종료 시까지' }}
+        {{ $t('detail.period', {
+          start: camp.startsAt ? new Date(camp.startsAt).toLocaleString() : $t('detail.always'),
+          end: camp.endsAt ? new Date(camp.endsAt).toLocaleString() : $t('campaign.durationUntilEnd')
+        }) }}
       </div>
     </div>
 
     <section v-if="winners.length" class="card" style="margin-bottom: 2rem; border-style: dashed; background: var(--accent-soft)">
-      <h2 style="font-size: 1.1rem; margin: 0 0 0.75rem; color: var(--text-h)">🏆 이번 캠페인 당첨자</h2>
+      <h2 style="font-size: 1.1rem; margin: 0 0 0.75rem; color: var(--text-h)">{{ $t('detail.winnersTitle') }}</h2>
       <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem">
         <div v-for="w in winners" :key="w.rank" style="font-weight: 600; font-size: 0.95rem">
-          {{ w.rank }}위 — {{ w.user.email }} 
+          {{ $t('detail.winnerRow', { rank: w.rank, email: w.user.email }) }} 
           <span v-if="w.points > 0" style="color: var(--accent)">({{ w.points.toLocaleString() }}P)</span>
         </div>
       </div>
@@ -227,11 +232,11 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
           <div style="display: flex; gap: 0.5rem; align-items: center">
             <span style="font-size: 1.5rem">{{ typeIcons[m.type] || '✨' }}</span>
             <span v-if="camp.totalRewardPoints > 0" style="font-size: 0.85rem; font-weight: 700; color: var(--accent); background: var(--accent-soft); padding: 0.2rem 0.6rem; border-radius: 99px">
-              {{ Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }}P 대기
+              {{ $t('detail.missionWait', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }}
             </span>
           </div>
           <span class="badge" :style="myStatus(m.id) === 'APPROVED' ? 'background: var(--mint); color: white' : ''">
-            {{ myStatus(m.id) ?? '미참여' }}
+            {{ myStatus(m.id) ? myStatus(m.id) : $t('detail.unparticipated') }}
           </span>
         </div>
 
@@ -242,9 +247,9 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
 
         <div style="border-top: 1px solid var(--border); padding-top: 1rem; margin-top: auto">
           <template v-if="m.type === 'LINK_VISIT'">
-            <button type="button" class="btn" style="width: 100%" @click="logVisit(m)">링크 열기</button>
+            <button type="button" class="btn" style="width: 100%" @click="logVisit(m)">{{ $t('detail.linkOpen') }}</button>
             <div class="field" style="margin-top: 0.75rem">
-              <label>체류 시간(초) 확인</label>
+              <label>{{ $t('detail.dwellTime') }}</label>
               <input v-model.number="dwellInput[m.id]" type="number" min="0" placeholder="0" />
             </div>
           </template>
@@ -317,13 +322,13 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
           <template v-else-if="m.type === 'CHECKIN'">
             <label style="display: flex; gap: 0.5rem; align-items: center; cursor: pointer">
               <input v-model="checkConfirm[m.id]" type="checkbox" />
-              <span style="font-size: 0.9rem">이해했습니다</span>
+              <span style="font-size: 0.9rem">{{ $t('detail.understand') }}</span>
             </label>
           </template>
 
           <template v-else-if="m.type === 'FILE_UPLOAD'">
             <div class="field">
-              <label>파일 URL</label>
+              <label>{{ $t('detail.fileUrl') }}</label>
               <input v-model="codeInput[m.id]" type="url" placeholder="https://..." style="width: 100%; box-sizing: border-box" />
             </div>
           </template>
@@ -343,8 +348,8 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
     
     <div class="card" style="margin-top: 3rem; background: var(--bg-deep); border: 2px solid var(--border)">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem">
-        <h2 style="font-size: 1.25rem; margin: 0; color: var(--text-h)">👥 실시간 참여 현황</h2>
-        <span class="badge" style="background: var(--accent); color: white; padding: 0.4rem 1rem">총 {{ participantCount }}명 완료</span>
+        <h2 style="font-size: 1.25rem; margin: 0; color: var(--text-h)">{{ $t('detail.realtimeTitle') }}</h2>
+        <span class="badge" style="background: var(--accent); color: white; padding: 0.4rem 1rem">{{ $t('detail.totalParticipants', { count: participantCount }) }}</span>
       </div>
       
       <div v-if="participants.length > 0" style="display: flex; flex-wrap: wrap; gap: 0.75rem">
@@ -357,16 +362,16 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
         </div>
       </div>
       <div v-else style="padding: 2rem; text-align: center; color: var(--muted); background: var(--panel); border-radius: 12px; border: 1px dashed var(--border)">
-        <p style="margin: 0; font-size: 0.95rem">아직 미션을 모두 완료한 참가자가 없습니다.</p>
-        <p style="margin: 0.5rem 0 0; font-size: 0.85rem">가장 먼저 모든 미션을 완료하고 행운의 주인공이 되어보세요! ✨</p>
+        <p style="margin: 0; font-size: 0.95rem">{{ $t('detail.nobodyParticipated') }}</p>
+        <p style="margin: 0.5rem 0 0; font-size: 0.85rem">{{ $t('detail.beTheFirst') }}</p>
       </div>
 
       <p style="margin-top: 1.25rem; font-size: 0.8rem; color: var(--muted); text-align: center">
-        모든 미션을 완료한 사용자만 목록에 표시됩니다.
+        {{ $t('detail.participantNotice') }}
       </p>
     </div>
   </div>
-  <p v-else-if="!err">불러오는 중…</p>
+  <p v-else-if="!err">{{ $t('detail.loading') }}</p>
   <p v-else class="err">{{ err }}</p>
 </template>
 

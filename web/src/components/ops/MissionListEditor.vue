@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { MissionRowState } from '../../utils/missionRow'
 import { emptyMissionRow } from '../../utils/missionRow'
 
+const { t } = useI18n()
 const rows = defineModel<MissionRowState[]>({ required: true })
-
+// ... (rest of the script logic remains the same)
 function updateRow(i: number, patch: Partial<MissionRowState>) {
   const next = rows.value.map((r, j) => (j === i ? { ...r, ...patch } : r))
   rows.value = next
@@ -71,33 +73,33 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
   <div class="mission-list">
     <div v-for="(row, i) in rows" :key="row.key" class="mission-card card">
       <div class="mission-head">
-        <span class="idx">미션 {{ i + 1 }}</span>
-        <button type="button" class="btn btn-sm" :disabled="rows.length <= 1" @click="removeRow(i)">삭제</button>
+        <span class="idx">{{ $t('ops.missionNum', { n: i + 1 }) }}</span>
+        <button type="button" class="btn btn-sm" :disabled="rows.length <= 1" @click="removeRow(i)">{{ $t('ops.remove') }}</button>
       </div>
       <div class="field">
-        <label>유형</label>
+        <label>{{ $t('ops.type') || 'Type' }}</label>
         <select
           :value="row.type"
           @change="updateRow(i, { type: ($event.target as HTMLSelectElement).value })"
         >
-          <option value="LINK_VISIT">링크 방문</option>
-          <option value="SURVEY">설문·코드</option>
-          <option value="CODE">코드 입력</option>
-          <option value="QUIZ">퀴즈</option>
-          <option value="CHECKIN">체크인</option>
-          <option value="FILE_UPLOAD">파일 업로드</option>
+          <option value="LINK_VISIT">{{ $t('ops.typeLink') }}</option>
+          <option value="SURVEY">{{ $t('ops.typeSurvey') }}</option>
+          <option value="CODE">{{ $t('ops.typeCode') }}</option>
+          <option value="QUIZ">{{ $t('ops.typeQuiz') }}</option>
+          <option value="CHECKIN">{{ $t('ops.typeCheckin') }}</option>
+          <option value="FILE_UPLOAD">{{ $t('ops.typeFile') }}</option>
         </select>
       </div>
       <div class="field">
-        <label>미션 제목</label>
-        <input :value="row.title" placeholder="예: 공식 홈 방문하기" @input="updateRow(i, { title: ($event.target as HTMLInputElement).value })" />
+        <label>{{ $t('ops.missionTitle') }}</label>
+        <input :value="row.title" :placeholder="t('ops.titlePlaceholder')" @input="updateRow(i, { title: ($event.target as HTMLInputElement).value })" />
       </div>
       <div class="field">
-        <label>설명 (선택)</label>
+        <label>{{ $t('ops.description') }} ({{ $t('common.optional') || 'Optional' }})</label>
         <textarea :value="row.description" rows="2" @input="updateRow(i, { description: ($event.target as HTMLTextAreaElement).value })" />
       </div>
       <div class="field">
-        <label>표시 순서</label>
+        <label>{{ $t('ops.sortOrder') || 'Sort Order' }}</label>
         <input
           type="number"
           :value="row.sortOrder"
@@ -108,11 +110,11 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
       <div class="type-box">
         <template v-if="row.type === 'LINK_VISIT'">
           <div class="field">
-            <label>링크 URL</label>
+            <label>{{ $t('ops.linkUrl') || 'Link URL' }}</label>
             <input :value="row.linkUrl" type="url" placeholder="https://..." @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
           </div>
           <div class="field">
-            <label>최소 체류 (초)</label>
+            <label>{{ $t('ops.minDwellLabel') }}</label>
             <input
               type="number"
               min="0"
@@ -124,36 +126,36 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
 
         <template v-else-if="row.type === 'CODE'">
           <div class="field">
-            <label>정답 코드</label>
+            <label>{{ $t('ops.correctCodeLabel') }}</label>
             <input :value="row.correctCode" @input="updateRow(i, { correctCode: ($event.target as HTMLInputElement).value })" />
           </div>
         </template>
 
         <template v-else-if="row.type === 'SURVEY'">
           <div class="field">
-            <label>설문 질문 리스트</label>
+            <label>{{ $t('ops.surveyQuestions') }}</label>
             <div v-for="(qs, qi) in row.surveyQuestions" :key="qs.id" class="survey-q-box">
               <div class="survey-q-head">
-                <span class="q-idx">질문 {{ qi + 1 }}</span>
+                <span class="q-idx">{{ $t('ops.questionNum', { n: qi + 1 }) }}</span>
                 <div class="q-ctrls">
                   <select :value="qs.type" @change="(e) => {
                     const nextQs = [...row.surveyQuestions];
                     nextQs[qi] = { ...nextQs[qi], type: (e.target as HTMLSelectElement).value as any };
                     if (nextQs[qi].type === 'OBJECTIVE' && nextQs[qi].options.length === 0) {
-                      nextQs[qi].options = ['보기 1', '보기 2'];
+                      nextQs[qi].options = ['Option 1', 'Option 2'];
                     }
                     updateRow(i, { surveyQuestions: nextQs });
                   }">
-                    <option value="SUBJECTIVE">주관식</option>
-                    <option value="OBJECTIVE">객관식</option>
+                    <option value="SUBJECTIVE">{{ $t('ops.typeSubjective') }}</option>
+                    <option value="OBJECTIVE">{{ $t('ops.typeObjective') }}</option>
                   </select>
-                  <button type="button" class="btn btn-sm" @click="removeSurveyQuestion(i, qi)">삭제</button>
+                  <button type="button" class="btn btn-sm" @click="removeSurveyQuestion(i, qi)">{{ $t('ops.remove') }}</button>
                 </div>
               </div>
               
               <input 
                 :value="qs.question" 
-                placeholder="질문 내용을 입력하세요" 
+                :placeholder="t('ops.questionPlaceholder')" 
                 @input="(e) => {
                   const nextQs = [...row.surveyQuestions];
                   nextQs[qi] = { ...nextQs[qi], question: (e.target as HTMLInputElement).value };
@@ -165,7 +167,7 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
                 <div v-for="(_, oi) in qs.options" :key="oi" class="survey-opt-row">
                   <input 
                     :value="qs.options[oi]" 
-                    :placeholder="'보기 ' + (oi + 1)"
+                    :placeholder="t('ops.optionPlaceholder', { n: oi + 1 })"
                     @input="(e) => {
                       const nextQs = [...row.surveyQuestions];
                       const nextOpts = [...nextQs[qi].options];
@@ -176,29 +178,29 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
                   />
                   <button type="button" class="btn btn-sm" @click="removeSurveyOption(i, qi, oi)">x</button>
                 </div>
-                <button type="button" class="btn btn-sm" @click="addSurveyOption(i, qi)">+ 보기 추가</button>
+                <button type="button" class="btn btn-sm" @click="addSurveyOption(i, qi)">{{ $t('ops.addOption') }}</button>
               </div>
             </div>
-            <button type="button" class="btn btn-sm" style="width: 100%; margin-top: 0.5rem" @click="addSurveyQuestion(i)">+ 질문 추가</button>
+            <button type="button" class="btn btn-sm" style="width: 100%; margin-top: 0.5rem" @click="addSurveyQuestion(i)">{{ $t('ops.addQuestion') }}</button>
           </div>
 
           <div class="field" style="margin-top: 1rem">
-            <label>공통 안내 문구 (선택)</label>
-            <textarea :value="row.surveyNote" rows="2" placeholder="설문 시작 전 안내할 내용을 적어주세요." @input="updateRow(i, { surveyNote: ($event.target as HTMLTextAreaElement).value })" />
+            <label>{{ $t('ops.surveyCommonNote') }}</label>
+            <textarea :value="row.surveyNote" rows="2" :placeholder="t('ops.surveyNotePlaceholder')" @input="updateRow(i, { surveyNote: ($event.target as HTMLTextAreaElement).value })" />
           </div>
           <div class="field">
-            <label>추가 링크 (필요 시)</label>
+            <label>{{ $t('ops.extraLink') }}</label>
             <input :value="row.linkUrl" type="url" placeholder="https://..." @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
           </div>
         </template>
 
         <template v-else-if="row.type === 'QUIZ'">
           <div class="field">
-            <label>질문</label>
+            <label>{{ $t('ops.quizQuestion') || 'Question' }}</label>
             <input :value="row.quizQuestion" @input="updateRow(i, { quizQuestion: ($event.target as HTMLInputElement).value })" />
           </div>
           <div class="field">
-            <label>보기 (정답에 라디오 선택)</label>
+            <label>{{ $t('ops.quizRadioHint') }}</label>
             <div v-for="(_, oi) in row.quizOptions" :key="oi" class="quiz-row">
               <input
                 type="radio"
@@ -207,7 +209,7 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
               />
               <input
                 :value="row.quizOptions[oi]"
-                :placeholder="'보기 ' + (oi + 1)"
+                :placeholder="t('ops.optionPlaceholder', { n: oi + 1 })"
                 @input="
                   (e) => {
                     const v = (e.target as HTMLInputElement).value
@@ -217,26 +219,26 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
                   }
                 "
               />
-              <button type="button" class="btn btn-sm" @click="removeQuizOption(i, oi)">삭제</button>
+              <button type="button" class="btn btn-sm" @click="removeQuizOption(i, oi)">{{ $t('ops.remove') }}</button>
             </div>
-            <button type="button" class="btn" style="width: 100%; margin-top: 0.25rem" @click="addQuizOption(i)">+ 보기 추가</button>
+            <button type="button" class="btn" style="width: 100%; margin-top: 0.25rem" @click="addQuizOption(i)">{{ $t('ops.addOption') }}</button>
           </div>
         </template>
 
         <template v-else-if="row.type === 'FILE_UPLOAD'">
           <div class="field">
-            <label>업로드 안내</label>
+            <label>{{ $t('ops.fileNoteLabel') }}</label>
             <input :value="row.fileNote" @input="updateRow(i, { fileNote: ($event.target as HTMLInputElement).value })" />
           </div>
         </template>
 
         <template v-else-if="row.type === 'CHECKIN'">
-          <p class="hint">참여자가 내용 확인에 동의하면 완료됩니다.</p>
+          <p class="hint">{{ $t('ops.checkinHint') }}</p>
         </template>
       </div>
     </div>
 
-    <button type="button" class="btn" style="width: 100%" @click="addRow">+ 미션 추가</button>
+    <button type="button" class="btn" style="width: 100%" @click="addRow">{{ $t('ops.addMissionBtn') }}</button>
   </div>
 </template>
 

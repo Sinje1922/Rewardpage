@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { api, getFileUrl } from '../../api/client'
 import { uploadCompanyLogo } from '../../api/upload'
 import MissionListEditor from '../../components/ops/MissionListEditor.vue'
 import { emptyMissionRow, rowToPayload, validateRows, type MissionRowState } from '../../utils/missionRow'
 
+const { t } = useI18n()
 const router = useRouter()
 const companyName = ref('')
 const companyLogoUrl = ref('')
@@ -32,7 +34,7 @@ async function onLogoFile(ev: Event) {
   try {
     companyLogoUrl.value = await uploadCompanyLogo(file)
   } catch {
-    err.value = '로고 업로드에 실패했습니다. 운영자로 로그인했는지, 이미지 형식·용량(2MB 이하)을 확인해 주세요.'
+    err.value = t('ops.logoUploadFail')
   } finally {
     logoUploading.value = false
     input.value = ''
@@ -51,7 +53,7 @@ async function save() {
     return
   }
   if (!title.value.trim()) {
-    err.value = '캠페인 제목을 입력해 주세요.'
+    err.value = t('ops.titleRequired')
     return
   }
   const missions = missionRows.value.map((r, i) => rowToPayload(r, i))
@@ -71,27 +73,27 @@ async function save() {
     })
     await router.replace(`/ops/campaigns/${data.id}`)
   } catch {
-    err.value = '저장에 실패했습니다. 운영자 권한과 미션 입력을 확인해 주세요.'
+    err.value = t('ops.saveFail')
   }
 }
 </script>
 
 <template>
   <div>
-    <h1 class="page-title">캠페인 · 미션 만들기</h1>
+    <h1 class="page-title">{{ $t('ops.createTitle') }}</h1>
     <p style="color: var(--muted); margin: 0 0 1rem; max-width: 40rem">
-      클라이언트(회사) 정보와 캠페인 설정, 미션을 한 번에 구성합니다. 저장 후에도 초안 상태면 계속 수정할 수 있어요.
+      {{ $t('ops.createLead') }}
     </p>
 
     <form class="stack" @submit.prevent="save">
       <section class="card">
-        <h2 class="section-title">클라이언트 (수주사)</h2>
+        <h2 class="section-title">{{ $t('ops.clientSection') }}</h2>
         <div class="field">
-          <label>회사 이름</label>
-          <input v-model="companyName" placeholder="예: ○○ 주식회사" />
+          <label>{{ $t('ops.companyName') }}</label>
+          <input v-model="companyName" :placeholder="t('ops.companyNameHint') || '○○ Co., Ltd.'" />
         </div>
         <div class="field">
-          <label>회사 로고</label>
+          <label>{{ $t('ops.companyLogo') }}</label>
           <div class="logo-row">
             <img v-if="companyLogoUrl" :src="getFileUrl(companyLogoUrl)" alt="" class="logo-preview" />
             <div class="logo-actions">
@@ -103,73 +105,72 @@ async function save() {
                 @change="onLogoFile"
               />
               <button type="button" class="btn" :disabled="logoUploading" @click="logoFileInput?.click()">
-                {{ logoUploading ? '업로드 중…' : '파일 선택' }}
+                {{ logoUploading ? $t('ops.uploading') : $t('ops.selectFile') }}
               </button>
-              <button v-if="companyLogoUrl" type="button" class="btn" @click="clearLogo">제거</button>
+              <button v-if="companyLogoUrl" type="button" class="btn" @click="clearLogo">{{ $t('ops.remove') }}</button>
             </div>
           </div>
-          <p class="hint">JPEG, PNG, GIF, WebP, SVG · 최대 2MB</p>
+          <p class="hint">{{ $t('ops.logoHint') }}</p>
         </div>
         <div class="field">
-          <label>또는 로고 URL (선택)</label>
-          <!-- type=url은 /uploads/... 상대경로를 '유효하지 않은 URL'로 판단하는 브라우저가 있어 text로 둡니다 -->
-          <input v-model="companyLogoUrl" type="text" placeholder="https://… 또는 /uploads/…" />
+          <label>{{ $t('ops.logoUrl') }}</label>
+          <input v-model="companyLogoUrl" type="text" placeholder="https://… or /uploads/…" />
         </div>
       </section>
 
       <section class="card">
-        <h2 class="section-title">캠페인</h2>
+        <h2 class="section-title">{{ $t('ops.campaignSection') }}</h2>
         <div class="field">
-          <label>캠페인 제목</label>
+          <label>{{ $t('ops.campaignTitle') }}</label>
           <input v-model="title" required />
         </div>
         <div class="field">
-          <label>설명</label>
+          <label>{{ $t('ops.description') }}</label>
           <textarea v-model="description" rows="3" />
         </div>
         <div class="field">
-          <label>당첨 인원</label>
+          <label>{{ $t('ops.winnerCount') }}</label>
           <input v-model.number="winnerCount" type="number" min="1" required />
         </div>
         <div class="field">
-          <label>추첨 방식</label>
+          <label>{{ $t('ops.lotteryMode') }}</label>
           <select v-model="lotteryMode">
-            <option value="SIMPLE">단순 (전체 완료자 중 추첨)</option>
-            <option value="WEIGHTED">가중치 (완료 미션 수만큼 티켓)</option>
+            <option value="SIMPLE">{{ $t('ops.lotterySimple') }}</option>
+            <option value="WEIGHTED">{{ $t('ops.lotteryWeighted') }}</option>
           </select>
         </div>
         <label style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem">
           <input v-model="autoApprove" type="checkbox" />
-          자동 승인 (검증 통과 시 APPROVED)
+          {{ $t('ops.autoApprove') }}
         </label>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem">
           <div class="field">
-            <label>시작 일시 (선택)</label>
+            <label>{{ $t('ops.startsAt') }}</label>
             <input v-model="startsAt" type="datetime-local" />
           </div>
           <div class="field">
-            <label>종료 일시 (선택)</label>
+            <label>{{ $t('ops.endsAt') }}</label>
             <input v-model="endsAt" type="datetime-local" />
           </div>
         </div>
 
         <div class="field reward-box">
-          <label>총 보상 포인트</label>
-          <input v-model.number="totalRewardPoints" type="number" min="0" step="100" placeholder="예: 1000" />
+          <label>{{ $t('ops.totalReward') }}</label>
+          <input v-model.number="totalRewardPoints" type="number" min="0" step="100" placeholder="1000" />
           <p v-if="winnerCount > 0" class="reward-hint">
-            당첨자 1인당 약 <strong>{{ Math.floor(totalRewardPoints / winnerCount) }}</strong> 포인트
+            {{ $t('ops.rewardHint', { points: Math.floor(totalRewardPoints / winnerCount) }) }}
           </p>
         </div>
       </section>
 
       <section class="card">
-        <h2 class="section-title">미션 구성</h2>
+        <h2 class="section-title">{{ $t('ops.missionSection') }}</h2>
         <MissionListEditor v-model="missionRows" />
       </section>
 
       <p v-if="err" class="err">{{ err }}</p>
-      <button class="btn primary" type="submit">캠페인·미션 저장</button>
+      <button class="btn primary" type="submit">{{ $t('ops.saveBtn') }}</button>
     </form>
   </div>
 </template>

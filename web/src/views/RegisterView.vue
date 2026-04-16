@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 const router = useRouter()
 const email = ref('')
@@ -17,7 +19,7 @@ async function onSubmit() {
     await auth.register(email.value, password.value)
     await router.replace('/campaigns')
   } catch {
-    err.value = '가입에 실패했습니다. 이미 있는 이메일일 수 있습니다.'
+    err.value = t('auth.registerFail')
   } finally {
     loading.value = false
   }
@@ -26,18 +28,18 @@ async function onSubmit() {
 
 <template>
   <div>
-    <h1 class="page-title">회원가입</h1>
+    <h1 class="page-title">{{ $t('auth.register') }}</h1>
     <form class="card" style="max-width: 22rem" @submit.prevent="onSubmit">
       <div class="field">
-        <label for="em">이메일</label>
+        <label for="em">{{ $t('auth.email') }}</label>
         <input id="em" v-model="email" type="email" required autocomplete="username" />
       </div>
       <div class="field">
-        <label for="pw">비밀번호 (6자 이상)</label>
+        <label for="pw">{{ $t('auth.passwordHint') }}</label>
         <input id="pw" v-model="password" type="password" required minlength="6" autocomplete="new-password" />
       </div>
       <p v-if="err" class="err">{{ err }}</p>
-      <button class="btn primary" type="submit" :disabled="loading">가입</button>
+      <button class="btn primary" type="submit" :disabled="loading">{{ $t('auth.registerBtn') }}</button>
     </form>
   </div>
 </template>

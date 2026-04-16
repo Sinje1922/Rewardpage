@@ -2,12 +2,33 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { OAuth2Client } from "google-auth-library";
+import geoip from "geoip-lite";
 import { prisma } from "../lib/prisma.js";
 import { signToken } from "../lib/jwt.js";
 import { authRequired, type AuthedRequest } from "../middleware/auth.js";
 
 const router = Router();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+async function recordUserEntry(userId: string, req: any, locale?: string) {
+  try {
+    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    const cleanIp = String(ip).split(",")[0].trim();
+    const geo = geoip.lookup(cleanIp);
+    const country = geo?.country || null;
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        lastIp: cleanIp,
+        ...(country && { country }),
+        ...(locale && { locale }),
+      },
+    });
+  } catch (err) {
+    console.error("Failed to record user entry:", err);
+  }
+}
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -32,6 +53,10 @@ router.post("/register", async (req, res) => {
     select: { id: true, email: true, role: true, pointBalance: true },
   });
   const token = signToken({ sub: user.id, email: user.email, role: user.role });
+  
+  // 비동기로 정보 기록
+  recordUserEntry(user.id, req);
+
   res.json({ user, token });
 });
 
@@ -57,6 +82,9 @@ router.post("/login", async (req, res) => {
     return;
   }
   const token = signToken({ sub: user.id, email: user.email, role: user.role });
+
+  recordUserEntry(user.id, req);
+
   res.json({
     user: { id: user.id, email: user.email, role: user.role, pointBalance: user.pointBalance },
     token,
@@ -103,6 +131,10 @@ router.post("/google", async (req, res) => {
     }
 
     const token = signToken({ sub: user.id, email: user.email, role: user.role });
+
+    const locale = (payload as any).locale;
+    recordUserEntry(user.id, req, locale);
+
     res.json({
       user: { id: user.id, email: user.email, role: user.role, pointBalance: user.pointBalance },
       token,
