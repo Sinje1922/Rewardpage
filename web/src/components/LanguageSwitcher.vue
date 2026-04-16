@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { locale } = useI18n()
@@ -12,7 +12,7 @@ const languages = [
   { code: 'pt', name: 'PT', flag: '🇧🇷' }
 ]
 
-const currentLang = languages.find(l => l.code === locale.value) || languages[0]
+const currentLang = computed(() => languages.find(l => l.code === locale.value) || languages[0])
 
 function toggle() {
   isOpen.value = !isOpen.value
@@ -42,8 +42,8 @@ onUnmounted(() => {
 <template>
   <div class="lang-container" ref="containerRef">
     <button type="button" class="lang-active" @click="toggle" :class="{ open: isOpen }">
-      <span class="flag">{{ languages.find(l => l.code === locale)?.flag }}</span>
-      <span class="name">{{ languages.find(l => l.code === locale)?.name }}</span>
+      <span class="flag">{{ currentLang.flag }}</span>
+      <span class="name">{{ currentLang.name }}</span>
       <span class="arrow">▾</span>
     </button>
 
