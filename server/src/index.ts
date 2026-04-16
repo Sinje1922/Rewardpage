@@ -12,6 +12,11 @@ import submissionsRouter from "./routes/submissions.js";
 import uploadRouter from "./routes/upload.js";
 import { startLotteryWorker } from "./workers/lotteryWorker.js";
 
+// BigInt JSON 직렬화 지원
+(BigInt.prototype as any).toJSON = function () {
+  return Number(this);
+};
+
 const app = express();
 
 const uploadsRoot = path.join(process.cwd(), "uploads");

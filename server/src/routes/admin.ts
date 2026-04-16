@@ -75,50 +75,57 @@ router.get("/overview", async (_req, res) => {
 });
 
 router.get("/dashboard", async (_req, res) => {
-  const [
-    userCount,
-    campStats,
-    subCount,
-    winnerStats,
-    userPointStats,
-    countries,
-    ages,
-    growth,
-  ] = await Promise.all([
-    prisma.user.count(),
-    prisma.campaign.groupBy({ by: ["status"], _count: true }),
-    prisma.submission.count(),
-    prisma.winner.aggregate({ _sum: { points: true } }),
-    prisma.user.aggregate({ _sum: { pointBalance: true } }),
-    prisma.user.groupBy({ by: ["country"], _count: true }),
-    prisma.user.groupBy({ by: ["birthYear"], _count: true }),
-    prisma.$queryRaw`
-      SELECT 
-        TO_CHAR("createdAt", 'YYYY-MM') as month,
-        COUNT(*)::int as count 
-      FROM "User" 
-      GROUP BY month 
-      ORDER BY month ASC 
-      LIMIT 12
-    `,
-  ]);
+  try {
+    const [
+      userCount,
+      campStats,
+      subCount,
+      winnerStats,
+      userPointStats,
+      countries,
+      ages,
+      growth,
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.campaign.groupBy({ by: ["status"], _count: true }),
+      prisma.submission.count(),
+      prisma.winner.aggregate({ _sum: { points: true } }),
+      prisma.user.aggregate({ _sum: { pointBalance: true } }),
+      prisma.user.groupBy({ by: ["country"], _count: true }),
+      prisma.user.groupBy({ by: ["birthYear"], _count: true }),
+      prisma.$queryRaw`
+        SELECT 
+          TO_CHAR("createdAt", 'YYYY-MM') as month,
+          COUNT(*)::int as count 
+        FROM "User" 
+        GROUP BY month 
+        ORDER BY month ASC 
+        LIMIT 12
+      `,
+    ]);
 
-  const activeCamps = campStats.find((s) => s.status === "ACTIVE")?._count ?? 0;
-  const totalPoints = (winnerStats._sum.points ?? 0) + (userPointStats._sum.pointBalance ?? 0);
+    const activeCamps = campStats.find((s) => s.status === "ACTIVE")?._count ?? 0;
+    const totalPoints = Number(winnerStats._sum.points ?? 0) + Number(userPointStats._sum.pointBalance ?? 0);
 
-  res.json({
-    summary: {
-      users: userCount,
-      activeCampaigns: activeCamps,
-      totalCampaigns: campStats.reduce((acc, curr) => acc + curr._count, 0),
-      submissions: subCount,
-      totalPoints,
-      avgParticipants: campStats.length > 0 ? (subCount / campStats.reduce((acc, curr) => acc + curr._count, 0)) : 0
-    },
-    countries: countries.map(c => ({ name: c.country || 'Unknown', count: c._count })),
-    ages: ages.map(a => ({ year: a.birthYear || 0, count: a._count })),
-    history: growth
-  });
+    res.json({
+      summary: {
+        users: userCount,
+        activeCampaigns: activeCamps,
+        totalCampaigns: campStats.reduce((acc, curr) => acc + curr._count, 0),
+        submissions: subCount,
+        totalPoints,
+        avgParticipants: campStats.reduce((acc, curr) => acc + curr._count, 0) > 0 
+          ? (subCount / campStats.reduce((acc, curr) => acc + curr._count, 0)) 
+          : 0
+      },
+      countries: countries.map(c => ({ name: c.country || 'Unknown', count: Number(c._count) })),
+      ages: ages.map(a => ({ year: a.birthYear || 0, count: Number(a._count) })),
+      history: growth
+    });
+  } catch (err) {
+    console.error("Dashboard Stats Error:", err);
+    res.status(500).json({ error: "Failed to load dashboard stats" });
+  }
 });
 
 export default router;
