@@ -10,8 +10,8 @@
     "logout": "Logout"
   },
   "home": {
-    "badge": "Reward Platform",
-    "heroTitle": "Complete Missions\n& Get Points",
+    "badge": "Pick Q",
+    "heroTitle": "Pick Q, Pick You",
     "heroLead": "Participate in various campaigns and get the rewards you want with the points you earn. You can start right now.",
     "exploreCampaigns": "Explore Campaigns",
     "tryDemo": "Try Demo",
@@ -180,6 +180,6 @@
     "submitFail": "Failed to submit.",
     "checkRequired": "Please check the confirmation box.",
     "person": " person(s)",
-    "brand": "Reward"
+    "brand": "Pick Q"
   }
 }
