@@ -25,7 +25,12 @@ fs.mkdirSync(uploadsRoot, { recursive: true });
 const rawCorsOrigin = process.env.CORS_ORIGIN;
 const corsOrigin = rawCorsOrigin
   ? rawCorsOrigin.split(",").map((o) => o.trim())
-  : ["http://localhost:5173", "https://rewardpage-5nmq.vercel.app"];
+  : [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "https://rewardpage-5nmq.vercel.app",
+      "https://pick-q.vercel.app" // 예상되는 새로운 주소 추가
+    ];
 
 app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(express.json());
