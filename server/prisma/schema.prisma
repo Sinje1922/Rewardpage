@@ -61,7 +61,7 @@ model Mission {
   description String   @default("")
   sortOrder   Int      @default(0)
   /// JSON: { linkUrl, correctCode, quizQuestion, quizOptions[], correctIndex, minDwellSeconds, surveyNote }
-  config      String   @default("{}")
+  config      String   @default("{}") @db.Text
   createdAt   DateTime @default(now())
 
   campaign    Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
@@ -75,7 +75,7 @@ model Submission {
   /// PENDING | APPROVED | REJECTED
   status    String   @default("PENDING")
   /// JSON: { code, selectedIndex, dwellSeconds, note, fileUrl }
-  payload   String   @default("{}")
+  payload   String   @default("{}") @db.Text
   createdAt DateTime @default(now())
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -102,6 +102,6 @@ model AnalyticsEvent {
   id        String   @id @default(cuid())
   name      String
   userId    String?
-  meta      String   @default("{}")
+  meta      String   @default("{}") @db.Text
   createdAt DateTime @default(now())
 }
