@@ -55,7 +55,7 @@ router.get("/users", async (req, res) => {
   const users = await prisma.user.findMany({
     where: query
       ? {
-          email: { contains: query, mode: "insensitive" },
+          email: { contains: query },
         }
       : {},
     orderBy: { createdAt: "desc" },
@@ -77,23 +77,23 @@ router.get("/overview", async (_req, res) => {
 router.get("/dashboard", async (_req, res) => {
   try {
     const [stats, countries, ages, growth] = await Promise.all([
-      // 핵심 지표들을 하나의 쿼리로 통합하여 커넥션 풀 절약
+      // 핵심 지표들을 하나의 쿼리로 통합하여 커넥션 풀 절약 (MariaDB 문법)
       prisma.$queryRaw<any[]>`
         SELECT 
-          (SELECT COUNT(*) FROM "User")::int as user_count,
-          (SELECT COUNT(*) FROM "Campaign")::int as total_camp_count,
-          (SELECT COUNT(*) FROM "Campaign" WHERE status = 'ACTIVE')::int as active_camp_count,
-          (SELECT COUNT(*) FROM "Submission")::int as sub_count,
-          (SELECT COALESCE(SUM(points), 0) FROM "Winner")::bigint as winner_points_sum,
-          (SELECT COALESCE(SUM("pointBalance"), 0) FROM "User")::bigint as user_points_sum
+          (SELECT COUNT(*) FROM User) as user_count,
+          (SELECT COUNT(*) FROM Campaign) as total_camp_count,
+          (SELECT COUNT(*) FROM Campaign WHERE status = 'ACTIVE') as active_camp_count,
+          (SELECT COUNT(*) FROM Submission) as sub_count,
+          (SELECT IFNULL(SUM(points), 0) FROM Winner) as winner_points_sum,
+          (SELECT IFNULL(SUM(pointBalance), 0) FROM User) as user_points_sum
       `,
       (prisma.user as any).groupBy({ by: ["country"], _count: true }),
       (prisma.user as any).groupBy({ by: ["birthYear"], _count: true }),
       prisma.$queryRaw<any[]>`
         SELECT 
-          TO_CHAR("createdAt", 'YYYY-MM') as month,
-          COUNT(*)::int as count 
-        FROM "User" 
+          DATE_FORMAT(createdAt, '%Y-%m') as month,
+          COUNT(*) as count 
+        FROM User 
         GROUP BY month 
         ORDER BY month ASC 
         LIMIT 12
