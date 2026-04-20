@@ -13,11 +13,23 @@ async function migrate() {
     process.exit(1);
   }
 
-  const client = new Client({ connectionString: sourceUrl });
+  const client = new Client({ 
+    connectionString: sourceUrl,
+    ssl: sourceUrl.includes('supabase') ? { rejectUnauthorized: false } : false
+  });
   
   try {
     await client.connect();
     console.log("Connected to source PostgreSQL.");
+
+    // 0. Clean local database to prevent conflicts
+    console.log("Cleaning local database...");
+    await destinationPrisma.winner.deleteMany();
+    await destinationPrisma.submission.deleteMany();
+    await destinationPrisma.mission.deleteMany();
+    await destinationPrisma.campaign.deleteMany();
+    await destinationPrisma.analyticsEvent.deleteMany();
+    await destinationPrisma.user.deleteMany();
 
     // Helper to fetch all rows from a table
     const fetchAll = async (table: string) => {
