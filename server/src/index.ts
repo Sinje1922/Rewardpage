@@ -28,8 +28,9 @@ const corsOrigin = rawCorsOrigin
   : [
       "http://localhost:5173",
       "http://localhost:3000",
+      "https://unwrap-villas-socket-frame.trycloudflare.com",
       "https://rewardpage-5nmq.vercel.app",
-      "https://pick-q.vercel.app" // 예상되는 새로운 주소 추가
+      "https://pick-q.vercel.app"
     ];
 
 app.use(cors({ origin: corsOrigin, credentials: true }));

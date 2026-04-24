@@ -34,7 +34,7 @@ onMounted(() => {
     type="button" 
     class="dark-mode-toggle" 
     @click="toggle"
-    :title="isDark ? '라이트 모드로 전환' : '다크 모드로 전환'"
+    :title="isDark ? $t('common.toggleLight') : $t('common.toggleDark')"
   >
     <span v-if="isDark" class="icon">☀️</span>
     <span v-else class="icon">🌙</span>
@@ -79,8 +79,8 @@ onMounted(() => {
 
 @media (max-width: 600px) {
   .dark-mode-toggle {
-    bottom: 6rem; /* 모바일 하단바 피하기 */
-    right: 1.5rem;
+    bottom: 7.5rem; /* 모바일 하단바 피하기 */
+    right: 1.25rem;
     width: 3rem;
     height: 3rem;
     font-size: 1.25rem;

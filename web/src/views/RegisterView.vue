@@ -17,8 +17,13 @@ async function onSubmit() {
   loading.value = true
   try {
     await auth.register(email.value, password.value)
-    await router.replace('/campaigns')
-  } catch {
+    
+    // 가입 성공 직후 프로필 실시간 동기화
+    await auth.loadMe()
+    
+    // 설정 페이지로 강제 이동
+    router.replace({ name: 'setup' })
+  } catch (e: unknown) {
     err.value = t('auth.registerFail')
   } finally {
     loading.value = false

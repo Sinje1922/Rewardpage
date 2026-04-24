@@ -30,7 +30,6 @@ type CampaignDetail = {
 }
 
 type Participant = { email: string }
-
 type WinnerRow = { rank: number; points: number; user: { email: string } }
 
 const { t } = useI18n()
@@ -106,7 +105,6 @@ onMounted(async () => {
         /* ignore */
       }
     }
-    
     await loadParticipants()
   } catch {
     err.value = t('common.errorLoad')
@@ -144,7 +142,6 @@ async function submitMission(m: Mission) {
     const cfg = parseCfg(m.config)
     const qs = (cfg.surveyQuestions as any[]) || []
     if (qs.length === 0) {
-      // Legacy support
       payload = { code: codeInput.value[m.id] ?? '' }
     } else {
       payload = { answers: surveyAnswers.value[m.id] || {} }
@@ -176,107 +173,103 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
 </script>
 
 <template>
-  <div v-if="camp">
-    <div style="margin-bottom: 2.5rem; text-align: center">
-      <div
-        v-if="camp.companyName || camp.companyLogoUrl"
-        style="display: flex; justify-content: center; align-items: center; gap: 0.65rem; margin-bottom: 0.75rem"
-      >
-        <img
-          v-if="camp.companyLogoUrl"
-          :src="getFileUrl(camp.companyLogoUrl)"
-          alt=""
-          style="width: 48px; height: 48px; border-radius: 12px; object-fit: cover; border: 1px solid var(--border)"
-        />
-        <span v-if="camp.companyName" style="font-weight: 800; font-size: 1.05rem; color: var(--text-h)">{{ camp.companyName }}</span>
+  <div v-if="camp" class="detail-container">
+    <div class="detail-header">
+      <div v-if="camp.companyName || camp.companyLogoUrl" class="company-brand">
+        <img v-if="camp.companyLogoUrl" :src="getFileUrl(camp.companyLogoUrl)" alt="" class="company-logo" />
+        <span v-if="camp.companyName" class="brand-name">{{ camp.companyName }}</span>
       </div>
       <h1 class="page-title">{{ camp.title }}</h1>
-      <p style="margin: 0 auto 1rem; max-width: 36rem; line-height: 1.6">{{ camp.description }}</p>
-      <div style="display: flex; gap: 0.75rem; justify-content: center; align-items: center">
+      <p class="description-text">{{ camp.description }}</p>
+      
+      <div class="meta-row">
         <span class="badge">{{ $t('detail.statusLabel', { status: camp.status }) }}</span>
-        <span v-if="camp.missions" style="font-size: 0.9rem; color: var(--muted)">{{ $t('detail.missionsCountLabel', { count: camp.missions.length }) }}</span>
-        <span v-if="camp.totalRewardPoints > 0" class="badge" style="background: var(--accent); color: white">
+        <span v-if="camp.missions" class="meta-item">{{ $t('detail.missionsCountLabel', { count: camp.missions.length }) }}</span>
+        <span v-if="camp.totalRewardPoints > 0" class="badge accent-badge">
           {{ $t('detail.rewardLabel', { points: camp.totalRewardPoints.toLocaleString() }) }}
         </span>
-        <button type="button" class="btn" style="padding: 0.35rem 0.8rem; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; border-radius: 99px" @click="copyLink">
+        <button type="button" class="btn copy-btn" @click="copyLink">
           🔗 {{ showCopyMsg ? $t('detail.copied') : $t('detail.copyLink') }}
         </button>
       </div>
-      <p v-if="camp.totalRewardPoints > 0" style="font-size: 0.85rem; color: var(--muted); margin-top: 0.5rem">
-        {{ $t('detail.rewardPerWinner', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }}
-      </p>
-      <div v-if="camp.startsAt || camp.endsAt" style="margin-top: 0.75rem; font-size: 0.9rem; color: var(--muted); font-weight: 600">
-        {{ $t('detail.period', {
-          start: camp.startsAt ? new Date(camp.startsAt).toLocaleString() : $t('detail.always'),
-          end: camp.endsAt ? new Date(camp.endsAt).toLocaleString() : $t('campaign.durationUntilEnd')
-        }) }}
+
+      <div class="info-footer">
+        <p v-if="camp.totalRewardPoints > 0" class="reward-notice">
+          {{ $t('detail.rewardPerWinner', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }}
+        </p>
+        <div v-if="camp.startsAt || camp.endsAt" class="period-text">
+          📅 {{ $t('detail.period', {
+            start: camp.startsAt ? new Date(camp.startsAt).toLocaleString() : $t('detail.always'),
+            end: camp.endsAt ? new Date(camp.endsAt).toLocaleString() : $t('campaign.durationUntilEnd')
+          }) }}
+        </div>
       </div>
     </div>
 
-    <section v-if="winners.length" class="card" style="margin-bottom: 2rem; border-style: dashed; background: var(--accent-soft)">
-      <h2 style="font-size: 1.1rem; margin: 0 0 0.75rem; color: var(--text-h)">{{ $t('detail.winnersTitle') }}</h2>
-      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem">
-        <div v-for="w in winners" :key="w.rank" style="font-weight: 600; font-size: 0.95rem">
+    <!-- Winners Section -->
+    <section v-if="winners.length" class="card winners-card">
+      <h2 class="section-title">{{ $t('detail.winnersTitle') }}</h2>
+      <div class="winners-grid">
+        <div v-for="w in winners" :key="w.rank" class="winner-row">
           {{ $t('detail.winnerRow', { rank: w.rank, email: w.user.email }) }} 
-          <span v-if="w.points > 0" style="color: var(--accent)">({{ w.points.toLocaleString() }}P)</span>
+          <span v-if="w.points > 0" class="winner-points">({{ w.points.toLocaleString() }}P)</span>
         </div>
       </div>
     </section>
 
-    <p v-if="msg" style="color: var(--mint); font-weight: 700; text-align: center; margin-bottom: 1rem">{{ msg }}</p>
-    <p v-if="err" class="err" style="text-align: center; margin-bottom: 1rem">{{ err }}</p>
+    <!-- Feedback Messages -->
+    <div class="status-messages">
+      <p v-if="msg" class="success-msg">{{ msg }}</p>
+      <p v-if="err" class="err-msg">{{ err }}</p>
+    </div>
 
+    <!-- Missions Grid -->
     <div class="grid">
-      <div v-for="m in sortedMissions" :key="m.id" class="card" :class="{ completed: myStatus(m.id) === 'APPROVED' }">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem">
-          <div style="display: flex; gap: 0.5rem; align-items: center">
-            <span style="font-size: 1.5rem">{{ typeIcons[m.type] || '✨' }}</span>
-            <span v-if="camp.totalRewardPoints > 0" style="font-size: 0.85rem; font-weight: 700; color: var(--accent); background: var(--accent-soft); padding: 0.2rem 0.6rem; border-radius: 99px">
+      <div v-for="m in sortedMissions" :key="m.id" class="card mission-card" :class="{ completed: myStatus(m.id) === 'APPROVED' }">
+        <div class="mission-header">
+          <div class="mission-type">
+            <span class="type-icon">{{ typeIcons[m.type] || '✨' }}</span>
+            <span v-if="camp.totalRewardPoints > 0" class="point-badge">
               {{ $t('detail.missionWait', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }}
             </span>
           </div>
-          <span class="badge" :style="myStatus(m.id) === 'APPROVED' ? 'background: var(--mint); color: white' : ''">
+          <span class="badge" :class="{ 'badge-done': myStatus(m.id) === 'APPROVED' }">
             {{ myStatus(m.id) ? myStatus(m.id) : $t('detail.unparticipated') }}
           </span>
         </div>
 
-        <h2 style="font-size: 1.15rem; margin: 0 0 0.5rem; color: var(--text-h)">{{ m.title }}</h2>
-        <p style="margin: 0 0 1rem; font-size: 0.9rem; color: var(--text); min-height: 2.7rem; line-height: 1.4">
-          {{ m.description }}
-        </p>
+        <h3 class="mission-title">{{ m.title }}</h3>
+        <p class="mission-desc">{{ m.description }}</p>
 
-        <div style="border-top: 1px solid var(--border); padding-top: 1rem; margin-top: auto">
+        <div class="mission-body">
           <template v-if="m.type === 'LINK_VISIT'">
-            <button type="button" class="btn" style="width: 100%" @click="logVisit(m)">{{ $t('detail.linkOpen') }}</button>
-            <div class="field" style="margin-top: 0.75rem">
+            <button type="button" class="btn full-width" @click="logVisit(m)">{{ $t('detail.linkOpen') }}</button>
+            <div class="field mt-3">
               <label>{{ $t('detail.dwellTime') }}</label>
               <input v-model.number="dwellInput[m.id]" type="number" min="0" placeholder="0" />
             </div>
           </template>
 
           <template v-else-if="m.type === 'SURVEY'">
-            <div v-if="parseCfg(m.config).surveyNote" style="font-size: 0.85rem; color: var(--muted); margin-bottom: 1.5rem; border-left: 3px solid var(--accent); padding-left: 0.75rem; line-height: 1.5">
+            <div v-if="parseCfg(m.config).surveyNote" class="survey-note">
               {{ parseCfg(m.config).surveyNote }}
             </div>
 
-            <!-- 다중 질문 리스트 -->
-            <div v-if="(parseCfg(m.config).surveyQuestions as any[])?.length" style="display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 1.5rem">
-              <div v-for="(qs, qi) in (parseCfg(m.config).surveyQuestions as any[])" :key="qs.id" class="survey-field">
-                <p style="margin: 0 0 0.75rem; font-weight: 700; color: var(--text-h); line-height: 1.4">
-                  {{ qi + 1 }}. {{ qs.question }}
-                </p>
+            <div v-if="(parseCfg(m.config).surveyQuestions as any[])?.length" class="survey-list">
+              <div v-for="(qs, qi) in (parseCfg(m.config).surveyQuestions as any[])" :key="qs.id" class="survey-item">
+                <p class="question-text">{{ qi + 1 }}. {{ qs.question }}</p>
                 
                 <template v-if="qs.type === 'SUBJECTIVE'">
                   <textarea 
                     v-model="(surveyAnswers[m.id] = surveyAnswers[m.id] || {})[qs.id]"
                     placeholder="답변을 입력해 주세요"
-                    style="width: 100%; min-height: 80px; padding: 0.75rem; border-radius: 8px"
+                    class="survey-textarea"
                   />
                 </template>
                 
                 <template v-else-if="qs.type === 'OBJECTIVE'">
-                  <div style="display: flex; flex-direction: column; gap: 0.5rem">
-                    <label v-for="(opt, oi) in qs.options" :key="oi" style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-size: 0.95rem">
+                  <div class="radio-group">
+                    <label v-for="(opt, oi) in qs.options" :key="oi" class="radio-label">
                       <input 
                         type="radio" 
                         :name="'survey-' + m.id + '-' + qs.id" 
@@ -289,55 +282,40 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
                 </template>
               </div>
             </div>
-
-            <!-- 레거시 지원 (질문 리스트가 없는 경우) -->
-            <template v-else>
-              <div v-if="parseCfg(m.config).surveyQuestion" style="margin-bottom: 1rem; background: var(--bg-deep); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border)">
-                <p style="margin: 0; font-weight: 700; color: var(--text-h)">💬 {{ parseCfg(m.config).surveyQuestion }}</p>
-              </div>
-              <div class="field">
-                <label>답변 입력</label>
-                <textarea v-model="codeInput[m.id]" placeholder="답변을 입력해 주세요" style="width: 100%; min-height: 80px" />
-              </div>
-            </template>
             
-            <div v-if="parseCfg(m.config).linkUrl" style="margin-top: 1.25rem">
-              <button type="button" class="btn btn-sm" style="width: 100%" @click="logVisit(m)">🔗 추가 링크 열기</button>
-            </div>
+            <button v-if="parseCfg(m.config).linkUrl" type="button" class="btn btn-sm full-width" @click="logVisit(m)">🔗 추가 링크 열기</button>
           </template>
 
           <template v-else-if="m.type === 'QUIZ'">
-            <p style="margin: 0 0 0.75rem; font-weight: 600; font-size: 0.95rem">{{ String(parseCfg(m.config).quizQuestion ?? '') }}</p>
+            <p class="quiz-question">{{ String(parseCfg(m.config).quizQuestion ?? '') }}</p>
             <div
               v-for="(opt, idx) in (parseCfg(m.config).quizOptions as string[] | undefined) ?? []"
               :key="idx"
-              class="field"
-              style="flex-direction: row; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem"
+              class="quiz-option"
             >
               <input :id="'q-' + m.id + '-' + idx" v-model.number="quizPick[m.id]" type="radio" :value="idx" />
-              <label :for="'q-' + m.id + '-' + idx" style="margin: 0; font-weight: 400">{{ opt }}</label>
+              <label :for="'q-' + m.id + '-' + idx">{{ opt }}</label>
             </div>
           </template>
 
           <template v-else-if="m.type === 'CHECKIN'">
-            <label style="display: flex; gap: 0.5rem; align-items: center; cursor: pointer">
+            <label class="check-label">
               <input v-model="checkConfirm[m.id]" type="checkbox" />
-              <span style="font-size: 0.9rem">{{ $t('detail.understand') }}</span>
+              <span>{{ $t('detail.understand') }}</span>
             </label>
           </template>
 
           <template v-else-if="m.type === 'FILE_UPLOAD'">
             <div class="field">
               <label>{{ $t('detail.fileUrl') }}</label>
-              <input v-model="codeInput[m.id]" type="url" placeholder="https://..." style="width: 100%; box-sizing: border-box" />
+              <input v-model="codeInput[m.id]" type="url" placeholder="https://..." />
             </div>
           </template>
 
           <button
             v-if="camp.status === 'ACTIVE'"
             type="button"
-            class="btn primary"
-            style="margin-top: 1.25rem; width: 100%; height: 3.2rem; font-size: 1rem; border-radius: 14px"
+            class="btn primary submit-btn"
             @click="submitMission(m)"
           >
             미션 완료 및 제출
@@ -346,38 +324,351 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
       </div>
     </div>
     
-    <div class="card" style="margin-top: 3rem; background: var(--bg-deep); border: 2px solid var(--border)">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem">
-        <h2 style="font-size: 1.25rem; margin: 0; color: var(--text-h)">{{ $t('detail.realtimeTitle') }}</h2>
-        <span class="badge" style="background: var(--accent); color: white; padding: 0.4rem 1rem">{{ $t('detail.totalParticipants', { count: participantCount }) }}</span>
+    <!-- Participants List -->
+    <div class="card participants-card">
+      <div class="participants-header">
+        <h2 class="section-title">{{ $t('detail.realtimeTitle') }}</h2>
+        <span class="badge accent-badge">{{ $t('detail.totalParticipants', { count: participantCount }) }}</span>
       </div>
       
-      <div v-if="participants.length > 0" style="display: flex; flex-wrap: wrap; gap: 0.75rem">
-        <div 
-          v-for="(p, idx) in participants" 
-          :key="idx" 
-          style="font-size: 0.85rem; padding: 0.4rem 0.75rem; background: var(--panel); border-radius: 0.5rem; border: 1px solid var(--border); color: var(--muted)"
-        >
+      <div v-if="participants.length > 0" class="participants-tags">
+        <div v-for="(p, idx) in participants" :key="idx" class="p-tag">
           {{ p.email }}
         </div>
       </div>
-      <div v-else style="padding: 2rem; text-align: center; color: var(--muted); background: var(--panel); border-radius: 12px; border: 1px dashed var(--border)">
-        <p style="margin: 0; font-size: 0.95rem">{{ $t('detail.nobodyParticipated') }}</p>
-        <p style="margin: 0.5rem 0 0; font-size: 0.85rem">{{ $t('detail.beTheFirst') }}</p>
+      <div v-else class="empty-participants">
+        <p>{{ $t('detail.nobodyParticipated') }}</p>
+        <p class="hint">{{ $t('detail.beTheFirst') }}</p>
       </div>
 
-      <p style="margin-top: 1.25rem; font-size: 0.8rem; color: var(--muted); text-align: center">
+      <p class="participant-notice">
         {{ $t('detail.participantNotice') }}
       </p>
     </div>
   </div>
-  <p v-else-if="!err">{{ $t('detail.loading') }}</p>
-  <p v-else class="err">{{ err }}</p>
+  <p v-else-if="!err" class="loading-text">{{ $t('detail.loading') }}</p>
+  <p v-else class="err-msg center">{{ err }}</p>
 </template>
 
 <style scoped>
+.detail-container {
+  padding-bottom: 5rem;
+}
+
+.detail-header {
+  margin-bottom: 3.5rem;
+  text-align: center;
+}
+
+.company-brand {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.company-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
+.brand-name {
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: var(--text-h);
+}
+
+.description-text {
+  margin: 0 auto 1.5rem;
+  max-width: 40rem;
+  line-height: 1.7;
+  color: var(--text);
+  font-size: 1.05rem;
+}
+
+.meta-row {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.accent-badge {
+  background: var(--accent);
+  color: white;
+}
+
+.copy-btn {
+  padding: 0.45rem 1rem;
+  font-size: 0.85rem;
+  border-radius: 99px;
+  height: auto;
+  min-height: 36px;
+}
+
+.info-footer {
+  margin-top: 1rem;
+}
+
+.reward-notice {
+  font-size: 0.95rem;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.period-text {
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Winners Card */
+.winners-card {
+  margin-bottom: 3rem;
+  border-style: dashed;
+  background: var(--accent-soft);
+  padding: 2rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  margin: 0 0 1rem;
+  color: var(--text-h);
+  font-weight: 800;
+}
+
+.winners-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.winner-row {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.winner-points {
+  color: var(--accent);
+}
+
+/* Mission Cards */
+.mission-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .completed {
   border-color: var(--mint);
   background: color-mix(in srgb, var(--panel) 95%, var(--mint-soft));
+}
+
+.mission-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+}
+
+.mission-type {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.type-icon {
+  font-size: 1.75rem;
+}
+
+.point-badge {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 0.25rem 0.75rem;
+  border-radius: 99px;
+}
+
+.badge-done {
+  background: var(--mint);
+  color: white;
+}
+
+.mission-title {
+  font-size: 1.3rem;
+  margin: 0 0 0.75rem;
+  color: var(--text-h);
+  font-weight: 800;
+}
+
+.mission-desc {
+  margin: 0 0 1.5rem;
+  font-size: 0.95rem;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.mission-body {
+  border-top: 1px solid var(--border);
+  padding-top: 1.5rem;
+  margin-top: auto;
+}
+
+/* Specific Mission Types */
+.survey-note {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+  border-left: 4px solid var(--accent);
+  padding-left: 1rem;
+  line-height: 1.6;
+}
+
+.survey-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.question-text {
+  margin: 0 0 0.85rem;
+  font-weight: 800;
+  color: var(--text-h);
+  line-height: 1.5;
+}
+
+.survey-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 0.85rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--bg-deep);
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  transition: background 0.2s;
+}
+.radio-label:hover { background: var(--accent-soft); }
+
+.quiz-question {
+  margin: 0 0 1rem;
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.quiz-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.check-label {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.submit-btn {
+  margin-top: 2rem;
+  width: 100%;
+  height: 3.5rem;
+  font-size: 1.1rem;
+  border-radius: 14px;
+}
+
+/* Participants List */
+.participants-card {
+  margin-top: 4rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  padding: 2.5rem;
+}
+
+.participants-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.participants-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.p-tag {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  background: var(--panel);
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.empty-participants {
+  padding: 3rem;
+  text-align: center;
+  color: var(--muted);
+  background: var(--panel);
+  border-radius: 1.25rem;
+  border: 1px dashed var(--border);
+}
+
+.hint {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.participant-notice {
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+  font-weight: 600;
+}
+
+.full-width { width: 100%; }
+.mt-3 { margin-top: 1rem; }
+.center { text-align: center; }
+
+@media (max-width: 768px) {
+  .meta-row { flex-direction: column; align-items: stretch; }
+  .copy-btn { width: 100%; height: 44px; }
+  .winners-grid { grid-template-columns: 1fr; }
+  .participants-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
 }
 </style>

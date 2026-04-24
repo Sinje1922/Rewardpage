@@ -3,6 +3,7 @@
 :root {
   --text: #3d344d;
   --text-h: #1a1523;
+  --text-p: #3d344d;
   --muted: #837a91;
   --bg: #f8f7fc;
   --bg-deep: #f0eff6;
@@ -35,11 +36,16 @@
   -webkit-font-smoothing: antialiased;
 }
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 /* Dark Mode Variables - Based on .dark class on html/root */
 :root.dark {
-  --text: #cbd5e1;
-  --text-h: #f8fafc;
-  --muted: #94a3b8;
+  --text: #f1f5f9;
+  --text-h: #ffffff;
+  --text-p: #f1f5f9;
+  --muted: #cbd5e1;
   --bg: #0f172a;
   --bg-deep: #020617;
   --panel: rgba(30, 41, 59, 0.7);
@@ -84,15 +90,16 @@ body {
   border-radius: var(--radius);
   padding: 1.5rem;
   background: var(--panel);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px); /* 블러 입자 정밀화 */
   box-shadow: var(--shadow);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1); /* 부드러운 관성 애니메이션 */
   position: relative;
   overflow: hidden;
+  animation: revealUp 0.6s cubic-bezier(0.2, 1, 0.2, 1) backwards;
 }
 
 .card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px) scale(1.01);
   box-shadow: var(--shadow-hover);
   border-color: var(--accent-border);
 }
@@ -102,34 +109,52 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.7rem 1.4rem;
-  border-radius: 1rem;
+  padding: 0.85rem 1.6rem;
+  min-height: 44px; /* Touch target compliance */
+  border-radius: 1.25rem;
   border: 1px solid var(--border);
   background: var(--panel);
   color: var(--text-h);
   cursor: pointer;
   font: inherit;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.95rem;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(4px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(8px);
+  box-sizing: border-box;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96); /* 클릭 시 물리적 피드백 */
 }
 
 .btn:hover:not(:disabled) {
   background: var(--bg-deep);
-  transform: translateY(-1px);
+  border-color: var(--accent-border);
 }
 
 .btn.primary {
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent), #7d5fff);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 4px 12px var(--accent-soft);
+  box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
 }
 
 .btn.primary:hover:not(:disabled) {
-  background: var(--accent-bright);
-  box-shadow: 0 6px 16px var(--accent-soft);
+  background: linear-gradient(135deg, var(--accent-bright), var(--accent));
+  box-shadow: 0 8px 25px rgba(108, 92, 231, 0.4);
+  transform: translateY(-2px);
+}
+
+@keyframes revealUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .grid {
@@ -152,6 +177,7 @@ body {
   padding: 0.75rem;
   background: rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(4px);
+  color: var(--text);
   transition: all 0.2s ease;
 }
 
@@ -214,4 +240,55 @@ body {
 
 .divider:not(:empty)::after {
   margin-left: .75em;
+}
+
+/* Form Layout Fixes */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.field label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.field input, .field select, .field textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* General Mobile Polish */
+@media (max-width: 600px) {
+  :root {
+    font-size: 16px;
+  }
+  
+  .card {
+    padding: 1.25rem;
+    border-radius: 1.25rem;
+  }
+  
+  .page-title {
+    margin-bottom: 1.25rem;
+  }
+
+  .stack-mobile {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1.25rem !important;
+  }
+
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .search-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

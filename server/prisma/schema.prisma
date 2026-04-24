@@ -19,6 +19,12 @@ model User {
   locale       String?
   lastIp       String?
   birthYear    Int?
+  birthDate    DateTime?
+  walletAddress String?
+  nickname     String?
+  avatarUrl    String?
+  gender       String?
+  region       String?
   createdAt    DateTime @default(now())
 
   campaignsCreated Campaign[]    @relation("CampaignCreator")

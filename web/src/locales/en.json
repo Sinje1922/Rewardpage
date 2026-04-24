@@ -7,7 +7,8 @@
     "ops": "Ops",
     "admin": "Admin",
     "login": "Login",
-    "logout": "Logout"
+    "logout": "Logout",
+    "myPage": "My Page"
   },
   "home": {
     "badge": "Pick Q",
@@ -90,7 +91,11 @@
     "winRank": "Rank {rank} Winner",
     "noWins": "No winning history.",
     "submissions": "Mission Submissions",
-    "statusLabel": "Status: {status}"
+    "statusLabel": "Status: {status}",
+    "active": "Active Campaigns",
+    "won": "Won Campaigns",
+    "closed": "Closed Campaigns",
+    "noParticipated": "No active campaigns found."
   },
   "ops": {
     "console": "Ops Console",
@@ -173,6 +178,21 @@
     "unblockBtn": "Unblock",
     "blockBtn": "Block"
   },
+  "onboarding": {
+    "title": "Account Setup",
+    "welcome": "Welcome!",
+    "welcomeLead": "Please complete your <strong>profile settings</strong> to ensure smooth use of the service!",
+    "nickname": "Nickname",
+    "nicknamePlaceholder": "Enter a name to use in the service",
+    "walletHint": "A correct address is required for reward transmission.",
+    "genderMaleShort": "Male",
+    "genderFemaleShort": "Female",
+    "countrySelect": "Select your country",
+    "startBtn": "Start 🚀",
+    "wrongAccount": "Logged in with the wrong account?",
+    "logout": "Logout",
+    "errorRequired": "Please fill in all required fields."
+  },
   "common": {
     "errorLoad": "Failed to load.",
     "loginRequired": "Login required.",
@@ -180,6 +200,28 @@
     "submitFail": "Failed to submit.",
     "checkRequired": "Please check the confirmation box.",
     "person": " person(s)",
-    "brand": "Pick Q"
+    "brand": "Pick Q",
+    "select": "Select",
+    "toggleLight": "Switch to light mode",
+    "toggleDark": "Switch to dark mode"
+  },
+  "mypage": {
+    "title": "Account Settings",
+    "profileInfo": "Profile Information",
+    "gender": "Gender",
+    "country": "Country",
+    "walletAddress": "Wallet Address",
+    "walletHint": "Please enter your wallet address for rewards.",
+    "save": "Save Settings",
+    "saveSuccess": "Settings saved successfully.",
+    "saveFail": "Failed to save settings.",
+    "birthYear": "Birth Year",
+    "birthDate": "Birth Date",
+    "nickname": "Nickname",
+    "nicknameHint": "Enter a nickname to express yourself",
+    "avatar": "Profile Icon",
+    "withdraw": "Delete Account",
+    "withdrawConfirm": "Are you sure you want to delete your account? All your history and points will be permanently deleted.",
+    "withdrawSuccess": "Your account has been deleted."
   }
 }

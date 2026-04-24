@@ -21,6 +21,7 @@ function toggle() {
 function setLocale(code: string) {
   locale.value = code
   localStorage.setItem('locale', code)
+  document.documentElement.lang = code
   isOpen.value = false
 }
 

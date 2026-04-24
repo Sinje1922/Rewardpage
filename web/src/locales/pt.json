@@ -6,7 +6,8 @@
     "ops": "Operação",
     "admin": "Admin",
     "login": "Login",
-    "logout": "Sair"
+    "logout": "Sair",
+    "myPage": "Minha Página"
   },
   "home": {
     "badge": "Pick Q",
@@ -89,7 +90,11 @@
     "winRank": "{rank}º Lugar",
     "noWins": "Nenhum histórico de vitórias.",
     "submissions": "Envios de Missão",
-    "statusLabel": "Estado: {status}"
+    "statusLabel": "Estado: {status}",
+    "active": "Campanhas Ativas",
+    "won": "Campanhas Ganhas",
+    "closed": "Campanhas Encerradas",
+    "noParticipated": "Nenhuma campanha ativa encontrada."
   },
   "ops": {
     "console": "Console de Operações",
@@ -180,5 +185,17 @@
     "checkRequired": "Por favor, marque a caixa de confirmação.",
     "person": " pessoa(s)",
     "brand": "Pick Q"
+  },
+  "mypage": {
+    "title": "Configurações da Conta",
+    "walletAddress": "Endereço da Carteira",
+    "walletHint": "Por favor, insira o endereço da sua carteira para recompensas.",
+    "save": "Salvar Configurações",
+    "saveSuccess": "Configurações salvas com sucesso.",
+    "saveFail": "Falha ao salvar as configurações.",
+    "birthYear": "Ano de Nascimento",
+    "withdraw": "Excluir Conta",
+    "withdrawConfirm": "Tem certeza de que deseja excluir sua conta? Todo o seu histórico e pontos serão excluídos permanentemente.",
+    "withdrawSuccess": "Sua conta foi excluída."
   }
 }

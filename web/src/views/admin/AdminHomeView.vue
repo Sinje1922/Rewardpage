@@ -15,6 +15,8 @@ type DashboardData = {
   }
   countries: { name: string; count: number }[]
   ages: { year: number; count: number }[]
+  genders: { name: string; count: number }[]
+  regions: { name: string; count: number }[]
   history: { month: string; count: number }[]
 }
 
@@ -25,6 +27,7 @@ const users = ref<UserRow[]>([])
 const err = ref('')
 const loading = ref(false)
 const campaignId = ref('')
+const exportCampaignId = ref('')
 const userSearchQuery = ref('')
 
 async function refresh() {
@@ -64,9 +67,29 @@ async function approveCampaign() {
   try {
     await api.post(`/admin/campaigns/${campaignId.value}/approve`)
     campaignId.value = ''
+    alert('캠페인이 승격되었습니다.')
     await refresh()
   } catch {
     err.value = t('admin.approveFail')
+  }
+}
+
+async function downloadCsv() {
+  if (!exportCampaignId.value) return
+  err.value = ''
+  try {
+    const res = await api.get(`/admin/campaigns/${exportCampaignId.value}/export`, {
+      responseType: 'blob'
+    })
+    const url = window.URL.createObjectURL(new Blob([res.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `campaign_${exportCampaignId.value}_data.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch {
+    alert('데이터 추출에 실패했습니다. ID를 확인해 주세요.')
   }
 }
 </script>
@@ -77,10 +100,10 @@ async function approveCampaign() {
       <h1 class="page-title">{{ $t('admin.title') }}</h1>
       <div class="tab-group">
         <button class="tab-btn" :class="{ active: tab === 'dashboard' }" @click="tab = 'dashboard'">
-          📊 {{ $t('admin.tabDashboard') || '대시보드' }}
+          📊 {{ $t('admin.tabDashboard') }}
         </button>
         <button class="tab-btn" :class="{ active: tab === 'users' }" @click="tab = 'users'">
-          👥 {{ $t('admin.tabUsers') || '유저 관리' }}
+          👥 {{ $t('admin.tabUsers') }}
         </button>
       </div>
     </header>
@@ -91,29 +114,29 @@ async function approveCampaign() {
     <div v-if="tab === 'dashboard' && dashboard" class="dashboard-content fade-in">
       <div class="stats-grid">
         <div class="stat-card">
-          <label>{{ $t('admin.totalUsers') || '누적 사용자' }}</label>
+          <label>{{ $t('admin.totalUsers') }}</label>
           <div class="value">{{ dashboard.summary.users.toLocaleString() }}</div>
           <div class="trend">+{{ dashboard.history[dashboard.history.length-1]?.count || 0 }} this month</div>
         </div>
         <div class="stat-card">
-          <label>{{ $t('admin.activeCampaigns') || '활성 캠페인' }}</label>
+          <label>{{ $t('admin.activeCampaigns') }}</label>
           <div class="value">{{ dashboard.summary.activeCampaigns }} / {{ dashboard.summary.totalCampaigns }}</div>
         </div>
         <div class="stat-card highlight">
-          <label>{{ $t('admin.totalPointsAwarded') || '지급된 총 포인트' }}</label>
+          <label>{{ $t('admin.totalPointsAwarded') }}</label>
           <div class="value">{{ dashboard.summary.totalPoints.toLocaleString() }} <small>P</small></div>
         </div>
         <div class="stat-card">
-          <label>{{ $t('admin.avgParticipants') || '평균 참여도' }}</label>
+          <label>{{ $t('admin.avgParticipants') }}</label>
           <div class="value">{{ dashboard.summary.avgParticipants.toFixed(1) }}</div>
-          <div class="sub">{{ $t('admin.perCampaign') || '인/캠페인' }}</div>
+          <div class="sub">{{ $t('admin.perCampaign') }}</div>
         </div>
       </div>
 
       <div class="charts-grid">
         <!-- Growth Chart -->
         <div class="card chart-card">
-          <h3>📈 {{ $t('admin.growthTrend') || '사용자 성장 추이' }}</h3>
+          <h3>📈 {{ $t('admin.growthTrend') }}</h3>
           <div class="chart-container">
             <svg viewBox="0 0 400 150" class="line-chart">
               <path
@@ -141,33 +164,66 @@ async function approveCampaign() {
           </div>
         </div>
 
-        <!-- Geo Distribution -->
+        <!-- Gender/Region Charts -->
         <div class="card chart-card">
-          <h3>🌍 {{ $t('admin.geoDist') || '국가별 분포' }}</h3>
+          <h3>👤 {{ $t('admin.genderDist') }}</h3>
           <div class="geo-list">
-            <div v-for="c in dashboard.countries.slice(0, 5)" :key="c.name" class="geo-item">
-              <span class="flag">{{ getFlag(c.name) }}</span>
-              <span class="name">{{ c.name }}</span>
+            <div v-for="g in dashboard.genders" :key="g.name" class="geo-item">
+              <span class="name">{{ g.name }}</span>
               <div class="bar-bg">
                 <div 
                   class="bar-fill" 
-                  :style="{ width: (c.count / dashboard.summary.users * 100) + '%' }"
+                  :style="{ width: (g.count / Math.max(dashboard.summary.users, 1) * 100) + '%' }"
                 ></div>
               </div>
-              <span class="count">{{ c.count }}</span>
+              <span class="count">{{ g.count }}</span>
             </div>
           </div>
         </div>
+
+        <div class="card chart-card">
+          <h3>📍 {{ $t('admin.regionDist') }}</h3>
+          <div class="geo-list">
+            <div v-for="r in dashboard.regions.slice(0, 8)" :key="r.name" class="geo-item">
+              <span class="name">{{ r.name }}</span>
+              <div class="bar-bg">
+                <div 
+                  class="bar-fill" 
+                  style="background: var(--mint)"
+                  :style="{ width: (r.count / Math.max(dashboard.summary.users, 1) * 100) + '%' }"
+                ></div>
+              </div>
+              <span class="count">{{ r.count }}</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <!-- Quick Approval Section (Original functionality) -->
-      <h2 style="font-size: 1.1rem; color: var(--text-h); margin-top: 2rem">{{ $t('admin.campaignApproveTitle') }}</h2>
-      <div class="card" style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-end">
-        <div class="field" style="margin: 0; flex: 1; min-width: 12rem">
-          <label>{{ $t('admin.campaignIdLabel') }}</label>
-          <input v-model="campaignId" placeholder="cuid…" />
+      <!-- Campaign Management & CSV Export -->
+      <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2rem">
+        <div class="card">
+          <h2 style="font-size: 1.1rem; color: var(--text-h); margin-bottom: 1rem">🚀 캠페인 공개 승인</h2>
+          <div style="display: flex; gap: 0.5rem; align-items: flex-end">
+            <div class="field" style="margin: 0; flex: 1">
+              <label>캠페인 ID</label>
+              <input v-model="campaignId" placeholder="cuid…" />
+            </div>
+            <button type="button" class="btn primary" @click="approveCampaign">{{ $t('ops.approve') }}</button>
+          </div>
         </div>
-        <button type="button" class="btn primary" @click="approveCampaign">{{ $t('ops.approve') || 'Approve' }}</button>
+
+        <div class="card" style="border: 2px solid var(--accent-soft)">
+          <h2 style="font-size: 1.1rem; color: var(--accent); margin-bottom: 0.5rem">📥 {{ $t('admin.exportData') }}</h2>
+          <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem">{{ $t('admin.exportHint') }}</p>
+          <div style="display: flex; gap: 0.5rem; align-items: flex-end">
+            <div class="field" style="margin: 0; flex: 1">
+              <label>대상 캠페인 ID</label>
+              <input v-model="exportCampaignId" placeholder="cuid…" />
+            </div>
+            <button type="button" class="btn outline" style="border-color: var(--accent); color: var(--accent)" @click="downloadCsv">다운로드</button>
+          </div>
+        </div>
       </div>
     </div>
 

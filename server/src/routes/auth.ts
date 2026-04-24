@@ -14,14 +14,22 @@ async function recordUserEntry(userId: string, req: any, locale?: string) {
   try {
     const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
     const cleanIp = String(ip).split(",")[0].trim();
+    
+    // 현재 유저의 정보를 먼저 조회
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { country: true }
+    });
+
     const geo = geoip.lookup(cleanIp);
-    const country = geo?.country || null;
+    const geoCountry = geo?.country || null;
 
     await prisma.user.update({
       where: { id: userId },
       data: {
         lastIp: cleanIp,
-        ...(country && { country }),
+        // 현재 설정된 국가가 없을 때만 GeoIP 정보로 업데이트
+        ...((geoCountry && !currentUser?.country) && { country: geoCountry }),
         ...(locale && { locale }),
       },
     });
@@ -48,9 +56,24 @@ router.post("/register", async (req, res) => {
     return;
   }
   const passwordHash = await bcrypt.hash(password, 10);
+  const FULL_USER_SELECT = {
+    id: true,
+    email: true,
+    role: true,
+    pointBalance: true,
+    nickname: true,
+    avatarUrl: true,
+    birthYear: true,
+    birthDate: true,
+    gender: true,
+    region: true,
+    country: true,
+    walletAddress: true,
+  };
+
   const user = await prisma.user.create({
     data: { email, passwordHash, role: "USER" },
-    select: { id: true, email: true, role: true, pointBalance: true },
+    select: FULL_USER_SELECT,
   });
   const token = signToken({ sub: user.id, email: user.email, role: user.role });
   
@@ -71,6 +94,22 @@ router.post("/login", async (req, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
+
+  const FULL_USER_SELECT = {
+    id: true,
+    email: true,
+    role: true,
+    pointBalance: true,
+    nickname: true,
+    avatarUrl: true,
+    birthYear: true,
+    birthDate: true,
+    gender: true,
+    region: true,
+    country: true,
+    walletAddress: true,
+  };
+
   const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
   if (!user || user.blocked || !user.passwordHash) {
     res.status(401).json({ error: "Invalid credentials" });
@@ -85,8 +124,14 @@ router.post("/login", async (req, res) => {
 
   recordUserEntry(user.id, req);
 
+  // Re-fetch or pick fields for consistent response
+  const responseUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: FULL_USER_SELECT
+  });
+
   res.json({
-    user: { id: user.id, email: user.email, role: user.role, pointBalance: user.pointBalance },
+    user: responseUser,
     token,
   });
 });
@@ -101,6 +146,21 @@ router.post("/google", async (req, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
+
+  const FULL_USER_SELECT = {
+    id: true,
+    email: true,
+    role: true,
+    pointBalance: true,
+    nickname: true,
+    avatarUrl: true,
+    birthYear: true,
+    birthDate: true,
+    gender: true,
+    region: true,
+    country: true,
+    walletAddress: true,
+  };
 
   try {
     const ticket = await client.verifyIdToken({
@@ -135,8 +195,13 @@ router.post("/google", async (req, res) => {
     const locale = (payload as any).locale;
     recordUserEntry(user.id, req, locale);
 
+    const responseUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: FULL_USER_SELECT
+    });
+
     res.json({
-      user: { id: user.id, email: user.email, role: user.role, pointBalance: user.pointBalance },
+      user: responseUser,
       token,
     });
   } catch (err) {
@@ -148,7 +213,22 @@ router.post("/google", async (req, res) => {
 router.get("/me", authRequired, async (req: AuthedRequest, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user!.id },
-    select: { id: true, email: true, role: true, blocked: true, pointBalance: true, createdAt: true },
+    select: { 
+      id: true, 
+      email: true, 
+      role: true, 
+      blocked: true, 
+      pointBalance: true, 
+      createdAt: true,
+      nickname: true,
+      avatarUrl: true,
+      birthYear: true,
+      birthDate: true,
+      gender: true,
+      region: true,
+      country: true,
+      walletAddress: true,
+    },
   });
   if (!user) {
     res.status(404).json({ error: "Not found" });

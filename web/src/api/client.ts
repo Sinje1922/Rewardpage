@@ -9,7 +9,6 @@ export const api = axios.create({
 export function getFileUrl(url: string | null | undefined) {
   if (!url) return ''
   if (url.startsWith('http')) return url
-  // baseURL에서 /api 부분을 제외한 순수 도메인/포트 주소 추출
   const root = baseURL || window.location.origin
   return `${root}${url.startsWith('/') ? '' : '/'}${url}`
 }
@@ -21,3 +20,14 @@ export function setAuthToken(token: string | null) {
     delete api.defaults.headers.common.Authorization
   }
 }
+
+// [Force Protocol] 모든 요청 직전에 로컬 스토리지에서 토큰을 가져와 헤더를 실시간 동기화합니다.
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('rp_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+}, (error) => {
+  return Promise.reject(error)
+})

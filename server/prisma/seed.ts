@@ -121,6 +121,51 @@ async function main() {
     });
   }
 
+  // 추가 더미 데이터: 종료된 캠페인
+  const closedExisting = await prisma.campaign.findFirst({
+    where: { title: "지난 추억의 이벤트 (종료)" },
+  });
+
+  if (!closedExisting) {
+    const closedCamp = await prisma.campaign.create({
+      data: {
+        title: "지난 추억의 이벤트 (종료)",
+        description: "이미 종료된 이벤트입니다. 결과 보기를 테스트할 수 있습니다.",
+        companyName: "과거 상사",
+        status: "CLOSED",
+        creatorId: admin.id,
+        winnerCount: 10,
+        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30일 전
+      },
+    });
+
+    await prisma.mission.create({
+      data: {
+        campaignId: closedCamp.id,
+        type: "LINK_VISIT",
+        title: "옛날 홈페이지 방문",
+        config: JSON.stringify({ linkUrl: "https://archive.org" }),
+      },
+    });
+  }
+
+  // 추가 더미 데이터: 준비 중인 캠페인
+  const draftExisting = await prisma.campaign.findFirst({
+    where: { title: "오픈 예정: 신규 서비스 런칭" },
+  });
+
+  if (!draftExisting) {
+    await prisma.campaign.create({
+      data: {
+        title: "오픈 예정: 신규 서비스 런칭",
+        description: "관리자만 볼 수 있는 준비 중인 캠페인 예시입니다.",
+        companyName: "뉴 스타트업",
+        status: "DRAFT",
+        creatorId: admin.id,
+      },
+    });
+  }
+
   console.log("Seed OK", {
     admin: admin.email,
     manager: "manager@demo.local",

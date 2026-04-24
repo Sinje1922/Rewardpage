@@ -76,8 +76,7 @@ router.get("/overview", async (_req, res) => {
 
 router.get("/dashboard", async (_req, res) => {
   try {
-    const [stats, countries, ages, growth] = await Promise.all([
-      // 핵심 지표들을 하나의 쿼리로 통합하여 커넥션 풀 절약 (MariaDB 문법)
+    const [stats, countries, ages, genders, regions, growth] = await Promise.all([
       prisma.$queryRaw<any[]>`
         SELECT 
           (SELECT COUNT(*) FROM User) as user_count,
@@ -89,6 +88,8 @@ router.get("/dashboard", async (_req, res) => {
       `,
       (prisma.user as any).groupBy({ by: ["country"], _count: true }),
       (prisma.user as any).groupBy({ by: ["birthYear"], _count: true }),
+      (prisma.user as any).groupBy({ by: ["gender"], _count: true }),
+      (prisma.user as any).groupBy({ by: ["region"], _count: true }),
       prisma.$queryRaw<any[]>`
         SELECT 
           DATE_FORMAT(createdAt, '%Y-%m') as month,
@@ -116,6 +117,8 @@ router.get("/dashboard", async (_req, res) => {
       },
       countries: (countries as any[]).map(c => ({ name: c.country || 'Unknown', count: Number(c._count) })),
       ages: (ages as any[]).map(a => ({ year: a.birthYear || 0, count: Number(a._count) })),
+      genders: (genders as any[]).map(g => ({ name: g.gender || 'Unknown', count: Number(g._count) })),
+      regions: (regions as any[]).map(r => ({ name: r.region || 'Unknown', count: Number(r._count) })),
       history: (growth || []).map(g => ({ month: g.month, count: Number(g.count) }))
     };
 
@@ -123,6 +126,48 @@ router.get("/dashboard", async (_req, res) => {
   } catch (err) {
     console.error("Dashboard Stats Error:", err);
     res.status(500).json({ error: "Failed to load dashboard stats" });
+  }
+});
+
+router.get("/campaigns/:id/export", async (req, res) => {
+  const cid = String(req.params.id);
+  
+  try {
+    const list = await prisma.submission.findMany({
+      where: { mission: { campaignId: cid } },
+      include: {
+        user: true,
+        mission: true
+      },
+      orderBy: { createdAt: "desc" }
+    });
+
+    // CSV Header
+    let csv = "SubmissionID,CreatedAt,UserEmail,UserNickname,Gender,Age,Region,MissionType,MissionTitle,Payload\n";
+    
+    for (const s of list) {
+      const age = s.user.birthYear ? (new Date().getFullYear() - s.user.birthYear) : "Unknown";
+      const row = [
+        s.id,
+        s.createdAt.toISOString(),
+        s.user.email,
+        `"${(s.user.nickname || "").replace(/"/g, '""')}"`,
+        s.user.gender || "Unknown",
+        age,
+        s.user.region || "Unknown",
+        s.mission.type,
+        `"${s.mission.title.replace(/"/g, '""')}"`,
+        `"${s.payload.replace(/"/g, '""')}"`
+      ];
+      csv += row.join(",") + "\n";
+    }
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="campaign_${cid}_data.csv"`);
+    res.status(200).send("\uFEFF" + csv); // BOM for Excel UTF-8 support
+  } catch (err) {
+    console.error("Export Error:", err);
+    res.status(500).json({ error: "Failed to export data" });
   }
 });
 
