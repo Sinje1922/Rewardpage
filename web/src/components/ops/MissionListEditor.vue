@@ -67,6 +67,46 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
   nextQs[qi] = { ...nextQs[qi], options: nextQs[qi].options.filter((_, j) => j !== oi) }
   updateRow(mi, { surveyQuestions: nextQs })
 }
+
+const missionCategories = [
+  {
+    id: 'general',
+    labelKey: 'ops.catGeneral',
+    types: [
+      { id: 'LINK_VISIT', labelKey: 'ops.typeLink', icon: '🔗' },
+      { id: 'CODE', labelKey: 'ops.typeCode', icon: '⌨️' },
+      { id: 'QUIZ', labelKey: 'ops.typeQuiz', icon: '❓' },
+      { id: 'SURVEY', labelKey: 'ops.typeSurvey', icon: '📝' },
+      { id: 'CHECKIN', labelKey: 'ops.typeCheckin', icon: '✅' },
+      { id: 'FILE_UPLOAD', labelKey: 'ops.typeFile', icon: '📁' },
+    ]
+  },
+  {
+    id: 'youtube',
+    labelKey: 'ops.catYouTube',
+    types: [
+      { id: 'YOUTUBE_WATCH', labelKey: 'ops.typeYoutube', icon: '📺' },
+      { id: 'YOUTUBE_SUBSCRIBE', labelKey: 'ops.typeYouTubeSub', icon: '🔴' },
+      { id: 'YOUTUBE_LIKE', labelKey: 'ops.typeYouTubeLike', icon: '👍' },
+    ]
+  },
+  {
+    id: 'telegram',
+    labelKey: 'ops.catTelegram',
+    types: [
+      { id: 'TELEGRAM_CHANNEL', labelKey: 'ops.typeTelegramChannel', icon: '📢' },
+      { id: 'TELEGRAM_GROUP', labelKey: 'ops.typeTelegramGroup', icon: '👥' },
+    ]
+  },
+  {
+    id: 'discord',
+    labelKey: 'ops.catDiscord',
+    types: [
+      { id: 'DISCORD_JOIN', labelKey: 'ops.typeDiscord', icon: '👾' },
+    ]
+  },
+
+]
 </script>
 
 <template>
@@ -78,17 +118,24 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
       </div>
       <div class="field">
         <label>{{ $t('ops.type') || 'Type' }}</label>
-        <select
-          :value="row.type"
-          @change="updateRow(i, { type: ($event.target as HTMLSelectElement).value })"
-        >
-          <option value="LINK_VISIT">{{ $t('ops.typeLink') }}</option>
-          <option value="SURVEY">{{ $t('ops.typeSurvey') }}</option>
-          <option value="CODE">{{ $t('ops.typeCode') }}</option>
-          <option value="QUIZ">{{ $t('ops.typeQuiz') }}</option>
-          <option value="CHECKIN">{{ $t('ops.typeCheckin') }}</option>
-          <option value="FILE_UPLOAD">{{ $t('ops.typeFile') }}</option>
-        </select>
+        <div class="mission-type-picker">
+          <div v-for="cat in missionCategories" :key="cat.id" class="mission-cat-group">
+            <div class="cat-name">{{ $t(cat.labelKey) }}</div>
+            <div class="type-grid">
+              <button
+                v-for="mType in cat.types"
+                :key="mType.id"
+                type="button"
+                class="type-btn"
+                :class="{ active: row.type === mType.id }"
+                @click="updateRow(i, { type: mType.id })"
+              >
+                <span class="type-icon">{{ mType.icon }}</span>
+                <span class="type-label">{{ $t(mType.labelKey) }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="field">
         <label>{{ $t('ops.missionTitle') }}</label>
@@ -235,6 +282,67 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
         <template v-else-if="row.type === 'CHECKIN'">
           <p class="hint">{{ $t('ops.checkinHint') }}</p>
         </template>
+
+        <template v-else-if="row.type === 'TELEGRAM_JOIN' || row.type === 'TELEGRAM_CHANNEL' || row.type === 'TELEGRAM_GROUP'">
+          <div class="field">
+            <label>채널/그룹 초대 링크 (https://t.me/...)</label>
+            <input :value="row.linkUrl" type="url" placeholder="https://t.me/your_channel" @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
+          </div>
+          <div class="field">
+            <label>채널/그룹 ID (또는 @username)</label>
+            <input :value="row.telegramChannel" placeholder="@your_channel_id" @input="updateRow(i, { telegramChannel: ($event.target as HTMLInputElement).value })" />
+          </div>
+        </template>
+
+        <template v-else-if="row.type === 'DISCORD_JOIN'">
+          <div class="field">
+            <label>서버 초대 링크 (https://discord.gg/...)</label>
+            <input :value="row.linkUrl" type="url" placeholder="https://discord.gg/invite_code" @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
+          </div>
+          <div class="field">
+            <label>서버 ID (Guild ID)</label>
+            <input :value="row.discordInvite" placeholder="123456789..." @input="updateRow(i, { discordInvite: ($event.target as HTMLInputElement).value })" />
+          </div>
+        </template>
+
+        <template v-else-if="row.type === 'YOUTUBE_WATCH'">
+          <div class="field">
+            <label>{{ $t('ops.youtubeVideoHint') }}</label>
+            <input :value="row.youtubeVideoId" placeholder="dQw4w9WgXcQ" @input="updateRow(i, { youtubeVideoId: ($event.target as HTMLInputElement).value })" />
+          </div>
+          <div class="field">
+            <label>{{ $t('ops.youtubeTargetSeconds') || 'Target Seconds' }}</label>
+            <input
+              type="number"
+              min="1"
+              :value="row.youtubeTargetSeconds"
+              @input="updateRow(i, { youtubeTargetSeconds: Number(($event.target as HTMLInputElement).value) })"
+            />
+          </div>
+        </template>
+
+        <template v-else-if="row.type === 'YOUTUBE_SUBSCRIBE'">
+          <div class="field">
+            <label>{{ $t('ops.linkUrl') }}</label>
+            <input :value="row.linkUrl" type="url" placeholder="https://youtube.com/@channel" @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
+          </div>
+          <div class="field">
+            <label>{{ $t('ops.youtubeChannelHint') }}</label>
+            <input :value="row.youtubeChannelId" placeholder="UC..." @input="updateRow(i, { youtubeChannelId: ($event.target as HTMLInputElement).value })" />
+          </div>
+        </template>
+
+        <template v-else-if="row.type === 'YOUTUBE_LIKE'">
+          <div class="field">
+            <label>{{ $t('ops.linkUrl') }}</label>
+            <input :value="row.linkUrl" type="url" placeholder="https://youtube.com/watch?v=..." @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
+          </div>
+          <div class="field">
+            <label>{{ $t('ops.youtubeVideoHint') }}</label>
+            <input :value="row.youtubeVideoId" placeholder="dQw4w9WgXcQ" @input="updateRow(i, { youtubeVideoId: ($event.target as HTMLInputElement).value })" />
+          </div>
+        </template>
+
       </div>
     </div>
 
@@ -324,5 +432,68 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
   flex: 1;
   padding: 0.25rem 0.5rem;
   font-size: 0.85rem;
+}
+.mission-type-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: var(--bg-deep);
+  padding: 1.25rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.mission-cat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.cat-name {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-left: 0.25rem;
+}
+.type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.5rem;
+}
+.type-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.75rem 0.5rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.type-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  transform: translateY(-2px);
+}
+.type-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  box-shadow: 0 4px 12px var(--accent-soft);
+}
+.type-icon {
+  font-size: 1.4rem;
+}
+.type-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+.type-btn.active .type-icon,
+.type-btn.active .type-label {
+  color: white;
 }
 </style>

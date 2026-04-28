@@ -12,12 +12,17 @@ type DashboardData = {
     submissions: number
     totalPoints: number
     avgParticipants: number
+    distributedPoints: number
+    heldPoints: number
   }
   countries: { name: string; count: number }[]
   ages: { year: number; count: number }[]
   genders: { name: string; count: number }[]
   regions: { name: string; count: number }[]
   history: { month: string; count: number }[]
+  topCampaigns: { id: string; title: string; count: number }[]
+  topUsers: { id: string; email: string; balance: number }[]
+  missionTypes: { type: string; count: number }[]
 }
 
 const { t } = useI18n()
@@ -26,8 +31,6 @@ const dashboard = ref<DashboardData | null>(null)
 const users = ref<UserRow[]>([])
 const err = ref('')
 const loading = ref(false)
-const campaignId = ref('')
-const exportCampaignId = ref('')
 const userSearchQuery = ref('')
 
 async function refresh() {
@@ -52,6 +55,73 @@ onMounted(async () => {
   }
 })
 
+function downloadDashboardCsv() {
+  if (!dashboard.value) return
+  
+  const d = dashboard.value
+  let csv = "\uFEFF" // BOM for Excel UTF-8
+  
+  // 1. Summary
+  csv += "--- Summary ---\n"
+  csv += "Metric,Value\n"
+  csv += `Total Users,${d.summary.users}\n`
+  csv += `Active Campaigns,${d.summary.activeCampaigns}\n`
+  csv += `Total Campaigns,${d.summary.totalCampaigns}\n`
+  csv += `Total Submissions,${d.summary.submissions}\n`
+  csv += `Total Points System-wide,${d.summary.totalPoints}\n`
+  csv += `Distributed Points,${d.summary.distributedPoints}\n`
+  csv += `Held Points,${d.summary.heldPoints}\n`
+  csv += `Avg Participants per Campaign,${d.summary.avgParticipants.toFixed(2)}\n\n`
+  
+  // 2. Top Campaigns
+  csv += "--- Top 5 Campaigns ---\n"
+  csv += "Rank,ID,Title,Participants\n"
+  d.topCampaigns.forEach((c, i) => {
+    csv += `${i+1},${c.id},"${c.title.replace(/"/g, '""')}",${c.count}\n`
+  })
+  csv += "\n"
+  
+  // 3. Top Users
+  csv += "--- Top 5 Users ---\n"
+  csv += "Rank,Email,Balance\n"
+  d.topUsers.forEach((u, i) => {
+    csv += `${i+1},${u.email},${u.balance}\n`
+  })
+  csv += "\n"
+  
+  // 4. Mission Types
+  csv += "--- Mission Type Distribution ---\n"
+  csv += "Type,Count\n"
+  d.missionTypes.forEach(m => {
+    csv += `${m.type},${m.count}\n`
+  })
+  csv += "\n"
+  
+  // 5. Gender
+  csv += "--- Gender Distribution ---\n"
+  csv += "Gender,Count\n"
+  d.genders.forEach(g => {
+    csv += `${g.name},${g.count}\n`
+  })
+  csv += "\n"
+  
+  // 6. Regions
+  csv += "--- Region Distribution ---\n"
+  csv += "Region,Count\n"
+  d.regions.forEach(r => {
+    csv += `${r.name},${r.count}\n`
+  })
+  
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.setAttribute("href", url)
+  link.setAttribute("download", `admin_dashboard_report_${new Date().toISOString().slice(0,10)}.csv`)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
 async function setRole(id: string, role: UserRow['role']) {
   await api.patch(`/admin/users/${id}/role`, { role })
   await refresh()
@@ -62,42 +132,17 @@ async function setBlock(id: string, blocked: boolean) {
   await refresh()
 }
 
-async function approveCampaign() {
-  err.value = ''
-  try {
-    await api.post(`/admin/campaigns/${campaignId.value}/approve`)
-    campaignId.value = ''
-    alert('캠페인이 승격되었습니다.')
-    await refresh()
-  } catch {
-    err.value = t('admin.approveFail')
-  }
-}
-
-async function downloadCsv() {
-  if (!exportCampaignId.value) return
-  err.value = ''
-  try {
-    const res = await api.get(`/admin/campaigns/${exportCampaignId.value}/export`, {
-      responseType: 'blob'
-    })
-    const url = window.URL.createObjectURL(new Blob([res.data]))
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', `campaign_${exportCampaignId.value}_data.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  } catch {
-    alert('데이터 추출에 실패했습니다. ID를 확인해 주세요.')
-  }
-}
 </script>
 
 <template>
   <div class="admin-container">
     <header class="admin-header">
-      <h1 class="page-title">{{ $t('admin.title') }}</h1>
+      <div style="display: flex; align-items: center; gap: 1rem">
+        <h1 class="page-title" style="margin: 0">{{ $t('admin.title') }}</h1>
+        <button v-if="tab === 'dashboard'" type="button" class="btn btn-sm outline" @click="downloadDashboardCsv">
+          📥 CSV 리포트
+        </button>
+      </div>
       <div class="tab-group">
         <button class="tab-btn" :class="{ active: tab === 'dashboard' }" @click="tab = 'dashboard'">
           📊 {{ $t('admin.tabDashboard') }}
@@ -130,6 +175,11 @@ async function downloadCsv() {
           <label>{{ $t('admin.avgParticipants') }}</label>
           <div class="value">{{ dashboard.summary.avgParticipants.toFixed(1) }}</div>
           <div class="sub">{{ $t('admin.perCampaign') }}</div>
+        </div>
+        <div class="stat-card">
+          <label>💰 {{ $t('admin.distributedPoints') || '지급된 포인트' }}</label>
+          <div class="value">{{ dashboard.summary.distributedPoints.toLocaleString() }}</div>
+          <div class="sub">{{ ((dashboard.summary.distributedPoints / (dashboard.summary.totalPoints || 1)) * 100).toFixed(1) }}% of total</div>
         </div>
       </div>
 
@@ -198,33 +248,50 @@ async function downloadCsv() {
           </div>
         </div>
 
+        <div class="card chart-card">
+          <h3>⚡ {{ $t('admin.missionDist') || '미션 유형 분포' }}</h3>
+          <div class="geo-list">
+            <div v-for="m in dashboard.missionTypes" :key="m.type" class="geo-item">
+              <span class="name" style="width: 100px">{{ m.type }}</span>
+              <div class="bar-bg">
+                <div 
+                  class="bar-fill" 
+                  style="background: var(--accent-bright)"
+                  :style="{ width: (m.count / Math.max(...dashboard.missionTypes.map(x => x.count), 1) * 100) + '%' }"
+                ></div>
+              </div>
+              <span class="count">{{ m.count }}</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <!-- Campaign Management & CSV Export -->
-      <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2rem">
+      <!-- Top Performance Section -->
+      <div class="charts-grid" style="margin-top: 1.5rem">
         <div class="card">
-          <h2 style="font-size: 1.1rem; color: var(--text-h); margin-bottom: 1rem">🚀 캠페인 공개 승인</h2>
-          <div style="display: flex; gap: 0.5rem; align-items: flex-end">
-            <div class="field" style="margin: 0; flex: 1">
-              <label>캠페인 ID</label>
-              <input v-model="campaignId" placeholder="cuid…" />
+          <h3 style="margin-bottom: 1rem">🏆 {{ $t('admin.topCampaigns') || '인기 캠페인 TOP 5' }}</h3>
+          <div class="rank-list">
+            <div v-for="(c, i) in dashboard.topCampaigns" :key="c.id" class="rank-item">
+              <span class="rank-num">{{ i + 1 }}</span>
+              <span class="rank-name">{{ c.title }}</span>
+              <span class="rank-value">{{ c.count }} {{ $t('common.participants') || '명' }}</span>
             </div>
-            <button type="button" class="btn primary" @click="approveCampaign">{{ $t('ops.approve') }}</button>
           </div>
         </div>
 
-        <div class="card" style="border: 2px solid var(--accent-soft)">
-          <h2 style="font-size: 1.1rem; color: var(--accent); margin-bottom: 0.5rem">📥 {{ $t('admin.exportData') }}</h2>
-          <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem">{{ $t('admin.exportHint') }}</p>
-          <div style="display: flex; gap: 0.5rem; align-items: flex-end">
-            <div class="field" style="margin: 0; flex: 1">
-              <label>대상 캠페인 ID</label>
-              <input v-model="exportCampaignId" placeholder="cuid…" />
+        <div class="card">
+          <h3 style="margin-bottom: 1rem">👑 {{ $t('admin.topUsers') || '활동 우수자 TOP 5' }}</h3>
+          <div class="rank-list">
+            <div v-for="(u, i) in dashboard.topUsers" :key="u.id" class="rank-item">
+              <span class="rank-num">{{ i + 1 }}</span>
+              <span class="rank-name">{{ u.email }}</span>
+              <span class="rank-value">{{ u.balance.toLocaleString() }} P</span>
             </div>
-            <button type="button" class="btn outline" style="border-color: var(--accent); color: var(--accent)" @click="downloadCsv">다운로드</button>
           </div>
         </div>
       </div>
+
     </div>
 
     <!-- USERS TAB -->
@@ -425,6 +492,20 @@ function getFlag(country: string) {
 }
 .nav-points .balance { font-weight: 800; color: var(--accent); }
 .nav-points .unit { font-size: 0.7rem; color: var(--accent); opacity: 0.7; }
+
+.rank-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.rank-item {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.75rem; border-radius: 0.75rem;
+  background: var(--bg-deep); transition: all 0.2s;
+}
+.rank-item:hover { transform: translateX(5px); background: var(--accent-soft); }
+.rank-num {
+  width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+  background: var(--accent); color: white; border-radius: 50%; font-size: 0.8rem; font-weight: 800;
+}
+.rank-name { flex: 1; font-weight: 600; font-size: 0.9rem; color: var(--text-h); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-value { font-weight: 800; color: var(--accent); font-size: 0.85rem; }
 
 .fade-in {
   animation: fadeIn 0.4s ease-out;

@@ -10,6 +10,26 @@ import { authRequired, type AuthedRequest } from "../middleware/auth.js";
 const router = Router();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+const FULL_USER_SELECT = {
+  id: true,
+  email: true,
+  role: true,
+  pointBalance: true,
+  nickname: true,
+  avatarUrl: true,
+  birthYear: true,
+  birthDate: true,
+  gender: true,
+  region: true,
+  country: true,
+  walletAddress: true,
+  telegramHandle: true,
+  discordId: true,
+  discordHandle: true,
+  youtubeHandle: true,
+  instagramHandle: true,
+};
+
 async function recordUserEntry(userId: string, req: any, locale?: string) {
   try {
     const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
@@ -56,20 +76,6 @@ router.post("/register", async (req, res) => {
     return;
   }
   const passwordHash = await bcrypt.hash(password, 10);
-  const FULL_USER_SELECT = {
-    id: true,
-    email: true,
-    role: true,
-    pointBalance: true,
-    nickname: true,
-    avatarUrl: true,
-    birthYear: true,
-    birthDate: true,
-    gender: true,
-    region: true,
-    country: true,
-    walletAddress: true,
-  };
 
   const user = await prisma.user.create({
     data: { email, passwordHash, role: "USER" },
@@ -94,21 +100,6 @@ router.post("/login", async (req, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
-
-  const FULL_USER_SELECT = {
-    id: true,
-    email: true,
-    role: true,
-    pointBalance: true,
-    nickname: true,
-    avatarUrl: true,
-    birthYear: true,
-    birthDate: true,
-    gender: true,
-    region: true,
-    country: true,
-    walletAddress: true,
-  };
 
   const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
   if (!user || user.blocked || !user.passwordHash) {
@@ -146,21 +137,6 @@ router.post("/google", async (req, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
-
-  const FULL_USER_SELECT = {
-    id: true,
-    email: true,
-    role: true,
-    pointBalance: true,
-    nickname: true,
-    avatarUrl: true,
-    birthYear: true,
-    birthDate: true,
-    gender: true,
-    region: true,
-    country: true,
-    walletAddress: true,
-  };
 
   try {
     const ticket = await client.verifyIdToken({
@@ -204,37 +180,12 @@ router.post("/google", async (req, res) => {
       user: responseUser,
       token,
     });
-  } catch (err) {
-    console.error("Google Auth Error:", err);
-    res.status(401).json({ error: "Google authentication failed" });
+  } catch (err: any) {
+    console.error("Google Auth Error Detail:", err?.message || err);
+    import("fs").then(fs => fs.writeFileSync("google_error.log", err?.message || String(err)));
+    res.status(401).json({ error: "Google authentication failed", details: err?.message });
   }
 });
 
-router.get("/me", authRequired, async (req: AuthedRequest, res) => {
-  const user = await prisma.user.findUnique({
-    where: { id: req.user!.id },
-    select: { 
-      id: true, 
-      email: true, 
-      role: true, 
-      blocked: true, 
-      pointBalance: true, 
-      createdAt: true,
-      nickname: true,
-      avatarUrl: true,
-      birthYear: true,
-      birthDate: true,
-      gender: true,
-      region: true,
-      country: true,
-      walletAddress: true,
-    },
-  });
-  if (!user) {
-    res.status(404).json({ error: "Not found" });
-    return;
-  }
-  res.json(user);
-});
 
 export default router;

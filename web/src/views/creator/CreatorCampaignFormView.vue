@@ -81,7 +81,7 @@ async function save() {
 <template>
   <div>
     <h1 class="page-title">{{ $t('ops.createTitle') }}</h1>
-    <p style="color: var(--muted); margin: 0 0 1rem; max-width: 40rem">
+    <p style="color: var(--muted); margin: 0 auto 1.5rem; max-width: 1000px">
       {{ $t('ops.createLead') }}
     </p>
 
@@ -180,7 +180,8 @@ async function save() {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-width: 40rem;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 .section-title {
   font-size: 1.05rem;

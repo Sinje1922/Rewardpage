@@ -48,7 +48,10 @@ const typeIcons: Record<string, string> = {
   CODE: '🔑',
   QUIZ: '❓',
   CHECKIN: '📍',
-  FILE_UPLOAD: '📁'
+  FILE_UPLOAD: '📁',
+  TELEGRAM_JOIN: '✈️',
+  DISCORD_JOIN: '👾',
+  YOUTUBE_WATCH: '📺'
 }
 
 function parseCfg(raw: string) {
@@ -66,6 +69,10 @@ const dwellInput = ref<Record<string, number>>({})
 const quizPick = ref<Record<string, number>>({})
 const surveyAnswers = ref<Record<string, Record<string, string | number>>>({})
 const checkConfirm = ref<Record<string, boolean>>({})
+const ytRemaining = ref<Record<string, number>>({})
+const ytTimer = ref<Record<string, any>>({})
+const telegramHandle = ref<Record<string, string>>({})
+const discordConnected = ref<Record<string, boolean>>({})
 
 const showCopyMsg = ref(false)
 
@@ -97,6 +104,20 @@ onMounted(async () => {
   try {
     const { data } = await api.get<CampaignDetail>(`/campaigns/${id}`)
     camp.value = data
+    
+    // Auto-fill handles from profile
+    if (auth.user) {
+      data.missions.forEach(m => {
+        if (m.type === 'TELEGRAM_JOIN' && auth.user?.telegramHandle) {
+          telegramHandle.value[m.id] = auth.user.telegramHandle
+        }
+        if (m.type === 'DISCORD_JOIN' && auth.user?.discordId) {
+          // If we have a discordId in profile, we might consider it connected
+          // Or just fill the input if there was one
+        }
+      })
+    }
+
     if (['DRAWN', 'CLOSED', 'ACTIVE'].includes(data.status)) {
       try {
         const w = await api.get<WinnerRow[]>(`/campaigns/${id}/winners`)
@@ -106,10 +127,93 @@ onMounted(async () => {
       }
     }
     await loadParticipants()
+    initYoutubePlayers()
   } catch {
     err.value = t('common.errorLoad')
   }
 })
+
+function initYoutubePlayers() {
+  if (!camp.value) return
+  const youtubeMissions = camp.value.missions.filter(m => m.type === 'YOUTUBE_WATCH')
+  if (youtubeMissions.length === 0) return
+
+  if (!(window as any).YT) {
+    const tag = document.createElement('script')
+    tag.src = "https://www.youtube.com/iframe_api"
+    const firstScriptTag = document.getElementsByTagName('script')[0]
+    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
+  }
+
+  (window as any).onYouTubeIframeAPIReady = () => {
+    youtubeMissions.forEach(m => {
+      const cfg = parseCfg(m.config)
+      const targetSec = Number(cfg.targetSeconds || 10)
+      ytRemaining.value[m.id] = targetSec
+      
+      new (window as any).YT.Player(`yt-player-${m.id}`, {
+        height: '240',
+        width: '100%',
+        videoId: cfg.videoId,
+        events: {
+          onStateChange: (event: any) => {
+            if (event.data === (window as any).YT.PlayerState.PLAYING) {
+              startTimer(m.id)
+            } else {
+              stopTimer(m.id)
+            }
+          }
+        }
+      })
+    })
+  }
+}
+
+function startTimer(mid: string) {
+  if (ytTimer.value[mid]) return
+  ytTimer.value[mid] = setInterval(() => {
+    if (ytRemaining.value[mid] > 0) {
+      ytRemaining.value[mid]--
+    } else {
+      stopTimer(mid)
+    }
+  }, 1000)
+}
+
+function stopTimer(mid: string) {
+  if (ytTimer.value[mid]) {
+    clearInterval(ytTimer.value[mid])
+    ytTimer.value[mid] = null
+  }
+}
+
+async function verifyTelegram(m: Mission) {
+  err.value = ''
+  msg.value = ''
+  const handle = telegramHandle.value[m.id]
+  if (!handle) {
+    err.value = '텔레그램 핸들을 입력해 주세요.'
+    return
+  }
+  try {
+    await api.post('/verify/telegram', { missionId: m.id, handle })
+    msg.value = '참여가 확인되었습니다!'
+  } catch (e: any) {
+    err.value = e.response?.data?.error || '참여 확인에 실패했습니다.'
+  }
+}
+
+async function verifyDiscord(m: Mission) {
+  err.value = ''
+  msg.value = ''
+  try {
+    await api.post('/verify/discord', { missionId: m.id })
+    discordConnected.value[m.id] = true
+    msg.value = '디스코드 연동이 확인되었습니다!'
+  } catch (e: any) {
+    err.value = e.response?.data?.error || '디스코드 확인 실패'
+  }
+}
 
 async function logVisit(m: Mission) {
   if (!auth.token) {
@@ -156,6 +260,16 @@ async function submitMission(m: Mission) {
     payload = {}
   } else if (m.type === 'FILE_UPLOAD') {
     payload = { fileUrl: codeInput.value[m.id] ?? '' }
+  } else if (m.type === 'TELEGRAM_JOIN') {
+    payload = { handle: telegramHandle.value[m.id] || '' }
+  } else if (m.type === 'DISCORD_JOIN') {
+    payload = { status: 'joined' }
+  } else if (m.type === 'YOUTUBE_WATCH') {
+    if (ytRemaining.value[m.id] > 0) {
+      err.value = '영상을 더 시청해야 합니다.'
+      return
+    }
+    payload = { watched: true }
   }
   try {
     await api.post(`/missions/${m.id}/submit`, { payload })
@@ -309,6 +423,39 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
             <div class="field">
               <label>{{ $t('detail.fileUrl') }}</label>
               <input v-model="codeInput[m.id]" type="url" placeholder="https://..." />
+            </div>
+          </template>
+
+          <template v-else-if="m.type === 'TELEGRAM_JOIN'">
+            <button type="button" class="btn outline full-width mb-2" @click="logVisit(m)">
+              ✈️ 텔레그램 채널 입장하기
+            </button>
+            <div class="field">
+              <label>본인의 텔레그램 핸들 (@username)</label>
+              <div style="display: flex; gap: 0.5rem">
+                <input v-model="telegramHandle[m.id]" type="text" placeholder="@nickname" style="flex: 1" />
+                <button type="button" class="btn btn-sm" @click="verifyTelegram(m)">확인</button>
+              </div>
+            </div>
+          </template>
+
+          <template v-else-if="m.type === 'DISCORD_JOIN'">
+            <button type="button" class="btn outline full-width mb-2" @click="logVisit(m)">
+              👾 디스코드 서버 입장하기
+            </button>
+            <div v-if="!discordConnected[m.id]" class="center mt-2">
+              <button type="button" class="btn btn-sm" @click="verifyDiscord(m)">연동 확인</button>
+            </div>
+            <p v-else class="center mt-2 success-msg">✅ 디스코드 연동됨</p>
+          </template>
+
+          <template v-else-if="m.type === 'YOUTUBE_WATCH'">
+            <div :id="'yt-player-' + m.id" class="yt-container mb-3"></div>
+            <div v-if="ytRemaining[m.id] > 0" class="timer-box">
+              시청 중... ({{ ytRemaining[m.id] }}초 남음)
+            </div>
+            <div v-else class="timer-box success">
+              ✅ 시청 완료! 미션을 제출해 주세요.
             </div>
           </template>
 
@@ -663,7 +810,31 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
 
 .full-width { width: 100%; }
 .mt-3 { margin-top: 1rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 1rem; }
 .center { text-align: center; }
+
+.yt-container {
+  aspect-ratio: 16/9;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.timer-box {
+  padding: 0.75rem;
+  background: var(--bg-deep);
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-top: 0.75rem;
+}
+
+.timer-box.success {
+  background: var(--mint-soft);
+  color: var(--mint);
+}
 
 @media (max-width: 768px) {
   .meta-row { flex-direction: column; align-items: stretch; }

@@ -17,6 +17,10 @@ export type User = {
   region?: string;
   country?: string;
   walletAddress?: string;
+  telegramHandle?: string;
+  discordId?: string;
+  twitterHandle?: string;
+  instagramHandle?: string;
 }
 
 export const useAuthStore = defineStore('auth', () => {

@@ -21,6 +21,13 @@ export type MissionRowState = {
   quizOptions: string[]
   quizCorrectIndex: number
   fileNote: string
+  telegramChannel: string
+  discordInvite: string
+  youtubeVideoId: string
+  youtubeTargetSeconds: number
+  youtubeChannelId: string
+  instagramHandle: string
+  instagramPostId: string
 }
 
 export type MissionPayload = {
@@ -48,6 +55,13 @@ export function emptyMissionRow(order = 0): MissionRowState {
     quizOptions: ['', ''],
     quizCorrectIndex: 0,
     fileNote: '',
+    telegramChannel: '',
+    discordInvite: '',
+    youtubeVideoId: '',
+    youtubeTargetSeconds: 10,
+    youtubeChannelId: '',
+    instagramHandle: '',
+    instagramPostId: '',
   }
 }
 
@@ -84,6 +98,24 @@ function buildConfig(row: MissionRowState): Record<string, unknown> {
     }
     case 'FILE_UPLOAD':
       return { fileNote: row.fileNote }
+    case 'INSTAGRAM_FOLLOW':
+      return { instagramHandle: row.instagramHandle, linkUrl: row.linkUrl }
+    case 'INSTAGRAM_LIKE':
+      return { postId: row.instagramPostId, linkUrl: row.linkUrl }
+    case 'TELEGRAM_JOIN':
+    case 'TELEGRAM_CHANNEL':
+    case 'TELEGRAM_GROUP':
+      return { telegramChannel: row.telegramChannel, linkUrl: row.linkUrl }
+    case 'DISCORD_JOIN':
+      return { discordInvite: row.discordInvite, linkUrl: row.linkUrl }
+    case 'YOUTUBE_WATCH':
+      return { videoId: row.youtubeVideoId, targetSeconds: row.youtubeTargetSeconds }
+    case 'YOUTUBE_SUBSCRIBE':
+      return { channelId: row.youtubeChannelId, linkUrl: row.linkUrl }
+    case 'YOUTUBE_LIKE':
+      return { videoId: row.youtubeVideoId, linkUrl: row.linkUrl }
+    case 'INSTAGRAM_FOLLOW':
+      return { instagramHandle: row.instagramHandle, linkUrl: row.linkUrl }
     case 'CHECKIN':
     default:
       return {}
@@ -130,6 +162,13 @@ export function apiMissionToRow(m: {
     quizOptions: opts.length >= 2 ? opts : [...opts, '', ''].slice(0, Math.max(2, opts.length)),
     quizCorrectIndex: Number(cfg.correctIndex ?? 0),
     fileNote: String(cfg.fileNote ?? ''),
+    telegramChannel: String(cfg.telegramChannel ?? ''),
+    discordInvite: String(cfg.discordInvite ?? ''),
+    youtubeVideoId: String(cfg.videoId ?? ''),
+    youtubeTargetSeconds: Number(cfg.targetSeconds ?? 10),
+    youtubeChannelId: String(cfg.channelId ?? ''),
+    instagramHandle: String(cfg.instagramHandle ?? ''),
+    instagramPostId: String(cfg.postId ?? ''),
   }
 }
 

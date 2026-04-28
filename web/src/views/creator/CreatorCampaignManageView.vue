@@ -96,6 +96,11 @@ const cfgQuizQuestion = ref('')
 const cfgQuizOptions = ref(['', ''])
 const cfgQuizCorrect = ref(0)
 const cfgFileNote = ref('')
+const cfgYtVideoId = ref('')
+const cfgYtTargetSec = ref(10)
+const cfgTgChannel = ref('')
+const cfgDiscordInvite = ref('')
+const cfgSnsLink = ref('')
 
 function addQuizOption() {
   cfgQuizOptions.value.push('')
@@ -240,6 +245,12 @@ async function addMission() {
     }
   } else if (mType.value === 'FILE_UPLOAD') {
     cfg = { fileNote: cfgFileNote.value }
+  } else if (mType.value === 'TELEGRAM_JOIN') {
+    cfg = { telegramChannel: cfgTgChannel.value, linkUrl: cfgSnsLink.value }
+  } else if (mType.value === 'DISCORD_JOIN') {
+    cfg = { discordInvite: cfgDiscordInvite.value, linkUrl: cfgSnsLink.value }
+  } else if (mType.value === 'YOUTUBE_WATCH') {
+    cfg = { videoId: cfgYtVideoId.value, targetSeconds: cfgYtTargetSec.value }
   }
 
   try {
@@ -259,7 +270,13 @@ async function addMission() {
     cfgQuizQuestion.value = ''
     cfgQuizOptions.value = ['', '']
     cfgQuizCorrect.value = 0
+    cfgQuizCorrect.value = 0
     cfgFileNote.value = ''
+    cfgYtVideoId.value = ''
+    cfgYtTargetSec.value = 10
+    cfgTgChannel.value = ''
+    cfgDiscordInvite.value = ''
+    cfgSnsLink.value = ''
     await reload()
   } catch {
     err.value = t('ops.missionAddFail') || 'Mission Add Fail'
@@ -393,6 +410,25 @@ async function exportToExcel() {
     err.value = '엑셀 추출 중 오류가 발생했습니다.'
   }
 }
+
+async function downloadCsv() {
+  if (!camp.value) return
+  err.value = ''
+  try {
+    const res = await api.get(`/campaigns/${camp.value.id}/export`, {
+      responseType: 'blob'
+    })
+    const url = window.URL.createObjectURL(new Blob([res.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `campaign_${camp.value.id}_data.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch {
+    alert('데이터 추출에 실패했습니다.')
+  }
+}
 </script>
 
 <template>
@@ -409,9 +445,14 @@ async function exportToExcel() {
     
     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem">
       <h1 class="page-title" style="margin-bottom: 0">{{ camp.title }}</h1>
-      <button v-if="!isDraftLike" type="button" class="btn primary" @click="exportToExcel">
-        📊 {{ $t('ops.exportExcel') || '데이터 추출 (Excel)' }}
-      </button>
+      <div style="display: flex; gap: 0.5rem">
+        <button v-if="!isDraftLike" type="button" class="btn outline" @click="downloadCsv">
+          📥 CSV
+        </button>
+        <button v-if="!isDraftLike" type="button" class="btn primary" @click="exportToExcel">
+          📊 {{ $t('ops.exportExcel') || '데이터 추출 (Excel)' }}
+        </button>
+      </div>
     </div>
     <p style="color: var(--muted); margin-bottom: 0.75rem">
       {{ $t('ops.statusLabel') || 'Status' }} <strong>{{ camp.status }}</strong> · {{ $t('ops.lotteryMode') }} <strong>{{ camp.lotteryMode }}</strong> · {{ $t('ops.winnerCount') }} <strong>{{ camp.winnerCount }}</strong>{{ $t('common.person') || '名' }}
@@ -536,6 +577,9 @@ async function exportToExcel() {
           <option value="QUIZ">QUIZ</option>
           <option value="CHECKIN">CHECKIN</option>
           <option value="FILE_UPLOAD">FILE_UPLOAD</option>
+          <option value="TELEGRAM_JOIN">TELEGRAM_JOIN</option>
+          <option value="DISCORD_JOIN">DISCORD_JOIN</option>
+          <option value="YOUTUBE_WATCH">YOUTUBE_WATCH</option>
         </select>
       </div>
       <div class="field">
@@ -606,6 +650,39 @@ async function exportToExcel() {
           <div class="field">
             <label>{{ $t('ops.fileNote') || 'Upload Note' }}</label>
             <input v-model="cfgFileNote" type="text" placeholder="e.g. Upload screenshot" />
+          </div>
+        </template>
+
+        <template v-else-if="mType === 'TELEGRAM_JOIN'">
+          <div class="field">
+            <label>채널/그룹 초대 링크 (t.me/...)</label>
+            <input v-model="cfgSnsLink" type="url" placeholder="https://t.me/..." />
+          </div>
+          <div class="field">
+            <label>채널 ID (@username)</label>
+            <input v-model="cfgTgChannel" type="text" placeholder="@your_channel" />
+          </div>
+        </template>
+
+        <template v-else-if="mType === 'DISCORD_JOIN'">
+          <div class="field">
+            <label>서버 초대 링크 (discord.gg/...)</label>
+            <input v-model="cfgSnsLink" type="url" placeholder="https://discord.gg/..." />
+          </div>
+          <div class="field">
+            <label>서버 ID (Guild ID)</label>
+            <input v-model="cfgDiscordInvite" type="text" placeholder="123456789..." />
+          </div>
+        </template>
+
+        <template v-else-if="mType === 'YOUTUBE_WATCH'">
+          <div class="field">
+            <label>유튜브 영상 ID</label>
+            <input v-model="cfgYtVideoId" type="text" placeholder="dQw4w9WgXcQ" />
+          </div>
+          <div class="field">
+            <label>목표 시청 시간 (초)</label>
+            <input v-model.number="cfgYtTargetSec" type="number" min="1" />
           </div>
         </template>
 

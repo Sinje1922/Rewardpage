@@ -33,6 +33,10 @@ const gender = ref('')
 const country = ref('')
 const nickname = ref('')
 const avatarUrl = ref('')
+const telegramHandle = ref('')
+const discordHandle = ref('')
+const youtubeHandle = ref('')
+const instagramHandle = ref('')
 const loading = ref(true)
 const saving = ref(false)
 const uploading = ref(false)
@@ -64,6 +68,10 @@ async function loadAllData() {
     avatarUrl.value = user.avatarUrl || ''
     gender.value = user.gender || ''
     country.value = user.country || ''
+    telegramHandle.value = user.telegramHandle || ''
+    discordHandle.value = user.discordHandle || ''
+    youtubeHandle.value = user.youtubeHandle || ''
+    instagramHandle.value = user.instagramHandle || ''
 
     if (user.birthDate) {
       birthDate.value = new Date(user.birthDate).toISOString().split('T')[0]
@@ -124,7 +132,11 @@ async function saveProfile() {
       nickname: nickname.value,
       avatarUrl: avatarUrl.value,
       gender: gender.value || null,
-      country: country.value || null
+      country: country.value || null,
+      telegramHandle: telegramHandle.value || null,
+      discordHandle: discordHandle.value || null,
+      youtubeHandle: youtubeHandle.value || null,
+      instagramHandle: instagramHandle.value || null
     })
     
     if(auth.user) {
@@ -134,6 +146,10 @@ async function saveProfile() {
         auth.user.avatarUrl = res.data.avatarUrl
         auth.user.gender = res.data.gender
         auth.user.country = res.data.country
+        auth.user.telegramHandle = res.data.telegramHandle
+        auth.user.discordHandle = res.data.discordHandle
+        auth.user.youtubeHandle = res.data.youtubeHandle
+        auth.user.instagramHandle = res.data.instagramHandle
     }
 
     message.value = t('mypage.saveSuccess')
@@ -159,6 +175,81 @@ async function handleWithdrawal() {
     alert(t('common.errorLoad'))
   }
 }
+
+function linkDiscord() {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
+  window.location.href = `${apiUrl}/oauth/discord/login?token=${auth.token}`
+}
+
+function initTelegramWidget() {
+  const container = document.getElementById('telegram-widget-container')
+  if (!container) return
+  container.innerHTML = ''
+  
+  const script = document.createElement('script')
+  script.async = true
+  script.src = "https://telegram.org/js/telegram-widget.js?22"
+  script.setAttribute('data-telegram-login', 'PickQ_bot') // 사용자 봇 유저네임 적용
+  script.setAttribute('data-size', 'medium')
+  script.setAttribute('data-onauth', 'onTelegramAuth(user)')
+  script.setAttribute('data-request-access', 'write')
+  
+  container.appendChild(script)
+}
+
+// 텔레그램 인증 콜백
+;(window as any).onTelegramAuth = async (user: any) => {
+  try {
+    const { data } = await api.post('/oauth/telegram/verify', user)
+    telegramHandle.value = data.handle
+    if (auth.user) auth.user.telegramHandle = data.handle
+    alert("텔레그램 연동이 완료되었습니다.")
+  } catch (err: any) {
+    alert(err.response?.data?.error || "텔레그램 인증 실패")
+  }
+}
+
+function linkYouTube() {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
+  // 유튜브 전용 OAuth 인증 (구글 계정 사용)
+  window.location.href = `${apiUrl}/oauth/youtube/login?token=${auth.token}`
+}
+
+async function unlinkSNS(type: 'telegram' | 'discord' | 'twitter' | 'instagram') {
+  if (!confirm(`${type} 연동을 해제하시겠습니까?`)) return
+  
+  try {
+    const fieldMap = {
+      telegram: 'telegramHandle',
+      discord: 'discordHandle',
+      youtube: 'youtubeHandle',
+      instagram: 'instagramHandle'
+    }
+    
+    await api.patch('/me/profile', { [fieldMap[type]]: null })
+    
+    // 로컬 상태 업데이트
+    if (type === 'telegram') telegramHandle.value = ''
+    if (type === 'discord') discordHandle.value = ''
+    if (type === 'youtube') youtubeHandle.value = ''
+    if (type === 'instagram') instagramHandle.value = ''
+    
+    if (auth.user) {
+      (auth.user as any)[fieldMap[type]] = null
+    }
+    
+    alert("연동이 해제되었습니다.")
+  } catch (err) {
+    console.error('Unlink failed:', err)
+    alert("연동 해제에 실패했습니다.")
+  }
+}
+
+onMounted(() => {
+  if (activeTab.value === 'profile') {
+    setTimeout(initTelegramWidget, 100)
+  }
+})
 </script>
 
 <template>
@@ -283,6 +374,71 @@ async function handleWithdrawal() {
                     </select>
                   </div>
                 </div>
+
+                <!-- SNS Linking Section (OAuth Style) -->
+                <div class="sns-linking-section">
+                  <h3 class="sub-section-title">SNS 계정 연동</h3>
+                  <p class="section-hint">공식 인증을 통해 계정을 연동해 주세요.</p>
+                  
+                  <div class="sns-auth-grid">
+                    <!-- Telegram -->
+                    <div class="sns-auth-card" :class="{ linked: !!telegramHandle }">
+                      <div class="sns-info">
+                        <span class="sns-icon telegram">✈️</span>
+                        <div class="sns-text">
+                          <span class="sns-name">Telegram</span>
+                          <span class="sns-status">{{ telegramHandle || '미연동' }}</span>
+                        </div>
+                      </div>
+                      <div class="auth-actions">
+                        <button v-if="telegramHandle" type="button" class="auth-action-btn unlink" @click="unlinkSNS('telegram')">
+                          해제
+                        </button>
+                        <div id="telegram-widget-container" class="auth-btn-wrapper"></div>
+                      </div>
+                    </div>
+
+                    <!-- Discord -->
+                    <div class="sns-auth-card" :class="{ linked: !!discordHandle }">
+                      <div class="sns-info">
+                        <span class="sns-icon discord">💬</span>
+                        <div class="sns-text">
+                          <span class="sns-name">Discord</span>
+                          <span class="sns-status">{{ discordHandle || '미연동' }}</span>
+                        </div>
+                      </div>
+                      <div class="auth-actions">
+                        <button v-if="discordHandle" type="button" class="auth-action-btn unlink" @click="unlinkSNS('discord')">
+                          해제
+                        </button>
+                        <button type="button" class="auth-action-btn discord" @click="linkDiscord">
+                          {{ discordHandle ? '재연동' : '인증하기' }}
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- YouTube -->
+                    <div class="sns-auth-card" :class="{ linked: !!youtubeHandle }">
+                      <div class="sns-info">
+                        <span class="sns-icon youtube">📺</span>
+                        <div class="sns-text">
+                          <span class="sns-name">YouTube</span>
+                          <span class="sns-status">{{ youtubeHandle || '미연동' }}</span>
+                        </div>
+                      </div>
+                      <div class="auth-actions">
+                        <button v-if="youtubeHandle" type="button" class="auth-action-btn unlink" @click="unlinkSNS('youtube')">
+                          해제
+                        </button>
+                        <button type="button" class="auth-action-btn youtube" @click="linkYouTube">
+                          {{ youtubeHandle ? '재연동' : '인증하기' }}
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
               </div>
 
               <div v-if="message" :class="['message-toast', { error: isError }]">
@@ -675,6 +831,135 @@ async function handleWithdrawal() {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.25rem;
+}
+
+.sns-linking-section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px dashed var(--border);
+}
+
+.sub-section-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-h);
+  margin-bottom: 0.5rem;
+}
+
+.section-hint {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+}
+
+.mt-4 { margin-top: 1rem; }
+
+/* SNS Auth Grid */
+.sns-auth-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.sns-auth-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  transition: all 0.3s ease;
+}
+
+.sns-auth-card.linked {
+  background: white;
+  border-color: var(--accent-soft);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.sns-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sns-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.sns-icon.telegram { color: #0088cc; }
+.sns-icon.discord { color: #5865F2; }
+.sns-icon.youtube { color: #FF0000; }
+.sns-icon.instagram { color: #E4405F; }
+
+.sns-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.sns-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-h);
+}
+
+.sns-status {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.auth-action-btn {
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.auth-action-btn.discord { background: #5865F2; color: white; }
+.auth-action-btn.youtube { background: #FF0000; color: white; }
+.auth-action-btn.instagram { background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); color: white; }
+
+.auth-action-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+.auth-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.auth-action-btn.unlink {
+  background: var(--bg-deep);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.auth-action-btn.unlink:hover {
+  background: #fee2e2;
+  color: #ef4444;
+  border-color: #fecaca;
+}
+
+.auth-btn-wrapper {
+  min-width: 100px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 /* Sidebar Nav */

@@ -16,6 +16,10 @@ const profileSchema = z.object({
   gender: z.string().optional().nullable(),
   region: z.string().optional().nullable(),
   country: z.string().optional().nullable(),
+  telegramHandle: z.string().max(100).optional().nullable(),
+  discordHandle: z.string().max(100).optional().nullable(),
+  youtubeHandle: z.string().max(100).optional().nullable(),
+  instagramHandle: z.string().max(100).optional().nullable(),
 });
 
 router.get("/", async (req: AuthedRequest, res) => {
@@ -33,7 +37,12 @@ router.get("/", async (req: AuthedRequest, res) => {
       gender: true, 
       region: true, 
       country: true,
-      walletAddress: true 
+      walletAddress: true,
+      telegramHandle: true,
+      discordId: true,
+      discordHandle: true,
+      youtubeHandle: true,
+      instagramHandle: true
     },
   });
   res.json(user);
@@ -54,7 +63,11 @@ router.patch("/profile", async (req: AuthedRequest, res) => {
   const user = await prisma.user.update({
     where: { id: req.user!.id },
     data,
-    select: { id: true, email: true, role: true, birthYear: true, birthDate: true, walletAddress: true, pointBalance: true, nickname: true, avatarUrl: true, gender: true, region: true, country: true },
+    select: { 
+      id: true, email: true, role: true, birthYear: true, birthDate: true, walletAddress: true, pointBalance: true, 
+      nickname: true, avatarUrl: true, gender: true, region: true, country: true,
+      telegramHandle: true, discordId: true, discordHandle: true, youtubeHandle: true, instagramHandle: true
+    },
   });
 
   res.json(user);

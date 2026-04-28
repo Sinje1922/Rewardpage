@@ -41,14 +41,6 @@ router.patch("/users/:id/block", async (req, res) => {
   res.json(u);
 });
 
-router.post("/campaigns/:id/approve", async (req, res) => {
-  const cid = String(req.params.id);
-  const c = await prisma.campaign.update({
-    where: { id: cid },
-    data: { status: "ACTIVE" },
-  });
-  res.json(c);
-});
 
 router.get("/users", async (req, res) => {
   const query = req.query.q ? String(req.query.q).trim() : "";
@@ -76,7 +68,7 @@ router.get("/overview", async (_req, res) => {
 
 router.get("/dashboard", async (_req, res) => {
   try {
-    const [stats, countries, ages, genders, regions, growth] = await Promise.all([
+    const [stats, countries, ages, genders, regions, growth, topCampaigns, topUsers, missionTypes] = await Promise.all([
       prisma.$queryRaw<any[]>`
         SELECT 
           (SELECT COUNT(*) FROM User) as user_count,
@@ -99,6 +91,27 @@ router.get("/dashboard", async (_req, res) => {
         ORDER BY month ASC 
         LIMIT 12
       `,
+      prisma.$queryRaw<any[]>`
+        SELECT 
+          c.id, 
+          c.title, 
+          COUNT(s.id) as count
+        FROM Campaign c
+        LEFT JOIN Mission m ON c.id = m.campaignId
+        LEFT JOIN Submission s ON m.id = s.missionId
+        GROUP BY c.id, c.title
+        ORDER BY count DESC
+        LIMIT 5
+      `,
+      prisma.user.findMany({
+        take: 5,
+        orderBy: { pointBalance: 'desc' },
+        select: { id: true, email: true, pointBalance: true }
+      }),
+      prisma.mission.groupBy({
+        by: ['type'],
+        _count: true
+      })
     ]);
 
     const s = stats[0] || {};
@@ -113,61 +126,24 @@ router.get("/dashboard", async (_req, res) => {
         totalPoints,
         avgParticipants: Number(s.total_camp_count) > 0 
           ? (Number(s.sub_count) / Number(s.total_camp_count)) 
-          : 0
+          : 0,
+        distributedPoints: Number(s.winner_points_sum || 0),
+        heldPoints: Number(s.user_points_sum || 0)
       },
       countries: (countries as any[]).map(c => ({ name: c.country || 'Unknown', count: Number(c._count) })),
       ages: (ages as any[]).map(a => ({ year: a.birthYear || 0, count: Number(a._count) })),
       genders: (genders as any[]).map(g => ({ name: g.gender || 'Unknown', count: Number(g._count) })),
       regions: (regions as any[]).map(r => ({ name: r.region || 'Unknown', count: Number(r._count) })),
-      history: (growth || []).map(g => ({ month: g.month, count: Number(g.count) }))
+      history: (growth || []).map(g => ({ month: g.month, count: Number(g.count) })),
+      topCampaigns: (topCampaigns || []).map((c: any) => ({ id: c.id, title: c.title, count: Number(c.count) })),
+      topUsers: (topUsers || []).map(u => ({ id: u.id, email: u.email, balance: u.pointBalance })),
+      missionTypes: missionTypes.map(m => ({ type: m.type, count: m._count }))
     };
 
     res.json(result);
   } catch (err) {
     console.error("Dashboard Stats Error:", err);
     res.status(500).json({ error: "Failed to load dashboard stats" });
-  }
-});
-
-router.get("/campaigns/:id/export", async (req, res) => {
-  const cid = String(req.params.id);
-  
-  try {
-    const list = await prisma.submission.findMany({
-      where: { mission: { campaignId: cid } },
-      include: {
-        user: true,
-        mission: true
-      },
-      orderBy: { createdAt: "desc" }
-    });
-
-    // CSV Header
-    let csv = "SubmissionID,CreatedAt,UserEmail,UserNickname,Gender,Age,Region,MissionType,MissionTitle,Payload\n";
-    
-    for (const s of list) {
-      const age = s.user.birthYear ? (new Date().getFullYear() - s.user.birthYear) : "Unknown";
-      const row = [
-        s.id,
-        s.createdAt.toISOString(),
-        s.user.email,
-        `"${(s.user.nickname || "").replace(/"/g, '""')}"`,
-        s.user.gender || "Unknown",
-        age,
-        s.user.region || "Unknown",
-        s.mission.type,
-        `"${s.mission.title.replace(/"/g, '""')}"`,
-        `"${s.payload.replace(/"/g, '""')}"`
-      ];
-      csv += row.join(",") + "\n";
-    }
-
-    res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader("Content-Disposition", `attachment; filename="campaign_${cid}_data.csv"`);
-    res.status(200).send("\uFEFF" + csv); // BOM for Excel UTF-8 support
-  } catch (err) {
-    console.error("Export Error:", err);
-    res.status(500).json({ error: "Failed to export data" });
   }
 });
 
