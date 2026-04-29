@@ -69,7 +69,7 @@ router.get("/discord/callback", async (req, res) => {
             <p>잠시 후 마이페이지로 이동합니다...</p>
             <script>
               alert("디스코드 연동이 완료되었습니다.");
-              window.location.href = "${process.env.FRONTEND_URL}/mypage?t=" + Date.now();
+              window.location.href = "${process.env.FRONTEND_URL}/my-page?t=" + Date.now();
             </script>
           </div>
         </body>
@@ -126,7 +126,7 @@ router.post("/telegram/verify", authRequired, async (req: AuthedRequest, res) =>
 // 유튜브 OAuth 로그인 (구글 사용)
 router.get("/youtube/login", authRequired, (req, res) => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
-  const redirectUri = encodeURIComponent(`${process.env.FRONTEND_URL.replace(":5173", ":4000")}/api/oauth/youtube/callback`);
+  const redirectUri = encodeURIComponent(`https://api.pickku.com/api/oauth/youtube/callback`);
   const scope = encodeURIComponent("https://www.googleapis.com/auth/youtube.readonly profile email");
   const state = req.user!.id;
   
@@ -144,7 +144,7 @@ router.get("/youtube/callback", async (req, res) => {
       code,
       client_id: process.env.GOOGLE_CLIENT_ID,
       client_secret: process.env.GOOGLE_CLIENT_SECRET,
-      redirect_uri: `${process.env.FRONTEND_URL.replace(":5173", ":4000")}/api/oauth/youtube/callback`,
+      redirect_uri: `https://api.pickku.com/api/oauth/youtube/callback`,
       grant_type: "authorization_code",
     });
 
@@ -171,7 +171,7 @@ router.get("/youtube/callback", async (req, res) => {
             <p>잠시 후 마이페이지로 이동합니다...</p>
             <script>
               alert("유튜브 채널(${channelName}) 연동이 완료되었습니다.");
-              window.location.href = "${process.env.FRONTEND_URL}/mypage?t=" + Date.now();
+              window.location.href = "${process.env.FRONTEND_URL}/my-page?t=" + Date.now();
             </script>
           </div>
         </body>

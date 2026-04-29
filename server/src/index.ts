@@ -31,10 +31,8 @@ const corsOrigin = rawCorsOrigin
       "http://localhost:5173",
       "http://127.0.0.1:5173",
       "http://localhost:3000",
-      "https://authors-coal-beauty-joined.trycloudflare.com",
-      "https://foam-insulation-formats-karma.trycloudflare.com",
-      "https://rewardpage-5nmq.vercel.app",
-      "https://pick-q.vercel.app"
+      "https://app.pickku.com",
+      "https://pickku.com"
     ];
 
 app.use(cors({
