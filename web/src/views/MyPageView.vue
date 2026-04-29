@@ -215,16 +215,15 @@ function linkYouTube() {
   window.location.href = `${apiUrl}/oauth/youtube/login?token=${auth.token}`
 }
 
-async function unlinkSNS(type: 'telegram' | 'discord' | 'twitter' | 'instagram') {
+async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
   if (!confirm(`${type} 연동을 해제하시겠습니까?`)) return
   
   try {
     const fieldMap = {
       telegram: 'telegramHandle',
       discord: 'discordHandle',
-      youtube: 'youtubeHandle',
-      instagram: 'instagramHandle'
-    }
+      youtube: 'youtubeHandle'
+    } as const
     
     await api.patch('/me/profile', { [fieldMap[type]]: null })
     
@@ -232,7 +231,6 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'twitter' | 'instagram')
     if (type === 'telegram') telegramHandle.value = ''
     if (type === 'discord') discordHandle.value = ''
     if (type === 'youtube') youtubeHandle.value = ''
-    if (type === 'instagram') instagramHandle.value = ''
     
     if (auth.user) {
       (auth.user as any)[fieldMap[type]] = null

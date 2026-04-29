@@ -19,6 +19,8 @@ export type User = {
   walletAddress?: string;
   telegramHandle?: string;
   discordId?: string;
+  discordHandle?: string;
+  youtubeHandle?: string;
   twitterHandle?: string;
   instagramHandle?: string;
 }

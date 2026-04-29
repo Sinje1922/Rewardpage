@@ -345,12 +345,7 @@ function generateLinePath(history: { count: number }[]) {
   }).join(" ")
 }
 
-function getFlag(country: string) {
-  const flags: Record<string, string> = {
-    'KR': '🇰🇷', 'US': '🇺🇸', 'JP': '🇯🇵', 'CN': '🇨🇳', 'BR': '🇧🇷', 'Unknown': '🏳️'
-  }
-  return flags[country] || '🏳️'
-}
+
 </script>
 
 <style scoped>
