@@ -137,14 +137,7 @@ const banners = computed(() => [
       <p v-else class="empty">{{ $t('home.noTrending') }}</p>
     </section>
 
-    <!-- Demo Note -->
-    <div class="hero-note card note">
-      <strong>{{ $t('home.tryDemo') }}</strong>
-      <p class="demo-line">
-        {{ $t('home.demoAccounts', { user: 'user@demo.local', manager: 'manager@demo.local', admin: 'admin@demo.local' }) }}
-      </p>
-      <p class="demo-pw">{{ $t('home.demoPassword', { pw: 'demo1234' }) }}</p>
-    </div>
+
   </div>
 </template>
 
@@ -394,16 +387,7 @@ const banners = computed(() => [
   box-shadow: 0 4px 12px var(--accent-soft);
 }
 
-/* Demo Note */
-.note {
-  border: 1px dashed var(--accent-border);
-  background: var(--accent-soft);
-  padding: 2.5rem;
-  text-align: center;
-  border-radius: 2rem;
-  margin-top: 2rem;
-  opacity: 0.8;
-}
+
 
 /* Skeleton */
 .skeleton {

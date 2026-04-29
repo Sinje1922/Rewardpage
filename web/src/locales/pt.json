@@ -10,9 +10,9 @@
     "myPage": "Minha Página"
   },
   "home": {
-    "badge": "Pick Q",
-    "heroTitle": "Pick Q, Pick You",
-    "heroLead": "Participe de várias campanhas e obtenha as recompensas que deseja com os pontos que ganhar. Você pode começar agora mesmo.",
+    "badge": "pickku",
+    "heroTitle": "pickku, Pick You",
+    "heroLead": "Pick + Quest, e Pick + You. Escolha suas missões livremente e ganhe recompensas.",
     "exploreCampaigns": "Explorar Campanhas",
     "tryDemo": "Tente a Demonstração",
     "demoAccounts": "Usuário: {user} / Gerente: {manager} / Admin: {admin}",
@@ -183,8 +183,8 @@
     "submitSuccess": "Enviado com sucesso.",
     "submitFail": "Falha ao enviar.",
     "checkRequired": "Por favor, marque a caixa de confirmação.",
-    "person": " pessoa(s)",
-    "brand": "Pick Q"
+    "brand": "pickku",
+    "footerDesc": "Pick + Quest, Pick + You. Uma plataforma onde você escolhe missões e ganha recompensas."
   },
   "mypage": {
     "title": "Configurações da Conta",

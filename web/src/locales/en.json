@@ -11,9 +11,9 @@
     "myPage": "My Page"
   },
   "home": {
-    "badge": "Pick Q",
-    "heroTitle": "Pick Q, Pick You",
-    "heroLead": "Participate in various campaigns and get the rewards you want with the points you earn. You can start right now.",
+    "badge": "pickku",
+    "heroTitle": "pickku, Pick You",
+    "heroLead": "Pick + Quest, and Pick + You. Choose your missions freely and seize your chance for rewards.",
     "exploreCampaigns": "Explore Campaigns",
     "tryDemo": "Try Demo",
     "demoAccounts": "User: {user} / Mgr: {manager} / Admin: {admin}",
@@ -199,8 +199,8 @@
     "submitSuccess": "Submitted successfully.",
     "submitFail": "Failed to submit.",
     "checkRequired": "Please check the confirmation box.",
-    "person": " person(s)",
-    "brand": "Pick Q",
+    "brand": "pickku",
+    "footerDesc": "Pick + Quest, Pick + You. A platform where you choose missions and earn rewards.",
     "select": "Select",
     "toggleLight": "Switch to light mode",
     "toggleDark": "Switch to dark mode"

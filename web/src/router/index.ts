@@ -9,6 +9,9 @@ const router = createRouter({
     { path: '/register', name: 'register', component: () => import('../views/RegisterView.vue') },
     { path: '/campaigns', name: 'campaigns', component: () => import('../views/CampaignListView.vue') },
     { path: '/campaigns/:id', name: 'campaign-detail', component: () => import('../views/CampaignDetailView.vue') },
+    { path: '/faq', name: 'faq', component: () => import('../views/legal/FaqView.vue') },
+    { path: '/terms', name: 'terms', component: () => import('../views/legal/TermsView.vue') },
+    { path: '/privacy', name: 'privacy', component: () => import('../views/legal/PrivacyView.vue') },
     {
       path: '/setup',
       name: 'setup',

@@ -103,8 +103,37 @@ watch(() => route.path, () => {
       </RouterLink>
     </nav>
 
-    <footer v-if="route.path !== '/setup'" class="foot pc-only">
-      <span>{{ $t('home.badge') }} · MVP</span>
+    <footer v-if="route.path !== '/setup'" class="main-footer pc-only">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <div class="brand-row">
+            <span class="brand-mark" aria-hidden="true">✦</span>
+            <span class="brand-text">{{ $t('common.brand') }}</span>
+          </div>
+          <p class="footer-desc">{{ $t('common.footerDesc') }}</p>
+        </div>
+        <div class="footer-links">
+          <div class="link-col">
+            <h4>Platform</h4>
+            <RouterLink to="/campaigns">Campaigns</RouterLink>
+            <RouterLink to="/my-page">My Page</RouterLink>
+          </div>
+          <div class="link-col">
+            <h4>Support</h4>
+            <RouterLink to="/faq">FAQ</RouterLink>
+            <a href="mailto:support@rewardplatform.com">Contact Us</a>
+          </div>
+          <div class="link-col">
+            <h4>Legal</h4>
+            <RouterLink to="/terms">Terms of Service</RouterLink>
+            <RouterLink to="/privacy">Privacy Policy</RouterLink>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>&copy; {{ new Date().getFullYear() }} {{ $t('common.brand') }}. All rights reserved.</span>
+        <span>MVP Version</span>
+      </div>
     </footer>
 
     <DarkModeToggle />
@@ -285,6 +314,103 @@ watch(() => route.path, () => {
 /* Common Utilities */
 .pc-only { display: block; }
 .mobile-only { display: none; }
+
+/* Footer */
+.main-footer {
+  margin-top: auto;
+  padding: 4rem 2rem 2rem;
+  background: color-mix(in srgb, var(--panel) 40%, transparent);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.footer-content {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 3rem;
+  margin-bottom: 3rem;
+}
+
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 320px;
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.footer-brand .brand-mark {
+  font-size: 1.5rem;
+  color: var(--accent);
+}
+
+.footer-brand .brand-text {
+  font-size: 1.5rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--text-h), var(--accent));
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.footer-desc {
+  font-size: 0.95rem;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-top: 0.5rem;
+}
+
+.footer-links {
+  display: flex;
+  gap: 5rem;
+}
+
+.link-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.link-col h4 {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-h);
+  margin-bottom: 0.5rem;
+}
+
+.link-col a {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.link-col a:hover {
+  color: var(--accent);
+}
+
+.footer-bottom {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 600;
+}
 
 @media (max-width: 900px) {
   .pc-only { display: none; }

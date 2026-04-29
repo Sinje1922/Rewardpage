@@ -11,9 +11,9 @@
     "myPage": "마이페이지"
   },
   "home": {
-    "badge": "Pick Q",
-    "heroTitle": "Pick Q, Pick You",
-    "heroLead": "다양한 캠페인에 참여하고 얻은 포인트로 원하는 보상을 받으세요. 지금 바로 시작할 수 있습니다.",
+    "badge": "pickku",
+    "heroTitle": "pickku, Pick You",
+    "heroLead": "Pick(선택) + Quest(미션), 그리고 Pick + You(당신). 미션을 자유롭게 선택하고 보상의 주인공이 되어보세요.",
     "exploreCampaigns": "캠페인 둘러보기",
     "tryDemo": "체험용 계정",
     "demoAccounts": "유저: {user} / 매니저: {manager} / 어드민: {admin}",
@@ -220,8 +220,8 @@
     "submitSuccess": "제출되었습니다.",
     "submitFail": "제출에 실패했습니다.",
     "checkRequired": "확인에 체크해 주세요.",
-    "person": "명",
-    "brand": "Pick Q",
+    "brand": "pickku",
+    "footerDesc": "Pick + Quest, Pick + You. 미션을 선택하고 보상의 기회를 얻는 리워드 플랫폼",
     "select": "선택",
     "toggleLight": "라이트 모드로 전환",
     "toggleDark": "다크 모드로 전환"
