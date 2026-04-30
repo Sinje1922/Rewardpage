@@ -34,14 +34,6 @@ router.patch("/users/:id/block", async (req, res) => {
     });
     res.json(u);
 });
-router.post("/campaigns/:id/approve", async (req, res) => {
-    const cid = String(req.params.id);
-    const c = await prisma.campaign.update({
-        where: { id: cid },
-        data: { status: "ACTIVE" },
-    });
-    res.json(c);
-});
 router.get("/users", async (req, res) => {
     const query = req.query.q ? String(req.query.q).trim() : "";
     const users = await prisma.user.findMany({
@@ -60,14 +52,13 @@ router.get("/overview", async (_req, res) => {
         prisma.user.count(),
         prisma.campaign.count(),
         prisma.submission.count(),
-        prisma.analyticsEvent.count(),
+        prisma.analyticsevent.count(),
     ]);
     res.json({ users, campaigns, submissions, analyticsEvents: events });
 });
 router.get("/dashboard", async (_req, res) => {
     try {
-        const [stats, countries, ages, growth] = await Promise.all([
-            // 핵심 지표들을 하나의 쿼리로 통합하여 커넥션 풀 절약 (MariaDB 문법)
+        const [stats, countries, ages, genders, regions, growth, topCampaigns, topUsers, missionTypes] = await Promise.all([
             prisma.$queryRaw `
         SELECT 
           (SELECT COUNT(*) FROM User) as user_count,
@@ -79,6 +70,8 @@ router.get("/dashboard", async (_req, res) => {
       `,
             prisma.user.groupBy({ by: ["country"], _count: true }),
             prisma.user.groupBy({ by: ["birthYear"], _count: true }),
+            prisma.user.groupBy({ by: ["gender"], _count: true }),
+            prisma.user.groupBy({ by: ["region"], _count: true }),
             prisma.$queryRaw `
         SELECT 
           DATE_FORMAT(createdAt, '%Y-%m') as month,
@@ -88,6 +81,27 @@ router.get("/dashboard", async (_req, res) => {
         ORDER BY month ASC 
         LIMIT 12
       `,
+            prisma.$queryRaw `
+        SELECT 
+          c.id, 
+          c.title, 
+          COUNT(s.id) as count
+        FROM Campaign c
+        LEFT JOIN Mission m ON c.id = m.campaignId
+        LEFT JOIN Submission s ON m.id = s.missionId
+        GROUP BY c.id, c.title
+        ORDER BY count DESC
+        LIMIT 5
+      `,
+            prisma.user.findMany({
+                take: 5,
+                orderBy: { pointBalance: 'desc' },
+                select: { id: true, email: true, pointBalance: true }
+            }),
+            prisma.mission.groupBy({
+                by: ['type'],
+                _count: true
+            })
         ]);
         const s = stats[0] || {};
         const totalPoints = Number(s.winner_points_sum || 0) + Number(s.user_points_sum || 0);
@@ -100,11 +114,18 @@ router.get("/dashboard", async (_req, res) => {
                 totalPoints,
                 avgParticipants: Number(s.total_camp_count) > 0
                     ? (Number(s.sub_count) / Number(s.total_camp_count))
-                    : 0
+                    : 0,
+                distributedPoints: Number(s.winner_points_sum || 0),
+                heldPoints: Number(s.user_points_sum || 0)
             },
             countries: countries.map(c => ({ name: c.country || 'Unknown', count: Number(c._count) })),
             ages: ages.map(a => ({ year: a.birthYear || 0, count: Number(a._count) })),
-            history: (growth || []).map(g => ({ month: g.month, count: Number(g.count) }))
+            genders: genders.map(g => ({ name: g.gender || 'Unknown', count: Number(g._count) })),
+            regions: regions.map(r => ({ name: r.region || 'Unknown', count: Number(r._count) })),
+            history: (growth || []).map(g => ({ month: g.month, count: Number(g.count) })),
+            topCampaigns: (topCampaigns || []).map((c) => ({ id: c.id, title: c.title, count: Number(c.count) })),
+            topUsers: (topUsers || []).map(u => ({ id: u.id, email: u.email, balance: u.pointBalance })),
+            missionTypes: missionTypes.map(m => ({ type: m.type, count: m._count }))
         };
         res.json(result);
     }

@@ -61,7 +61,7 @@ router.get("/overview", async (_req, res) => {
     prisma.user.count(),
     prisma.campaign.count(),
     prisma.submission.count(),
-    prisma.analyticsEvent.count(),
+    prisma.analyticsevent.count(),
   ]);
   res.json({ users, campaigns, submissions, analyticsEvents: events });
 });

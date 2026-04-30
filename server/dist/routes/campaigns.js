@@ -23,7 +23,7 @@ router.get("/", authOptional, async (req, res) => {
     res.json(list);
 });
 const missionInputSchema = z.object({
-    type: z.enum(["LINK_VISIT", "SURVEY", "CODE", "QUIZ", "CHECKIN", "FILE_UPLOAD"]),
+    type: z.enum(["LINK_VISIT", "SURVEY", "CODE", "QUIZ", "CHECKIN", "FILE_UPLOAD", "TELEGRAM_JOIN", "DISCORD_JOIN", "YOUTUBE_WATCH"]),
     title: z.string().min(1),
     description: z.string().optional(),
     sortOrder: z.number().int().optional(),
@@ -379,5 +379,47 @@ router.get("/:id", authOptional, async (req, res) => {
         });
     }
     res.json({ ...c, mySubmissions });
+});
+router.get("/:id/export", authRequired, async (req, res) => {
+    const cid = String(req.params.id);
+    if (!isOperator(req.user.role)) {
+        res.status(403).json({ error: "운영자만 내보낼 수 있습니다." });
+        return;
+    }
+    try {
+        const list = await prisma.submission.findMany({
+            where: { mission: { campaignId: cid } },
+            include: {
+                user: true,
+                mission: true,
+            },
+            orderBy: { createdAt: "desc" },
+        });
+        // CSV Header
+        let csv = "SubmissionID,CreatedAt,UserEmail,UserNickname,Gender,Age,Region,MissionType,MissionTitle,Payload\n";
+        for (const s of list) {
+            const age = s.user.birthYear ? new Date().getFullYear() - s.user.birthYear : "Unknown";
+            const row = [
+                s.id,
+                s.createdAt.toISOString(),
+                s.user.email,
+                `"${(s.user.nickname || "").replace(/"/g, '""')}"`,
+                s.user.gender || "Unknown",
+                age,
+                s.user.region || "Unknown",
+                s.mission.type,
+                `"${s.mission.title.replace(/"/g, '""')}"`,
+                `"${s.payload.replace(/"/g, '""')}"`,
+            ];
+            csv += row.join(",") + "\n";
+        }
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader("Content-Disposition", `attachment; filename="campaign_${cid}_data.csv"`);
+        res.status(200).send("\uFEFF" + csv); // BOM for Excel UTF-8 support
+    }
+    catch (err) {
+        console.error("Export Error:", err);
+        res.status(500).json({ error: "Failed to export data" });
+    }
 });
 export default router;

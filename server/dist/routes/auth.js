@@ -8,17 +8,42 @@ import { signToken } from "../lib/jwt.js";
 import { authRequired } from "../middleware/auth.js";
 const router = Router();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const FULL_USER_SELECT = {
+    id: true,
+    email: true,
+    role: true,
+    pointBalance: true,
+    nickname: true,
+    avatarUrl: true,
+    birthYear: true,
+    birthDate: true,
+    gender: true,
+    region: true,
+    country: true,
+    walletAddress: true,
+    telegramHandle: true,
+    discordId: true,
+    discordHandle: true,
+    youtubeHandle: true,
+    instagramHandle: true,
+};
 async function recordUserEntry(userId, req, locale) {
     try {
         const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
         const cleanIp = String(ip).split(",")[0].trim();
+        // 현재 유저의 정보를 먼저 조회
+        const currentUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { country: true }
+        });
         const geo = geoip.lookup(cleanIp);
-        const country = geo?.country || null;
+        const geoCountry = geo?.country || null;
         await prisma.user.update({
             where: { id: userId },
             data: {
                 lastIp: cleanIp,
-                ...(country && { country }),
+                // 현재 설정된 국가가 없을 때만 GeoIP 정보로 업데이트
+                ...((geoCountry && !currentUser?.country) && { country: geoCountry }),
                 ...(locale && { locale }),
             },
         });
@@ -46,7 +71,7 @@ router.post("/register", async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
         data: { email, passwordHash, role: "USER" },
-        select: { id: true, email: true, role: true, pointBalance: true },
+        select: FULL_USER_SELECT,
     });
     const token = signToken({ sub: user.id, email: user.email, role: user.role });
     // 비동기로 정보 기록
@@ -75,8 +100,13 @@ router.post("/login", async (req, res) => {
     }
     const token = signToken({ sub: user.id, email: user.email, role: user.role });
     recordUserEntry(user.id, req);
+    // Re-fetch or pick fields for consistent response
+    const responseUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: FULL_USER_SELECT
+    });
     res.json({
-        user: { id: user.id, email: user.email, role: user.role, pointBalance: user.pointBalance },
+        user: responseUser,
         token,
     });
 });
@@ -116,26 +146,20 @@ router.post("/google", async (req, res) => {
         const token = signToken({ sub: user.id, email: user.email, role: user.role });
         const locale = payload.locale;
         recordUserEntry(user.id, req, locale);
+        const responseUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: FULL_USER_SELECT
+        });
         res.json({
-            user: { id: user.id, email: user.email, role: user.role, pointBalance: user.pointBalance },
+            user: responseUser,
             token,
         });
     }
     catch (err) {
-        console.error("Google Auth Error:", err);
-        res.status(401).json({ error: "Google authentication failed" });
+        console.error("Google Auth Error Detail:", err?.message || err);
+        import("fs").then(fs => fs.writeFileSync("google_error.log", err?.message || String(err)));
+        res.status(401).json({ error: "Google authentication failed", details: err?.message });
     }
-});
-router.get("/me", authRequired, async (req, res) => {
-    const user = await prisma.user.findUnique({
-        where: { id: req.user.id },
-        select: { id: true, email: true, role: true, blocked: true, pointBalance: true, createdAt: true },
-    });
-    if (!user) {
-        res.status(404).json({ error: "Not found" });
-        return;
-    }
-    res.json(user);
 });
 router.put("/me/profile", authRequired, async (req, res) => {
     try {
@@ -149,8 +173,10 @@ router.put("/me/profile", authRequired, async (req, res) => {
             updateData.locale = data.locale;
         if (data.discordId !== undefined)
             updateData.discordId = data.discordId;
+        if (data.telegramHandle !== undefined)
+            updateData.telegramHandle = data.telegramHandle;
         if (data.telegramId !== undefined)
-            updateData.telegramId = data.telegramId;
+            updateData.telegramHandle = data.telegramId; // Compatibility
         const user = await prisma.user.update({
             where: { id: req.user.id },
             data: updateData,

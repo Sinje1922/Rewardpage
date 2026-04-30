@@ -69,7 +69,7 @@ router.post("/:id/submit", authRequired, async (req: AuthedRequest, res) => {
     },
   });
 
-  await prisma.analyticsEvent.create({
+  await prisma.analyticsevent.create({
     data: {
       name: "mission_submit",
       userId: req.user!.id,
@@ -91,7 +91,7 @@ router.post("/:id/event", authRequired, async (req: AuthedRequest, res) => {
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
-  await prisma.analyticsEvent.create({
+  await prisma.analyticsevent.create({
     data: {
       name: parsed.data.name,
       userId: req.user!.id,

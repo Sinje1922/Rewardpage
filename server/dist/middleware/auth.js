@@ -14,12 +14,19 @@ export function authOptional(req, _res, next) {
 }
 export function authRequired(req, res, next) {
     const h = req.headers.authorization;
-    if (!h?.startsWith("Bearer ")) {
+    let token = null;
+    if (h?.startsWith("Bearer ")) {
+        token = h.slice(7);
+    }
+    else if (req.query.token) {
+        token = req.query.token;
+    }
+    if (!token) {
         res.status(401).json({ error: "Unauthorized" });
         return;
     }
     try {
-        const p = verifyToken(h.slice(7));
+        const p = verifyToken(token);
         req.user = { id: p.sub, email: p.email, role: p.role };
         next();
     }

@@ -47,4 +47,23 @@ router.post("/logo", authRequired, requireRoles("MANAGER", "ADMIN"), (req, res, 
     const publicPath = `/uploads/${f.filename}`;
     res.status(201).json({ url: publicPath });
 });
+router.post("/avatar", authRequired, (req, res, next) => {
+    upload.single("file")(req, res, (err) => {
+        if (err) {
+            const msg = err instanceof Error ? err.message : "업로드 실패";
+            res.status(400).json({ error: msg });
+            return;
+        }
+        next();
+    });
+}, (req, res) => {
+    const f = req.file;
+    if (!f) {
+        res.status(400).json({ error: "파일이 없습니다." });
+        return;
+    }
+    // 프론트엔드에서 접근 가능한 URL 반환
+    const publicPath = `/uploads/${f.filename}`;
+    res.status(201).json({ url: publicPath });
+});
 export default router;

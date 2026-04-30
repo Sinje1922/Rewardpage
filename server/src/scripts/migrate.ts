@@ -28,7 +28,7 @@ async function migrate() {
     await destinationPrisma.submission.deleteMany();
     await destinationPrisma.mission.deleteMany();
     await destinationPrisma.campaign.deleteMany();
-    await destinationPrisma.analyticsEvent.deleteMany();
+    await destinationPrisma.analyticsevent.deleteMany();
     await destinationPrisma.user.deleteMany();
 
     // Helper to fetch all rows from a table
@@ -96,7 +96,7 @@ async function migrate() {
     console.log("Migrating AnalyticsEvents...");
     const events = await fetchAll('AnalyticsEvent');
     for (const e of events) {
-      await destinationPrisma.analyticsEvent.upsert({
+      await destinationPrisma.analyticsevent.upsert({
         where: { id: e.id },
         update: e,
         create: e

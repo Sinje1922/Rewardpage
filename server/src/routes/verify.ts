@@ -30,9 +30,8 @@ router.post("/telegram", authRequired, async (req: AuthedRequest, res) => {
 // 디스코드 참여 확인
 router.post("/discord", authRequired, async (req: AuthedRequest, res) => {
   const { missionId } = req.body;
-  const user = req.user!;
-
-  if (!user.discordId) {
+  const currentUser = await prisma.user.findUnique({ where: { id: req.user!.id } });
+  if (!currentUser?.discordId) {
     return res.status(400).json({ error: "디스코드 계정 연동이 필요합니다. 마이페이지에서 연동해 주세요." });
   }
 
@@ -53,7 +52,7 @@ router.post("/discord", authRequired, async (req: AuthedRequest, res) => {
     }
 
     const { checkGuildMembership } = await import('../lib/discord.js');
-    const isMember = await checkGuildMembership(guildId, user.discordId);
+    const isMember = await checkGuildMembership(guildId, currentUser.discordId);
 
     if (isMember) {
       res.json({ success: true, message: "디스코드 서버 참여가 확인되었습니다!" });

@@ -1,0 +1,44 @@
+
+Invalid `prisma.user.findUnique()` invocation in
+G:\Rewardpage\server\src\routes\auth.ts:174:44
+
+  171 const locale = (payload as any).locale;
+  172 recordUserEntry(user.id, req, locale);
+  173 
+→ 174 const responseUser = await prisma.user.findUnique({
+        where: {
+          id: "cmny9v0h80001b2ichlignnzc"
+        },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          pointBalance: true,
+          nickname: true,
+          ~~~~~~~~
+          avatarUrl: true,
+          birthYear: true,
+          birthDate: true,
+          gender: true,
+          region: true,
+          country: true,
+          walletAddress: true,
+          telegramHandle: true,
+          discordId: true,
+          discordHandle: true,
+          youtubeHandle: true,
+          instagramHandle: true,
+      ?   passwordHash?: true,
+      ?   blocked?: true,
+      ?   locale?: true,
+      ?   lastIp?: true,
+      ?   telegramId?: true,
+      ?   createdAt?: true,
+      ?   campaignsCreated?: true,
+      ?   submissions?: true,
+      ?   winners?: true,
+      ?   _count?: true
+        }
+      })
+
+Unknown field `nickname` for select statement on model `User`. Available options are marked with ?.

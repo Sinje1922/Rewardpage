@@ -7,7 +7,7 @@ import { authRequired, type AuthedRequest } from "../middleware/auth.js";
 const router = Router();
 
 // 디스코드 OAuth 리다이렉트 URL 생성 및 리다이렉트
-router.get("/discord/login", authRequired, (req, res) => {
+router.get("/discord/login", authRequired, (req: AuthedRequest, res) => {
   const clientId = process.env.DISCORD_CLIENT_ID;
   const redirectUri = encodeURIComponent(process.env.DISCORD_REDIRECT_URI || "");
   const scope = encodeURIComponent("identify guilds.join");
@@ -45,6 +45,8 @@ router.get("/discord/callback", async (req, res) => {
     const userResponse = await axios.get("https://discord.com/api/users/@me", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
+
+    const discordUser = userResponse.data;
 
     // 신규 사용자(태그 0)와 기존 사용자 처리
     const handle = discordUser.discriminator === "0" || !discordUser.discriminator
@@ -124,7 +126,7 @@ router.post("/telegram/verify", authRequired, async (req: AuthedRequest, res) =>
 });
 
 // 유튜브 OAuth 로그인 (구글 사용)
-router.get("/youtube/login", authRequired, (req, res) => {
+router.get("/youtube/login", authRequired, (req: AuthedRequest, res) => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const redirectUri = encodeURIComponent(`https://api.pickku.com/api/oauth/youtube/callback`);
   const scope = encodeURIComponent("https://www.googleapis.com/auth/youtube.readonly profile email");
