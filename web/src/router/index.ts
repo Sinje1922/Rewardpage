@@ -70,8 +70,16 @@ router.beforeEach(async (to) => {
   const isAuthPath = ['login', 'register'].includes(String(to.name))
   const isHomePath = to.path === '/' || to.name === 'home'
   
+  // 이미 로그인된 유저가 로그인/회원가입 페이지에 접근하려는 경우
+  if (auth.token && auth.user && isAuthPath) {
+    if (auth.isProfileIncomplete) {
+      return { name: 'setup' }
+    }
+    return { name: 'home' }
+  }
+
   // 프로필 정보가 하나라도 없고, 현재 '홈'도 아니고 '설정/인증' 페이지도 아닌 경우에만 강제 이동
-  if (auth.token && auth.user && auth.isProfileIncomplete && !isSetupPath && !isAuthPath && !isHomePath) {
+  if (auth.token && auth.user && auth.isProfileIncomplete && !isSetupPath && !isHomePath) {
     return { name: 'setup' }
   }
 
