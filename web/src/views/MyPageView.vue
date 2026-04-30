@@ -698,7 +698,7 @@ onMounted(() => {
 .avatar-main {
   width: 100%;
   height: 100%;
-  background: white;
+  background: var(--bg-card);
   border-radius: 50%;
   border: 4px solid var(--accent);
   box-shadow: 0 10px 30px var(--accent-soft);
@@ -728,7 +728,7 @@ onMounted(() => {
   height: 38px;
   background: var(--accent);
   color: white;
-  border: 3px solid white;
+  border: 3px solid var(--bg-card);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -758,10 +758,14 @@ onMounted(() => {
 .upload-loader {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+:root.dark .upload-loader {
+  background: rgba(15, 23, 42, 0.6);
 }
 
 .spinner {
@@ -872,8 +876,8 @@ onMounted(() => {
 }
 
 .sns-auth-card.linked {
-  background: white;
-  border-color: var(--accent-soft);
+  background: var(--panel);
+  border-color: var(--accent-border);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
@@ -891,7 +895,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
-  background: white;
+  background: var(--bg-card);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
