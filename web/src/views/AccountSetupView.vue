@@ -95,9 +95,52 @@ async function onComplete() {
     }
 
     router.replace('/')
-  } catch (err) {
+  } catch (err: any) {
     console.error('Profile update failed:', err)
-    error.value = '정보 저장 중 오류가 발생했습니다. 다시 시도해 주세요.'
+    
+    // 만약 백엔드가 구버전이라 404를 반환하면 구버전 경로로 폴백
+    if (err.response && err.response.status === 404) {
+      try {
+        const { data } = await api.patch('/auth/me/profile', {
+          nickname: nickname.value,
+          walletAddress: walletAddress.value,
+          birthDate: birthDate.value,
+          gender: gender.value,
+          country: country.value
+        })
+        if (auth.user) Object.assign(auth.user, data)
+        router.replace('/')
+        return
+      } catch (fallbackErr: any) {
+        err = fallbackErr // 폴백도 실패하면 아래 에러 처리 로직으로 넘어감
+      }
+    }
+
+    let errorMessage = '정보 저장 중 오류가 발생했습니다. 다시 시도해 주세요.'
+    
+    if (err.response && err.response.data && err.response.data.error) {
+      const e = err.response.data.error
+      if (typeof e === 'string') {
+        errorMessage = e
+      } else if (e.fieldErrors) {
+        const fields = Object.keys(e.fieldErrors)
+        if (fields.length > 0) {
+          const fieldMap: Record<string, string> = {
+            nickname: '닉네임',
+            walletAddress: '지갑 주소',
+            birthDate: '생년월일',
+            gender: '성별',
+            country: '거주 국가'
+          }
+          const fieldName = fieldMap[fields[0]] || fields[0]
+          errorMessage = `[${fieldName}] 항목에 문제가 있습니다: ${e.fieldErrors[fields[0]][0]}`
+        }
+      }
+    } else if (err.response && err.response.status === 404) {
+       errorMessage = '서버 통신 오류 (404): 백엔드 API가 최신 버전이 아닙니다.'
+    }
+    
+    error.value = errorMessage
   } finally {
     saving.value = false
   }
