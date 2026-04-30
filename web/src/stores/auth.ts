@@ -58,8 +58,18 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function loadMe() {
     if (!token.value) return
-    const { data } = await api.get<User>('/me') // Changed from /auth/me to /me for consistency with routes
-    user.value = data
+    try {
+      const { data } = await api.get<User>('/me') // Changed from /auth/me to /me for consistency with routes
+      user.value = data
+    } catch (e: any) {
+      // 만약 백엔드가 아직 구버전이라 /api/me를 지원하지 못해 404를 반환하면 구버전 경로(/api/auth/me)로 재시도합니다.
+      if (e.response && e.response.status === 404) {
+        const { data } = await api.get<User>('/auth/me')
+        user.value = data
+      } else {
+        throw e
+      }
+    }
   }
 
   function persist(t: string) {
