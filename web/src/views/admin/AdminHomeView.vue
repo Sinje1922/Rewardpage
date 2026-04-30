@@ -177,7 +177,7 @@ async function setBlock(id: string, blocked: boolean) {
           <div class="sub">{{ $t('admin.perCampaign') }}</div>
         </div>
         <div class="stat-card">
-          <label>💰 {{ $t('admin.distributedPoints') || '지급된 포인트' }}</label>
+          <label>💰 {{ $t('admin.distributedPoints') }}</label>
           <div class="value">{{ dashboard.summary.distributedPoints.toLocaleString() }}</div>
           <div class="sub">{{ ((dashboard.summary.distributedPoints / (dashboard.summary.totalPoints || 1)) * 100).toFixed(1) }}% of total</div>
         </div>
@@ -232,7 +232,7 @@ async function setBlock(id: string, blocked: boolean) {
         </div>
 
         <div class="card chart-card">
-          <h3>📍 {{ $t('admin.regionDist') }}</h3>
+          <h3>📍 {{ $t('admin.countryDist') }}</h3>
           <div class="geo-list">
             <div v-for="r in dashboard.regions.slice(0, 8)" :key="r.name" class="geo-item">
               <span class="name">{{ r.name }}</span>
@@ -249,7 +249,7 @@ async function setBlock(id: string, blocked: boolean) {
         </div>
 
         <div class="card chart-card">
-          <h3>⚡ {{ $t('admin.missionDist') || '미션 유형 분포' }}</h3>
+          <h3>⚡ {{ $t('admin.missionDist') }}</h3>
           <div class="geo-list">
             <div v-for="m in dashboard.missionTypes" :key="m.type" class="geo-item">
               <span class="name" style="width: 100px">{{ m.type }}</span>
@@ -270,7 +270,7 @@ async function setBlock(id: string, blocked: boolean) {
       <!-- Top Performance Section -->
       <div class="charts-grid" style="margin-top: 1.5rem">
         <div class="card">
-          <h3 style="margin-bottom: 1rem">🏆 {{ $t('admin.topCampaigns') || '인기 캠페인 TOP 5' }}</h3>
+          <h3 style="margin-bottom: 1rem">🏆 {{ $t('admin.topCampaigns') }}</h3>
           <div class="rank-list">
             <div v-for="(c, i) in dashboard.topCampaigns" :key="c.id" class="rank-item">
               <span class="rank-num">{{ i + 1 }}</span>
@@ -281,7 +281,7 @@ async function setBlock(id: string, blocked: boolean) {
         </div>
 
         <div class="card">
-          <h3 style="margin-bottom: 1rem">👑 {{ $t('admin.topUsers') || '활동 우수자 TOP 5' }}</h3>
+          <h3 style="margin-bottom: 1rem">👑 {{ $t('admin.topUsers') }}</h3>
           <div class="rank-list">
             <div v-for="(u, i) in dashboard.topUsers" :key="u.id" class="rank-item">
               <span class="rank-num">{{ i + 1 }}</span>
