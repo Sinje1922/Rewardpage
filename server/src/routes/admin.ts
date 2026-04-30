@@ -71,12 +71,12 @@ router.get("/dashboard", async (_req, res) => {
     const [stats, countries, ages, genders, regions, growth, topCampaigns, topUsers, missionTypes] = await Promise.all([
       prisma.$queryRaw<any[]>`
         SELECT 
-          (SELECT COUNT(*) FROM User) as user_count,
-          (SELECT COUNT(*) FROM Campaign) as total_camp_count,
-          (SELECT COUNT(*) FROM Campaign WHERE status = 'ACTIVE') as active_camp_count,
-          (SELECT COUNT(*) FROM Submission) as sub_count,
-          (SELECT IFNULL(SUM(points), 0) FROM Winner) as winner_points_sum,
-          (SELECT IFNULL(SUM(pointBalance), 0) FROM User) as user_points_sum
+          (SELECT COUNT(*) FROM user) as user_count,
+          (SELECT COUNT(*) FROM campaign) as total_camp_count,
+          (SELECT COUNT(*) FROM campaign WHERE status = 'ACTIVE') as active_camp_count,
+          (SELECT COUNT(*) FROM submission) as sub_count,
+          (SELECT IFNULL(SUM(points), 0) FROM winner) as winner_points_sum,
+          (SELECT IFNULL(SUM(pointBalance), 0) FROM user) as user_points_sum
       `,
       (prisma.user as any).groupBy({ by: ["country"], _count: true }),
       (prisma.user as any).groupBy({ by: ["birthYear"], _count: true }),
@@ -86,7 +86,7 @@ router.get("/dashboard", async (_req, res) => {
         SELECT 
           DATE_FORMAT(createdAt, '%Y-%m') as month,
           COUNT(*) as count 
-        FROM User 
+        FROM user 
         GROUP BY month 
         ORDER BY month ASC 
         LIMIT 12
@@ -96,9 +96,9 @@ router.get("/dashboard", async (_req, res) => {
           c.id, 
           c.title, 
           COUNT(s.id) as count
-        FROM Campaign c
-        LEFT JOIN Mission m ON c.id = m.campaignId
-        LEFT JOIN Submission s ON m.id = s.missionId
+        FROM campaign c
+        LEFT JOIN mission m ON c.id = m.campaignId
+        LEFT JOIN submission s ON m.id = s.missionId
         GROUP BY c.id, c.title
         ORDER BY count DESC
         LIMIT 5
