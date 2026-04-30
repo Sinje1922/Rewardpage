@@ -332,7 +332,7 @@ const banners = computed(() => [
   border-radius: 14px;
   object-fit: cover;
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--bg-card);
 }
 
 .company-name {

@@ -471,6 +471,7 @@ const missionCategories = [
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   cursor: pointer;
+  color: var(--text-h);
   transition: all 0.2s ease;
 }
 .type-btn:hover {
@@ -491,6 +492,7 @@ const missionCategories = [
   font-size: 0.75rem;
   font-weight: 700;
   text-align: center;
+  color: var(--text-h);
 }
 .type-btn.active .type-icon,
 .type-btn.active .type-label {
