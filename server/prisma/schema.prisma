@@ -7,105 +7,103 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model analyticsevent {
-  id        String   @id @default(cuid())
-  name      String
-  userId    String?
-  meta      String   @default("{}") @db.Text
-  createdAt DateTime @default(now())
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String?
+  /// USER | CREATOR | MANAGER | ADMIN
+  role         String   @default("USER")
+  blocked      Boolean  @default(false)
+  pointBalance Int      @default(0)
+  country      String?
+  locale       String?
+  lastIp       String?
+  birthYear    Int?
+  discordId    String?
+  telegramId   String?
+  createdAt    DateTime @default(now())
+
+  campaignsCreated Campaign[]    @relation("CampaignCreator")
+  submissions    Submission[]
+  winners        Winner[]
 }
 
-model campaign {
-  id                String    @id @default(cuid())
-  title             String
-  description       String    @default("")
-  companyName       String    @default("")
-  companyLogoUrl    String    @default("")
-  status            String    @default("DRAFT")
-  creatorId         String
-  startsAt          DateTime?
-  endsAt            DateTime?
-  winnerCount       Int       @default(1)
-  lotteryMode       String    @default("SIMPLE")
-  autoApprove       Boolean   @default(true)
-  totalRewardPoints Int       @default(0)
-  createdAt         DateTime  @default(now())
-  drawnAt           DateTime?
-  creator           user?     @relation(fields: [creatorId], references: [id], map: "Campaign_creatorId_fkey")
-  missions          mission[]
-  winners           winner[]
+model Campaign {
+  id          String    @id @default(cuid())
+  title       String
+  description String    @default("")
+  /// 수주·노출용 클라이언트(회사) 이름
+  companyName    String @default("")
+  /// 로고 이미지 URL
+  companyLogoUrl String @default("")
+  /// DRAFT | PENDING_ADMIN | ACTIVE | CLOSED | DRAWN
+  status      String    @default("DRAFT")
+  creatorId   String
+  startsAt    DateTime?
+  endsAt      DateTime?
+  winnerCount Int       @default(1)
+  /// SIMPLE | WEIGHTED
+  lotteryMode         String    @default("SIMPLE")
+  autoApprove         Boolean   @default(true)
+  totalRewardPoints   Int       @default(0)
+  createdAt           DateTime  @default(now())
+  drawnAt     DateTime?
 
-  @@index([creatorId], map: "Campaign_creatorId_fkey")
+  creator  User      @relation("CampaignCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  missions Mission[]
+  winners  Winner[]
 }
 
-model mission {
-  id          String       @id @default(cuid())
+model Mission {
+  id          String   @id @default(cuid())
   campaignId  String
+  /// LINK_VISIT | SURVEY | CODE | QUIZ | CHECKIN | FILE_UPLOAD
   type        String
   title       String
-  description String       @default("")
-  sortOrder   Int          @default(0)
-  config      String       @default("{}") @db.Text
-  createdAt   DateTime     @default(now())
-  campaign    campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade, map: "Mission_campaignId_fkey")
-  submissions  submission[]
+  description String   @default("")
+  sortOrder   Int      @default(0)
+  /// JSON: { linkUrl, correctCode, quizQuestion, quizOptions[], correctIndex, minDwellSeconds, surveyNote }
+  config      String   @default("{}") @db.Text
+  createdAt   DateTime @default(now())
 
-  @@index([campaignId], map: "Mission_campaignId_fkey")
+  campaign    Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  submissions Submission[]
 }
 
-model submission {
+model Submission {
   id        String   @id @default(cuid())
   userId    String
   missionId String
+  /// PENDING | APPROVED | REJECTED
   status    String   @default("PENDING")
+  /// JSON: { code, selectedIndex, dwellSeconds, note, fileUrl }
   payload   String   @default("{}") @db.Text
   createdAt DateTime @default(now())
-  mission   mission  @relation(fields: [missionId], references: [id], onDelete: Cascade, map: "Submission_missionId_fkey")
-  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Submission_userId_fkey")
 
-  @@unique([userId, missionId], map: "Submission_userId_missionId_key")
-  @@index([missionId], map: "Submission_missionId_fkey")
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mission Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, missionId])
 }
 
-model user {
-  id            String       @id @default(cuid())
-  email         String       @unique(map: "User_email_key")
-  passwordHash  String?
-  role          String       @default("USER")
-  blocked       Boolean      @default(false)
-  pointBalance  Int          @default(0)
-  country       String?
-  locale        String?
-  lastIp        String?
-  birthYear     Int?
-  walletAddress String?
-  nickname      String?
-  avatarUrl     String?
-  createdAt     DateTime     @default(now())
-  birthDate     DateTime?
-  gender        String?
-  region        String?
-  telegramHandle String?
-  discordId      String?
-  discordHandle  String?
-  youtubeHandle  String?
-  instagramHandle String?
-  updatedAt     DateTime     @default(now()) @updatedAt
-  submissions   submission[]
-  campaigns     campaign[]
-  winners       winner[]
-}
-
-model winner {
+model Winner {
   id         String   @id @default(cuid())
   campaignId String
   userId     String
   rank       Int
   points     Int      @default(0)
   createdAt  DateTime @default(now())
-  campaign   campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade, map: "Winner_campaignId_fkey")
-  user       user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Winner_userId_fkey")
 
-  @@unique([campaignId, userId], map: "Winner_campaignId_userId_key")
-  @@index([userId], map: "Winner_userId_fkey")
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, userId])
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String?
+  meta      String   @default("{}") @db.Text
+  createdAt DateTime @default(now())
 }
