@@ -903,10 +903,10 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
   transition: all 0.2s ease;
 }
 
-.auth-action-btn.telegram { background: #0088cc; color: white !important; }
-.auth-action-btn.discord { background: #5865F2; color: white !important; }
-.auth-action-btn.youtube { background: #FF0000; color: white !important; }
-.auth-action-btn.instagram { background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); color: white !important; }
+.auth-action-btn.telegram { background: #0088cc !important; color: #ffffff !important; }
+.auth-action-btn.discord { background: #5865F2 !important; color: #ffffff !important; }
+.auth-action-btn.youtube { background: #FF0000 !important; color: #ffffff !important; }
+.auth-action-btn.instagram { background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%) !important; color: #ffffff !important; }
 
 .auth-action-btn:hover {
   filter: brightness(1.1);
@@ -920,13 +920,15 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
 }
 
 .auth-action-btn.unlink {
-  background: var(--bg-deep);
-  color: var(--muted);
-  border: 1px solid var(--border);
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
 }
 
 :root.dark .auth-action-btn.unlink {
-  background: rgba(255, 255, 255, 0.05);
+  background: #1e293b;
+  color: #f1f5f9;
+  border: 1px solid #334155;
 }
 
 .auth-action-btn.unlink:hover {
