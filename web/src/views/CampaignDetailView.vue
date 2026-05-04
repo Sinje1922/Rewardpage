@@ -71,8 +71,6 @@ const surveyAnswers = ref<Record<string, Record<string, string | number>>>({})
 const checkConfirm = ref<Record<string, boolean>>({})
 const ytRemaining = ref<Record<string, number>>({})
 const ytTimer = ref<Record<string, any>>({})
-const telegramHandle = ref<Record<string, string>>({})
-const discordConnected = ref<Record<string, boolean>>({})
 
 const showCopyMsg = ref(false)
 
@@ -105,18 +103,6 @@ onMounted(async () => {
     const { data } = await api.get<CampaignDetail>(`/campaigns/${id}`)
     camp.value = data
     
-    // Auto-fill handles from profile
-    if (auth.user) {
-      data.missions.forEach(m => {
-        if (m.type === 'TELEGRAM_JOIN' && auth.user?.telegramHandle) {
-          telegramHandle.value[m.id] = auth.user.telegramHandle
-        }
-        if (m.type === 'DISCORD_JOIN' && auth.user?.discordId) {
-          // If we have a discordId in profile, we might consider it connected
-          // Or just fill the input if there was one
-        }
-      })
-    }
 
     if (['DRAWN', 'CLOSED', 'ACTIVE'].includes(data.status)) {
       try {
@@ -187,33 +173,6 @@ function stopTimer(mid: string) {
   }
 }
 
-async function verifyTelegram(m: Mission) {
-  err.value = ''
-  msg.value = ''
-  const handle = telegramHandle.value[m.id]
-  if (!handle) {
-    err.value = '텔레그램 핸들을 입력해 주세요.'
-    return
-  }
-  try {
-    await api.post('/verify/telegram', { missionId: m.id, handle })
-    msg.value = '참여가 확인되었습니다!'
-  } catch (e: any) {
-    err.value = e.response?.data?.error || '참여 확인에 실패했습니다.'
-  }
-}
-
-async function verifyDiscord(m: Mission) {
-  err.value = ''
-  msg.value = ''
-  try {
-    await api.post('/verify/discord', { missionId: m.id })
-    discordConnected.value[m.id] = true
-    msg.value = '디스코드 연동이 확인되었습니다!'
-  } catch (e: any) {
-    err.value = e.response?.data?.error || '디스코드 확인 실패'
-  }
-}
 
 async function handleSNSLinkVisit(m: Mission, type: 'telegram' | 'discord') {
   const isLinked = type === 'telegram' ? !!auth.user?.telegramHandle : !!auth.user?.discordHandle
