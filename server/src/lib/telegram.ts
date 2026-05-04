@@ -30,11 +30,18 @@ export async function startTelegramBot() {
         if (update.message && update.message.text) {
           const { text, from } = update.message;
           
-          // Handle /start {userId}
-          if (text.startsWith('/start ')) {
-            const userId = text.split(' ')[1];
-            if (userId) {
+          // Handle /start
+          if (text.startsWith('/start')) {
+            const parts = text.split(' ');
+            if (parts.length > 1) {
+              const userId = parts[1];
               await handleLinkRequest(userId, from);
+            } else {
+              // No ID provided, send guide message
+              await axios.post(`${API_URL}/sendMessage`, {
+                chat_id: from.id,
+                text: "반갑습니다! 👋\n\n이 봇은 픽쿠(pickku) 계정 연동을 위한 봇입니다.\n\n연동을 하시려면 홈페이지의 [마이페이지] > [SNS 계정 연동]에서 [인증하기] 버튼을 눌러 이동해 주세요.",
+              });
             }
           }
         }
