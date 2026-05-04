@@ -104,7 +104,7 @@ router.post("/telegram/verify", authRequired, async (req, res) => {
 // 유튜브 OAuth 로그인 (구글 사용)
 router.get("/youtube/login", authRequired, (req, res) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
-    const redirectUri = encodeURIComponent(`https://api.pickku.com/api/oauth/youtube/callback`);
+    const redirectUri = encodeURIComponent(process.env.YOUTUBE_REDIRECT_URI || "");
     const scope = encodeURIComponent("https://www.googleapis.com/auth/youtube.readonly profile email");
     const state = req.user.id;
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}&access_type=offline&prompt=consent`;
@@ -120,7 +120,7 @@ router.get("/youtube/callback", async (req, res) => {
             code,
             client_id: process.env.GOOGLE_CLIENT_ID,
             client_secret: process.env.GOOGLE_CLIENT_SECRET,
-            redirect_uri: `https://api.pickku.com/api/oauth/youtube/callback`,
+            redirect_uri: process.env.YOUTUBE_REDIRECT_URI,
             grant_type: "authorization_code",
         });
         const accessToken = tokenResponse.data.access_token;
