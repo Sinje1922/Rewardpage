@@ -285,23 +285,15 @@ const missionCategories = [
 
         <template v-else-if="row.type === 'TELEGRAM_JOIN' || row.type === 'TELEGRAM_CHANNEL' || row.type === 'TELEGRAM_GROUP'">
           <div class="field">
-            <label>채널/그룹 초대 링크 (https://t.me/...)</label>
+            <label>텔레그램 채널/그룹 참여 URL (https://t.me/...)</label>
             <input :value="row.linkUrl" type="url" placeholder="https://t.me/your_channel" @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
-          </div>
-          <div class="field">
-            <label>채널/그룹 ID (또는 @username)</label>
-            <input :value="row.telegramChannel" placeholder="@your_channel_id" @input="updateRow(i, { telegramChannel: ($event.target as HTMLInputElement).value })" />
           </div>
         </template>
 
         <template v-else-if="row.type === 'DISCORD_JOIN'">
           <div class="field">
-            <label>서버 초대 링크 (https://discord.gg/...)</label>
+            <label>디스코드 서버 초대 URL (https://discord.gg/...)</label>
             <input :value="row.linkUrl" type="url" placeholder="https://discord.gg/invite_code" @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
-          </div>
-          <div class="field">
-            <label>서버 ID (Guild ID)</label>
-            <input :value="row.discordInvite" placeholder="123456789..." @input="updateRow(i, { discordInvite: ($event.target as HTMLInputElement).value })" />
           </div>
         </template>
 

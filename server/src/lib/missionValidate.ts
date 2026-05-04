@@ -94,6 +94,12 @@ export function evaluateMission(
       if (!url) return { ok: false, reason: "파일 URL이 필요합니다." };
       return { ok: true };
     }
+    case "TELEGRAM_JOIN":
+    case "DISCORD_JOIN":
+    case "YOUTUBE_WATCH":
+      // These are validated via profile link presence on frontend 
+      // and optional backend membership checks
+      return { ok: true };
     default:
       return { ok: false, reason: "알 수 없는 미션 유형입니다." };
   }

@@ -215,6 +215,17 @@ async function verifyDiscord(m: Mission) {
   }
 }
 
+async function handleSNSLinkVisit(m: Mission, type: 'telegram' | 'discord') {
+  const isLinked = type === 'telegram' ? !!auth.user?.telegramHandle : !!auth.user?.discordHandle
+  
+  if (!isLinked) {
+    alert(`먼저 마이페이지에서 ${type === 'telegram' ? '텔레그램' : '디스코드'} 계정을 연동해 주세요.`)
+    return
+  }
+
+  logVisit(m)
+}
+
 async function logVisit(m: Mission) {
   if (!auth.token) {
     err.value = '로그인이 필요합니다.'
@@ -261,9 +272,17 @@ async function submitMission(m: Mission) {
   } else if (m.type === 'FILE_UPLOAD') {
     payload = { fileUrl: codeInput.value[m.id] ?? '' }
   } else if (m.type === 'TELEGRAM_JOIN') {
-    payload = { handle: telegramHandle.value[m.id] || '' }
+    if (!auth.user?.telegramHandle) {
+      err.value = '텔레그램 연동이 필요합니다.'
+      return
+    }
+    payload = { handle: auth.user.telegramHandle }
   } else if (m.type === 'DISCORD_JOIN') {
-    payload = { status: 'joined' }
+    if (!auth.user?.discordHandle) {
+      err.value = '디스코드 연동이 필요합니다.'
+      return
+    }
+    payload = { handle: auth.user.discordHandle }
   } else if (m.type === 'YOUTUBE_WATCH') {
     if (ytRemaining.value[m.id] > 0) {
       err.value = '영상을 더 시청해야 합니다.'
@@ -427,26 +446,31 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
           </template>
 
           <template v-else-if="m.type === 'TELEGRAM_JOIN'">
-            <button type="button" class="btn outline full-width mb-2" @click="logVisit(m)">
-              ✈️ 텔레그램 채널 입장하기
-            </button>
-            <div class="field">
-              <label>본인의 텔레그램 핸들 (@username)</label>
-              <div style="display: flex; gap: 0.5rem">
-                <input v-model="telegramHandle[m.id]" type="text" placeholder="@nickname" style="flex: 1" />
-                <button type="button" class="btn btn-sm" @click="verifyTelegram(m)">확인</button>
+            <div class="sns-mission-box">
+              <button type="button" class="btn outline full-width mb-2" @click="handleSNSLinkVisit(m, 'telegram')">
+                ✈️ 텔레그램 채널 입장하기
+              </button>
+              <div v-if="auth.user?.telegramHandle" class="linked-info">
+                연동된 계정: <strong>{{ auth.user.telegramHandle }}</strong>
+              </div>
+              <div v-else class="link-notice">
+                ⚠️ 텔레그램 계정이 연동되지 않았습니다. <RouterLink to="/my-page">마이페이지</RouterLink>에서 연동해 주세요.
               </div>
             </div>
           </template>
 
           <template v-else-if="m.type === 'DISCORD_JOIN'">
-            <button type="button" class="btn outline full-width mb-2" @click="logVisit(m)">
-              👾 디스코드 서버 입장하기
-            </button>
-            <div v-if="!discordConnected[m.id]" class="center mt-2">
-              <button type="button" class="btn btn-sm" @click="verifyDiscord(m)">연동 확인</button>
+            <div class="sns-mission-box">
+              <button type="button" class="btn outline full-width mb-2" @click="handleSNSLinkVisit(m, 'discord')">
+                👾 디스코드 서버 입장하기
+              </button>
+              <div v-if="auth.user?.discordHandle" class="linked-info">
+                연동된 계정: <strong>{{ auth.user.discordHandle }}</strong>
+              </div>
+              <div v-else class="link-notice">
+                ⚠️ 디스코드 계정이 연동되지 않았습니다. <RouterLink to="/my-page">마이페이지</RouterLink>에서 연동해 주세요.
+              </div>
             </div>
-            <p v-else class="center mt-2 success-msg">✅ 디스코드 연동됨</p>
           </template>
 
           <template v-else-if="m.type === 'YOUTUBE_WATCH'">
