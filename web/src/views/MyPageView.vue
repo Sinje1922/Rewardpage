@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRouter } from 'vue-router'
-import { api } from '../api/client'
+import { api, API_BASE } from '../api/client'
 import { useAuthStore } from '../stores/auth'
 
 type SubRow = {
@@ -177,8 +177,7 @@ async function handleWithdrawal() {
 }
 
 function linkDiscord() {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
-  window.location.href = `${apiUrl}/oauth/discord/login?token=${auth.token}`
+  window.location.href = `${API_BASE}/oauth/discord/login?token=${auth.token}`
 }
 
 function initTelegramWidget() {
@@ -210,9 +209,8 @@ function initTelegramWidget() {
 }
 
 function linkYouTube() {
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
   // 유튜브 전용 OAuth 인증 (구글 계정 사용)
-  window.location.href = `${apiUrl}/oauth/youtube/login?token=${auth.token}`
+  window.location.href = `${API_BASE}/oauth/youtube/login?token=${auth.token}`
 }
 
 async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {

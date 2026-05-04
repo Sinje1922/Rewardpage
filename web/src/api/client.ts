@@ -2,8 +2,9 @@ import axios from 'axios'
 
 const baseURL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || ''
 
+export const API_BASE = baseURL.endsWith('/') ? baseURL + 'api' : (baseURL ? baseURL + '/api' : '/api')
 export const api = axios.create({
-  baseURL: baseURL.endsWith('/') ? baseURL + 'api' : (baseURL ? baseURL + '/api' : '/api'),
+  baseURL: API_BASE,
 })
 
 export function getFileUrl(url: string | null | undefined) {
