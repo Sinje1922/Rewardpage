@@ -99,6 +99,14 @@ const missionCategories = [
     ]
   },
   {
+    id: 'instagram',
+    labelKey: 'ops.catInstagram',
+    types: [
+      { id: 'INSTAGRAM_FOLLOW', labelKey: 'ops.typeInstagramFollow', icon: '📸' },
+      { id: 'INSTAGRAM_LIKE', labelKey: 'ops.typeInstagramLike', icon: '❤️' },
+    ]
+  },
+  {
     id: 'discord',
     labelKey: 'ops.catDiscord',
     types: [
@@ -113,14 +121,14 @@ const missionCategories = [
   <div class="mission-list">
     <div v-for="(row, i) in rows" :key="row.key" class="mission-card card">
       <div class="mission-head">
-        <span class="idx">{{ $t('ops.missionNum', { n: i + 1 }) }}</span>
-        <button type="button" class="btn btn-sm" :disabled="rows.length <= 1" @click="removeRow(i)">{{ $t('ops.remove') }}</button>
+        <span class="idx">{{ t('ops.missionNum', { n: i + 1 }) }}</span>
+        <button type="button" class="btn btn-sm" :disabled="rows.length <= 1" @click="removeRow(i)">{{ t('ops.remove') }}</button>
       </div>
       <div class="field">
-        <label>{{ $t('ops.type') || 'Type' }}</label>
+        <label>{{ t('ops.type') }}</label>
         <div class="mission-type-picker">
           <div v-for="cat in missionCategories" :key="cat.id" class="mission-cat-group">
-            <div class="cat-name">{{ $t(cat.labelKey) }}</div>
+            <div class="cat-name">{{ t(cat.labelKey) }}</div>
             <div class="type-grid">
               <button
                 v-for="mType in cat.types"
@@ -131,7 +139,7 @@ const missionCategories = [
                 @click="updateRow(i, { type: mType.id })"
               >
                 <span class="type-icon">{{ mType.icon }}</span>
-                <span class="type-label">{{ $t(mType.labelKey) }}</span>
+                <span class="type-label">{{ t(mType.labelKey) }}</span>
               </button>
             </div>
           </div>
@@ -299,11 +307,11 @@ const missionCategories = [
 
         <template v-else-if="row.type === 'YOUTUBE_WATCH'">
           <div class="field">
-            <label>{{ $t('ops.youtubeVideoHint') }}</label>
+            <label>{{ t('ops.youtubeVideoHint') }}</label>
             <input :value="row.youtubeVideoId" placeholder="dQw4w9WgXcQ" @input="updateRow(i, { youtubeVideoId: ($event.target as HTMLInputElement).value })" />
           </div>
           <div class="field">
-            <label>{{ $t('ops.youtubeTargetSeconds') }}</label>
+            <label>{{ t('ops.youtubeTargetSeconds') }}</label>
             <input
               type="number"
               min="1"
@@ -315,30 +323,44 @@ const missionCategories = [
 
         <template v-else-if="row.type === 'YOUTUBE_SUBSCRIBE'">
           <div class="field">
-            <label>{{ $t('ops.linkUrl') }}</label>
+            <label>{{ t('ops.linkUrl') }}</label>
             <input :value="row.linkUrl" type="url" placeholder="https://youtube.com/@channel" @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
           </div>
           <div class="field">
-            <label>{{ $t('ops.youtubeChannelHint') }}</label>
+            <label>{{ t('ops.youtubeChannelHint') }}</label>
             <input :value="row.youtubeChannelId" placeholder="UC..." @input="updateRow(i, { youtubeChannelId: ($event.target as HTMLInputElement).value })" />
           </div>
         </template>
 
         <template v-else-if="row.type === 'YOUTUBE_LIKE'">
           <div class="field">
-            <label>{{ $t('ops.linkUrl') }}</label>
+            <label>{{ t('ops.linkUrl') }}</label>
             <input :value="row.linkUrl" type="url" placeholder="https://youtube.com/watch?v=..." @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
           </div>
           <div class="field">
-            <label>{{ $t('ops.youtubeVideoHint') }}</label>
+            <label>{{ t('ops.youtubeVideoHint') }}</label>
             <input :value="row.youtubeVideoId" placeholder="dQw4w9WgXcQ" @input="updateRow(i, { youtubeVideoId: ($event.target as HTMLInputElement).value })" />
+          </div>
+        </template>
+
+        <template v-else-if="row.type === 'INSTAGRAM_FOLLOW'">
+          <div class="field">
+            <label>{{ t('ops.instagramHandleHint') }}</label>
+            <input :value="row.instagramHandle" placeholder="@username" @input="updateRow(i, { instagramHandle: ($event.target as HTMLInputElement).value })" />
+          </div>
+        </template>
+
+        <template v-else-if="row.type === 'INSTAGRAM_LIKE'">
+          <div class="field">
+            <label>Instagram Post ID / URL</label>
+            <input :value="row.instagramPostId" placeholder="C123..." @input="updateRow(i, { instagramPostId: ($event.target as HTMLInputElement).value })" />
           </div>
         </template>
 
       </div>
     </div>
 
-    <button type="button" class="btn" style="width: 100%" @click="addRow">{{ $t('ops.addMissionBtn') }}</button>
+    <button type="button" class="btn" style="width: 100%" @click="addRow">{{ t('ops.addMissionBtn') }}</button>
   </div>
 </template>
 
