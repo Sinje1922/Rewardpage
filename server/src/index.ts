@@ -13,6 +13,7 @@ import uploadRouter from "./routes/upload.js";
 import verifyRouter from "./routes/verify.js";
 import oauthRouter from "./routes/oauth.js";
 import { startLotteryWorker } from "./workers/lotteryWorker.js";
+import { startTelegramBot } from "./lib/telegram.js";
 
 // BigInt JSON 직렬화 지원
 (BigInt.prototype as any).toJSON = function () {
@@ -20,6 +21,9 @@ import { startLotteryWorker } from "./workers/lotteryWorker.js";
 };
 
 const app = express();
+
+// 배경 서비스 시작
+startTelegramBot();
 
 const uploadsRoot = path.join(process.cwd(), "uploads");
 fs.mkdirSync(uploadsRoot, { recursive: true });
