@@ -903,9 +903,10 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
   transition: all 0.2s ease;
 }
 
-.auth-action-btn.discord { background: #5865F2; color: white; }
-.auth-action-btn.youtube { background: #FF0000; color: white; }
-.auth-action-btn.instagram { background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); color: white; }
+.auth-action-btn.telegram { background: #0088cc; color: white !important; }
+.auth-action-btn.discord { background: #5865F2; color: white !important; }
+.auth-action-btn.youtube { background: #FF0000; color: white !important; }
+.auth-action-btn.instagram { background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); color: white !important; }
 
 .auth-action-btn:hover {
   filter: brightness(1.1);
@@ -924,10 +925,20 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
   border: 1px solid var(--border);
 }
 
+:root.dark .auth-action-btn.unlink {
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .auth-action-btn.unlink:hover {
   background: #fee2e2;
   color: #ef4444;
   border-color: #fecaca;
+}
+
+:root.dark .auth-action-btn.unlink:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 .auth-btn-wrapper {
