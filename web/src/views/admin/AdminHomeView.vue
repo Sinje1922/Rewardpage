@@ -140,7 +140,7 @@ async function setBlock(id: string, blocked: boolean) {
       <div style="display: flex; align-items: center; gap: 1rem">
         <h1 class="page-title" style="margin: 0">{{ $t('admin.title') }}</h1>
         <button v-if="tab === 'dashboard'" type="button" class="btn btn-sm outline" @click="downloadDashboardCsv">
-          📥 CSV 리포트
+          {{ $t('admin.exportBtn') }}
         </button>
       </div>
       <div class="tab-group">
@@ -161,7 +161,7 @@ async function setBlock(id: string, blocked: boolean) {
         <div class="stat-card">
           <label>{{ $t('admin.totalUsers') }}</label>
           <div class="value">{{ dashboard.summary.users.toLocaleString() }}</div>
-          <div class="trend">+{{ dashboard.history[dashboard.history.length-1]?.count || 0 }} this month</div>
+          <div class="trend">{{ $t('admin.thisMonth', { n: dashboard.history[dashboard.history.length-1]?.count || 0 }) }}</div>
         </div>
         <div class="stat-card">
           <label>{{ $t('admin.activeCampaigns') }}</label>
@@ -179,7 +179,7 @@ async function setBlock(id: string, blocked: boolean) {
         <div class="stat-card">
           <label>💰 {{ $t('admin.distributedPoints') }}</label>
           <div class="value">{{ dashboard.summary.distributedPoints.toLocaleString() }}</div>
-          <div class="sub">{{ ((dashboard.summary.distributedPoints / (dashboard.summary.totalPoints || 1)) * 100).toFixed(1) }}% of total</div>
+          <div class="sub">{{ $t('admin.ofTotal', { p: ((dashboard.summary.distributedPoints / (dashboard.summary.totalPoints || 1)) * 100).toFixed(1) }) }}</div>
         </div>
       </div>
 
@@ -275,7 +275,7 @@ async function setBlock(id: string, blocked: boolean) {
             <div v-for="(c, i) in dashboard.topCampaigns" :key="c.id" class="rank-item">
               <span class="rank-num">{{ i + 1 }}</span>
               <span class="rank-name">{{ c.title }}</span>
-              <span class="rank-value">{{ c.count }} {{ $t('common.participants') || '명' }}</span>
+              <span class="rank-value">{{ c.count }}{{ $t('common.participants') }}</span>
             </div>
           </div>
         </div>

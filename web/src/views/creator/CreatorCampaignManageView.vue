@@ -316,16 +316,16 @@ function parsePayloadDetail(s: SubRow) {
     
     switch (s.mission.type) {
       case 'QUIZ': {
-        const selected = p.selectedIndex !== undefined ? (c.quizOptions?.[p.selectedIndex] ?? `Index: ${p.selectedIndex}`) : '미선택'
+        const selected = p.selectedIndex !== undefined ? (c.quizOptions?.[p.selectedIndex] ?? `Index: ${p.selectedIndex}`) : t('common.notSelected')
         const isCorrect = p.selectedIndex === c.correctIndex
-        return `[선택] ${selected} (${isCorrect ? '정답' : '오답'})`
+        return `[${t('ops.typeQuiz')}] ${selected} (${isCorrect ? t('common.correct') : t('common.incorrect')})`
       }
       case 'SURVEY': {
         // 다중 질문 답변 처리
         if (p.answers && c.surveyQuestions) {
           return c.surveyQuestions.map((q: any, i: number) => {
             const ans = p.answers[q.id]
-            let displayAns = ans ?? '미응답'
+            let displayAns = ans ?? t('common.notAnswered')
             if (q.type === 'OBJECTIVE' && ans !== undefined) {
               displayAns = q.options?.[ans] ?? ans
             }
@@ -333,24 +333,24 @@ function parsePayloadDetail(s: SubRow) {
           }).join(' | ')
         }
         // 레거시 또는 단일 응답 처리
-        return p.code || p.note || '제출됨'
+        return p.code || p.note || t('common.submitted')
       }
       case 'CODE':
-        return p.code || '정답제출'
+        return p.code || t('common.correctAnswerSubmitted')
       case 'LINK_VISIT':
-        return p.dwellSeconds ? `${p.dwellSeconds}초 체류` : '방문완료'
+        return p.dwellSeconds ? t('common.dwellSeconds', { n: p.dwellSeconds }) : t('common.visitCompleted')
       case 'FILE_UPLOAD':
-        return p.fileUrl || '파일업로드'
+        return p.fileUrl || t('common.fileUploaded')
       default:
         // 정의되지 않은 필드들도 최대한 보여줌
         const keys = Object.keys(p)
         if (keys.length > 0) {
           return keys.map(k => `${k}: ${p[k]}`).join(', ')
         }
-        return '참여완료'
+        return t('common.completed')
     }
   } catch {
-    return '데이터 파싱 오류'
+    return t('common.parseError')
   }
 }
 
@@ -371,7 +371,7 @@ async function exportToExcel() {
     
     allSubs.forEach(s => {
       if (!userMap.has(s.user.email)) {
-        userMap.set(s.user.email, { email: s.user.email, completed: 0, status: '미흡' })
+        userMap.set(s.user.email, { email: s.user.email, completed: 0, status: t('common.insufficient') })
       }
       if (s.status === 'APPROVED') {
         userMap.get(s.user.email)!.completed++
@@ -379,23 +379,23 @@ async function exportToExcel() {
     })
     
     const summaryRows = [...userMap.values()].map(u => ({
-      '이메일': u.email,
-      '완료 미션 수': u.completed,
-      '총 미션 수': missionCount,
-      '모든 미션 완료 여부': u.completed >= missionCount ? '완료 (추첨대상)' : '미완료'
+      [t('auth.email')]: u.email,
+      [t('ops.completedMissionCount')]: u.completed,
+      [t('ops.totalMissionCount')]: missionCount,
+      [t('ops.allMissionsCompleted')]: u.completed >= missionCount ? t('ops.completedLotteryTarget') : t('ops.incomplete')
     }))
     
     const summarySheet = XLSX.utils.json_to_sheet(summaryRows)
-    XLSX.utils.book_append_sheet(workbook, summarySheet, '참여자 요약')
+    XLSX.utils.book_append_sheet(workbook, summarySheet, t('ops.participantSummary'))
     
     // 2. 미션별 시트 생성
     camp.value.missions.forEach(m => {
       const mSubs = allSubs.filter(s => s.missionId === m.id)
       const rows = mSubs.map(s => ({
-        '이메일': s.user.email,
-        '상태': s.status,
-        '답변/내용': parsePayloadDetail(s),
-        '제출_시각': new Date(s.createdAt).toLocaleString()
+        [t('auth.email')]: s.user.email,
+        [t('ops.statusLabel')]: s.status,
+        [t('ops.answerContent')]: parsePayloadDetail(s),
+        [t('ops.submitTime')]: new Date(s.createdAt).toLocaleString()
       }))
       
       const sheet = XLSX.utils.json_to_sheet(rows)
@@ -407,7 +407,7 @@ async function exportToExcel() {
     XLSX.writeFile(workbook, `Campaign_Export_${camp.value.id}.xlsx`)
   } catch (e) {
     console.error(e)
-    err.value = '엑셀 추출 중 오류가 발생했습니다.'
+    err.value = t('ops.excelExportError')
   }
 }
 
@@ -426,7 +426,7 @@ async function downloadCsv() {
     link.click()
     document.body.removeChild(link)
   } catch {
-    alert('데이터 추출에 실패했습니다.')
+    alert(t('ops.exportFail'))
   }
 }
 </script>
@@ -450,7 +450,7 @@ async function downloadCsv() {
           📥 CSV
         </button>
         <button v-if="!isDraftLike" type="button" class="btn primary" @click="exportToExcel">
-          📊 {{ $t('ops.exportExcel') || '데이터 추출 (Excel)' }}
+          📊 {{ $t('ops.exportExcel') }}
         </button>
       </div>
     </div>
@@ -655,33 +655,33 @@ async function downloadCsv() {
 
         <template v-else-if="mType === 'TELEGRAM_JOIN'">
           <div class="field">
-            <label>채널/그룹 초대 링크 (t.me/...)</label>
+            <label>{{ $t('ops.telegramUrl') }}</label>
             <input v-model="cfgSnsLink" type="url" placeholder="https://t.me/..." />
           </div>
           <div class="field">
-            <label>채널 ID (@username)</label>
+            <label>{{ $t('ops.youtubeChannelHint') }}</label>
             <input v-model="cfgTgChannel" type="text" placeholder="@your_channel" />
           </div>
         </template>
 
         <template v-else-if="mType === 'DISCORD_JOIN'">
           <div class="field">
-            <label>서버 초대 링크 (discord.gg/...)</label>
+            <label>{{ $t('ops.discordUrl') }}</label>
             <input v-model="cfgSnsLink" type="url" placeholder="https://discord.gg/..." />
           </div>
           <div class="field">
-            <label>서버 ID (Guild ID)</label>
+            <label>{{ $t('ops.discordServerId') }}</label>
             <input v-model="cfgDiscordInvite" type="text" placeholder="123456789..." />
           </div>
         </template>
 
         <template v-else-if="mType === 'YOUTUBE_WATCH'">
           <div class="field">
-            <label>유튜브 영상 ID</label>
+            <label>{{ $t('ops.youtubeVideoHint') }}</label>
             <input v-model="cfgYtVideoId" type="text" placeholder="dQw4w9WgXcQ" />
           </div>
           <div class="field">
-            <label>목표 시청 시간 (초)</label>
+            <label>{{ $t('ops.youtubeTargetSeconds') }}</label>
             <input v-model.number="cfgYtTargetSec" type="number" min="1" />
           </div>
         </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts"></script>
 <template>
   <div class="legal-page card">
-    <h1>개인정보처리방침 (Privacy Policy)</h1>
+    <h1>{{ $t('legal.privacyTitle') }}</h1>
     <div class="legal-content">
       <p>pickku(이하 "회사")은 개인정보보호법에 따라 정보주체의 개인정보를 보호하고 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보 처리방침을 수립·공개합니다.</p>
 

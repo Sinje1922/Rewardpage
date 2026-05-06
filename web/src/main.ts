@@ -9,7 +9,7 @@ import ko from './locales/ko.json'
 import en from './locales/en.json'
 import pt from './locales/pt.json'
 
-const i18n = createI18n({
+export const i18n = createI18n({
   legacy: false,
   locale: localStorage.getItem('locale') || 'ko',
   fallbackLocale: 'en',

@@ -1,3 +1,6 @@
+import { i18n } from '../main'
+const { t } = i18n.global as any
+
 export interface SurveyQuestion {
   id: string
   type: 'SUBJECTIVE' | 'OBJECTIVE'
@@ -175,14 +178,14 @@ export function apiMissionToRow(m: {
 export function validateRows(rows: MissionRowState[]): string | null {
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i]
-    if (!r.title.trim()) return `미션 ${i + 1}: 제목을 입력해 주세요.`
+    if (!r.title.trim()) return t('error.missionTitleRequired', { n: i + 1 })
     if (r.type === 'QUIZ') {
       const opts = r.quizOptions.map((s) => s.trim()).filter(Boolean)
-      if (opts.length < 2) return `미션 ${i + 1}: 퀴즈 보기를 2개 이상 입력해 주세요.`
+      if (opts.length < 2) return t('error.missionQuizMinOptions', { n: i + 1 })
       if (r.quizCorrectIndex < 0 || r.quizCorrectIndex >= opts.length)
-        return `미션 ${i + 1}: 정답 보기를 선택해 주세요.`
+        return t('error.missionQuizAnswerRequired', { n: i + 1 })
     }
-    if (r.type === 'LINK_VISIT' && !r.linkUrl.trim()) return `미션 ${i + 1}: 링크 URL을 입력해 주세요.`
+    if (r.type === 'LINK_VISIT' && !r.linkUrl.trim()) return t('error.missionLinkRequired', { n: i + 1 })
   }
   return null
 }

@@ -1,23 +1,23 @@
 <script setup lang="ts"></script>
 <template>
   <div class="legal-page card">
-    <h1>자주 묻는 질문 (FAQ)</h1>
+    <h1>{{ $t('legal.faqTitle') }}</h1>
     <div class="legal-content">
       <div class="faq-item">
-        <h3>Q. 리워드는 어떻게 받나요?</h3>
-        <p>A. 미션을 완료하고 관리자가 승인하면 즉시 포인트가 지급됩니다.</p>
+        <h3>{{ $t('legal.qReward') }}</h3>
+        <p>{{ $t('legal.aReward') }}</p>
       </div>
       <div class="faq-item">
-        <h3>Q. 캠페인 추첨은 어떻게 진행되나요?</h3>
-        <p>A. 캠페인이 종료되면 시스템에서 무작위로 추첨을 진행합니다.</p>
+        <h3>{{ $t('legal.qDraw') }}</h3>
+        <p>{{ $t('legal.aDraw') }}</p>
       </div>
       <div class="faq-item">
-        <h3>Q. 구글 로그인이 안 돼요.</h3>
-        <p>A. 주소창이 올바른지 확인해 주세요. 시크릿 모드나 광고 차단기(Adblock)를 끄고 일반 브라우저 탭에서 다시 시도해 주시기 바랍니다.</p>
+        <h3>{{ $t('legal.qGoogle') }}</h3>
+        <p>{{ $t('legal.aGoogle') }}</p>
       </div>
       <div class="faq-item">
-        <h3>Q. 지갑 주소는 왜 필요한가요?</h3>
-        <p>A. 블록체인 기반의 리워드를 안전하고 투명하게 지급하기 위해 필요합니다.</p>
+        <h3>{{ $t('legal.qWallet') }}</h3>
+        <p>{{ $t('legal.aWallet') }}</p>
       </div>
     </div>
   </div>

@@ -116,7 +116,7 @@ async function onComplete() {
       }
     }
 
-    let errorMessage = '정보 저장 중 오류가 발생했습니다. 다시 시도해 주세요.'
+    let errorMessage = t('common.saveError')
     
     if (err.response && err.response.data && err.response.data.error) {
       const e = err.response.data.error
@@ -126,18 +126,18 @@ async function onComplete() {
         const fields = Object.keys(e.fieldErrors)
         if (fields.length > 0) {
           const fieldMap: Record<string, string> = {
-            nickname: '닉네임',
-            walletAddress: '지갑 주소',
-            birthDate: '생년월일',
-            gender: '성별',
-            country: '거주 국가'
+            nickname: t('mypage.nickname'),
+            walletAddress: t('mypage.walletAddress'),
+            birthDate: t('mypage.birthDate'),
+            gender: t('mypage.gender'),
+            country: t('mypage.country')
           }
           const fieldName = fieldMap[fields[0]] || fields[0]
-          errorMessage = `[${fieldName}] 항목에 문제가 있습니다: ${e.fieldErrors[fields[0]][0]}`
+          errorMessage = t('common.fieldProblem', { field: fieldName, error: e.fieldErrors[fields[0]][0] })
         }
       }
     } else if (err.response && err.response.status === 404) {
-       errorMessage = '서버 통신 오류 (404): 백엔드 API가 최신 버전이 아닙니다.'
+       errorMessage = t('common.apiOutdated')
     }
     
     error.value = errorMessage

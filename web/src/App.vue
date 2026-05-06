@@ -114,17 +114,17 @@ watch(() => route.path, () => {
         </div>
         <div class="footer-links">
           <div class="link-col">
-            <h4>Platform</h4>
-            <RouterLink to="/campaigns">Campaigns</RouterLink>
-            <RouterLink to="/my-page">My Page</RouterLink>
+            <h4>{{ $t('common.platform') }}</h4>
+            <RouterLink to="/campaigns">{{ $t('nav.campaigns') }}</RouterLink>
+            <RouterLink to="/my-page">{{ $t('nav.myPage') }}</RouterLink>
           </div>
           <div class="link-col">
-            <h4>Support</h4>
+            <h4>{{ $t('common.support') }}</h4>
             <RouterLink to="/faq">FAQ</RouterLink>
             <a href="mailto:support@rewardplatform.com">Contact Us</a>
           </div>
           <div class="link-col">
-            <h4>Legal</h4>
+            <h4>{{ $t('common.legal') }}</h4>
             <RouterLink to="/terms">Terms of Service</RouterLink>
             <RouterLink to="/privacy">Privacy Policy</RouterLink>
           </div>

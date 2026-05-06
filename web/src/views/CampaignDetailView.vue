@@ -178,7 +178,7 @@ async function handleSNSLinkVisit(m: Mission, type: 'telegram' | 'discord') {
   const isLinked = type === 'telegram' ? !!auth.user?.telegramHandle : !!auth.user?.discordHandle
   
   if (!isLinked) {
-    alert(`먼저 마이페이지에서 ${type === 'telegram' ? '텔레그램' : '디스코드'} 계정을 연동해 주세요.`)
+    alert(t('detail.snsLinkRequired', { type: type === 'telegram' ? 'Telegram' : 'Discord' }))
     return
   }
 
@@ -187,7 +187,7 @@ async function handleSNSLinkVisit(m: Mission, type: 'telegram' | 'discord') {
 
 async function logVisit(m: Mission) {
   if (!auth.token) {
-    err.value = '로그인이 필요합니다.'
+    err.value = t('common.loginRequired')
     return
   }
   const cfg = parseCfg(m.config)
@@ -204,7 +204,7 @@ async function submitMission(m: Mission) {
   err.value = ''
   msg.value = ''
   if (!auth.token) {
-    err.value = '로그인이 필요합니다.'
+    err.value = t('common.loginRequired')
     return
   }
   let payload: Record<string, unknown> = {}
@@ -232,19 +232,19 @@ async function submitMission(m: Mission) {
     payload = { fileUrl: codeInput.value[m.id] ?? '' }
   } else if (m.type === 'TELEGRAM_JOIN') {
     if (!auth.user?.telegramHandle) {
-      err.value = '텔레그램 연동이 필요합니다.'
+      err.value = t('detail.snsNotLinked', { type: 'Telegram' })
       return
     }
     payload = { handle: auth.user.telegramHandle }
   } else if (m.type === 'DISCORD_JOIN') {
     if (!auth.user?.discordHandle) {
-      err.value = '디스코드 연동이 필요합니다.'
+      err.value = t('detail.snsNotLinked', { type: 'Discord' })
       return
     }
     payload = { handle: auth.user.discordHandle }
   } else if (m.type === 'YOUTUBE_WATCH') {
     if (ytRemaining.value[m.id] > 0) {
-      err.value = '영상을 더 시청해야 합니다.'
+      err.value = t('detail.ytWatchRequired')
       return
     }
     payload = { watched: true }
@@ -354,7 +354,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
                 <template v-if="qs.type === 'SUBJECTIVE'">
                   <textarea 
                     v-model="(surveyAnswers[m.id] = surveyAnswers[m.id] || {})[qs.id]"
-                    placeholder="답변을 입력해 주세요"
+                    :placeholder="$t('detail.answerPlaceholder')"
                     class="survey-textarea"
                   />
                 </template>
@@ -375,7 +375,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
               </div>
             </div>
             
-            <button v-if="parseCfg(m.config).linkUrl" type="button" class="btn btn-sm full-width" @click="logVisit(m)">🔗 추가 링크 열기</button>
+            <button v-if="parseCfg(m.config).linkUrl" type="button" class="btn btn-sm full-width" @click="logVisit(m)">{{ $t('detail.extraLinkOpen') }}</button>
           </template>
 
           <template v-else-if="m.type === 'QUIZ'">
@@ -407,13 +407,13 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
           <template v-else-if="m.type === 'TELEGRAM_JOIN'">
             <div class="sns-mission-box">
               <button type="button" class="btn outline full-width mb-2" @click="handleSNSLinkVisit(m, 'telegram')">
-                ✈️ 텔레그램 채널 입장하기
+                {{ $t('detail.tgJoinBtn') }}
               </button>
               <div v-if="auth.user?.telegramHandle" class="linked-info">
-                연동된 계정: <strong>{{ auth.user.telegramHandle }}</strong>
+                {{ $t('detail.linkedAccount', { handle: auth.user.telegramHandle }) }}
               </div>
               <div v-else class="link-notice">
-                ⚠️ 텔레그램 계정이 연동되지 않았습니다. <RouterLink to="/my-page">마이페이지</RouterLink>에서 연동해 주세요.
+                {{ $t('detail.snsNotLinked', { type: 'Telegram' }) }} <RouterLink to="/my-page">{{ $t('nav.myPage') }}</RouterLink>
               </div>
             </div>
           </template>
@@ -421,13 +421,13 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
           <template v-else-if="m.type === 'DISCORD_JOIN'">
             <div class="sns-mission-box">
               <button type="button" class="btn outline full-width mb-2" @click="handleSNSLinkVisit(m, 'discord')">
-                👾 디스코드 서버 입장하기
+                {{ $t('detail.discordJoinBtn') }}
               </button>
               <div v-if="auth.user?.discordHandle" class="linked-info">
-                연동된 계정: <strong>{{ auth.user.discordHandle }}</strong>
+                {{ $t('detail.linkedAccount', { handle: auth.user.discordHandle }) }}
               </div>
               <div v-else class="link-notice">
-                ⚠️ 디스코드 계정이 연동되지 않았습니다. <RouterLink to="/my-page">마이페이지</RouterLink>에서 연동해 주세요.
+                {{ $t('detail.snsNotLinked', { type: 'Discord' }) }} <RouterLink to="/my-page">{{ $t('nav.myPage') }}</RouterLink>
               </div>
             </div>
           </template>
@@ -435,10 +435,10 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
           <template v-else-if="m.type === 'YOUTUBE_WATCH'">
             <div :id="'yt-player-' + m.id" class="yt-container mb-3"></div>
             <div v-if="ytRemaining[m.id] > 0" class="timer-box">
-              시청 중... ({{ ytRemaining[m.id] }}초 남음)
+              {{ $t('detail.ytWatching', { n: ytRemaining[m.id] }) }}
             </div>
             <div v-else class="timer-box success">
-              ✅ 시청 완료! 미션을 제출해 주세요.
+              {{ $t('detail.ytWatchComplete') }}
             </div>
           </template>
 
@@ -448,7 +448,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
             class="btn primary submit-btn"
             @click="submitMission(m)"
           >
-            미션 완료 및 제출
+            {{ $t('detail.submitMission') }}
           </button>
         </div>
       </div>

@@ -197,7 +197,7 @@ const missionCategories = [
                     const nextQs = [...row.surveyQuestions];
                     nextQs[qi] = { ...nextQs[qi], type: (e.target as HTMLSelectElement).value as any };
                     if (nextQs[qi].type === 'OBJECTIVE' && nextQs[qi].options.length === 0) {
-                      nextQs[qi].options = ['Option 1', 'Option 2'];
+                      nextQs[qi].options = [t('ops.optionPlaceholder', { n: 1 }), t('ops.optionPlaceholder', { n: 2 })];
                     }
                     updateRow(i, { surveyQuestions: nextQs });
                   }">
@@ -352,7 +352,7 @@ const missionCategories = [
 
         <template v-else-if="row.type === 'INSTAGRAM_LIKE'">
           <div class="field">
-            <label>Instagram Post ID / URL</label>
+            <label>{{ $t('ops.instagramPostHint') }}</label>
             <input :value="row.instagramPostId" placeholder="C123..." @input="updateRow(i, { instagramPostId: ($event.target as HTMLInputElement).value })" />
           </div>
         </template>

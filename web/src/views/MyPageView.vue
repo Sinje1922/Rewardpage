@@ -112,7 +112,7 @@ async function handleFileChange(event: Event) {
     await saveProfile()
   } catch (err: any) {
     console.error('Upload failed:', err)
-    alert(err.response?.data?.error || '업로드 실패')
+    alert(err.response?.data?.error || t('common.uploadFail'))
   } finally {
     uploading.value = false
     target.value = ''
@@ -183,7 +183,7 @@ function linkDiscord() {
 function linkTelegram() {
   const botName = import.meta.env.VITE_TELEGRAM_BOT_NAME || 'PickQ_bot'
   window.open(`https://t.me/${botName}?start=${auth.user?.id}`, '_blank')
-  alert("텔레그램 앱에서 '시작(Start)' 버튼을 누르면 연동이 완료됩니다. 연동 완료 시 화면이 자동으로 업데이트됩니다.")
+  alert(t('mypage.tgBotStartAlert'))
   
   // 연동 완료 자동 감지를 위한 폴링 시작
   startTelegramPolling()
@@ -208,7 +208,7 @@ function startTelegramPolling() {
         telegramHandle.value = data.telegramHandle
         if (auth.user) auth.user.telegramHandle = data.telegramHandle
         clearInterval(tgPollingInterval)
-        alert("텔레그램 연동이 완료되었습니다!")
+        alert(t('mypage.tgLinkedAlert'))
       }
     } catch (err) {
       console.error('Polling failed:', err)
@@ -222,7 +222,7 @@ function linkYouTube() {
 }
 
 async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
-  if (!confirm(`${type} 연동을 해제하시겠습니까?`)) return
+  if (!confirm(t('mypage.unlinkConfirm', { type }))) return
   
   try {
     const fieldMap = {
@@ -242,10 +242,10 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
       (auth.user as any)[fieldMap[type]] = null
     }
     
-    alert("연동이 해제되었습니다.")
+    alert(t('mypage.unlinkSuccess'))
   } catch (err) {
     console.error('Unlink failed:', err)
-    alert("연동 해제에 실패했습니다.")
+    alert(t('mypage.unlinkFail'))
   }
 }
 
@@ -376,8 +376,8 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
 
                 <!-- SNS Linking Section (OAuth Style) -->
                 <div class="sns-linking-section">
-                  <h3 class="sub-section-title">SNS 계정 연동</h3>
-                  <p class="section-hint">공식 인증을 통해 계정을 연동해 주세요.</p>
+                  <h3 class="sub-section-title">{{ $t('mypage.snsLinking') }}</h3>
+                  <p class="section-hint">{{ $t('mypage.snsHint') }}</p>
                   
                   <div class="sns-auth-grid">
                     <!-- Telegram -->
@@ -386,15 +386,15 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
                         <span class="sns-icon telegram">✈️</span>
                         <div class="sns-text">
                           <span class="sns-name">Telegram</span>
-                          <span class="sns-status">{{ telegramHandle || '미연동' }}</span>
+                          <span class="sns-status">{{ telegramHandle || $t('common.unlinked') }}</span>
                         </div>
                       </div>
                       <div class="auth-actions">
                         <button v-if="telegramHandle" type="button" class="auth-action-btn unlink" @click="unlinkSNS('telegram')">
-                          해제
+                          {{ $t('common.unlink') }}
                         </button>
                         <button type="button" class="auth-action-btn telegram" @click="linkTelegram">
-                          {{ telegramHandle ? '재연동' : '인증하기' }}
+                          {{ telegramHandle ? $t('common.relink') : $t('common.authBtn') }}
                         </button>
                       </div>
                     </div>
@@ -405,15 +405,15 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
                         <span class="sns-icon discord">💬</span>
                         <div class="sns-text">
                           <span class="sns-name">Discord</span>
-                          <span class="sns-status">{{ discordHandle || '미연동' }}</span>
+                          <span class="sns-status">{{ discordHandle || $t('common.unlinked') }}</span>
                         </div>
                       </div>
                       <div class="auth-actions">
                         <button v-if="discordHandle" type="button" class="auth-action-btn unlink" @click="unlinkSNS('discord')">
-                          해제
+                          {{ $t('common.unlink') }}
                         </button>
                         <button type="button" class="auth-action-btn discord" @click="linkDiscord">
-                          {{ discordHandle ? '재연동' : '인증하기' }}
+                          {{ discordHandle ? $t('common.relink') : $t('common.authBtn') }}
                         </button>
                       </div>
                     </div>
@@ -424,15 +424,15 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
                         <span class="sns-icon youtube">📺</span>
                         <div class="sns-text">
                           <span class="sns-name">YouTube</span>
-                          <span class="sns-status">{{ youtubeHandle || '미연동' }}</span>
+                          <span class="sns-status">{{ youtubeHandle || $t('common.unlinked') }}</span>
                         </div>
                       </div>
                       <div class="auth-actions">
                         <button v-if="youtubeHandle" type="button" class="auth-action-btn unlink" @click="unlinkSNS('youtube')">
-                          해제
+                          {{ $t('common.unlink') }}
                         </button>
                         <button type="button" class="auth-action-btn youtube" @click="linkYouTube">
-                          {{ youtubeHandle ? '재연동' : '인증하기' }}
+                          {{ youtubeHandle ? $t('common.relink') : $t('common.authBtn') }}
                         </button>
                       </div>
                     </div>
