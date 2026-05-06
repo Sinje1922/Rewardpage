@@ -153,14 +153,6 @@ const missionCategories = [
         <label>{{ $t('ops.description') }} ({{ $t('common.optional') || 'Optional' }})</label>
         <textarea :value="row.description" rows="2" @input="updateRow(i, { description: ($event.target as HTMLTextAreaElement).value })" />
       </div>
-      <div class="field">
-        <label>{{ $t('ops.sortOrder') }}</label>
-        <input
-          type="number"
-          :value="row.sortOrder"
-          @input="updateRow(i, { sortOrder: Number(($event.target as HTMLInputElement).value) })"
-        />
-      </div>
 
       <div class="type-box">
         <template v-if="row.type === 'LINK_VISIT'">

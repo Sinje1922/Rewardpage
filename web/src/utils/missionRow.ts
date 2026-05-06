@@ -130,7 +130,7 @@ export function rowToPayload(row: MissionRowState, index: number): MissionPayloa
     type: row.type,
     title: row.title.trim(),
     description: row.description.trim(),
-    sortOrder: row.sortOrder ?? index,
+    sortOrder: index,
     config: buildConfig(row),
   }
 }
