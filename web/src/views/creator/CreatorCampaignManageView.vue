@@ -87,7 +87,6 @@ const missionRows = ref<MissionRowState[]>([emptyMissionRow(0)])
 const mType = ref('LINK_VISIT')
 const mTitle = ref('')
 const mDesc = ref('')
-const mOrder = ref(0)
 const cfgLinkUrl = ref('')
 const cfgMinDwell = ref(0)
 const cfgCorrectCode = ref('')
@@ -258,7 +257,7 @@ async function addMission() {
       type: mType.value,
       title: mTitle.value,
       description: mDesc.value,
-      sortOrder: mOrder.value,
+      sortOrder: camp.value?.missions.length || 0,
       config: cfg,
     })
     mTitle.value = ''
@@ -590,10 +589,7 @@ async function downloadCsv() {
         <label>{{ $t('ops.description') }} ({{ $t('common.optional') || 'Optional' }})</label>
         <textarea v-model="mDesc" rows="2" :placeholder="t('ops.descPlaceholder') || 'Enter mission details'" />
       </div>
-      <div class="field">
-        <label>{{ $t('ops.sortOrder') || 'Sort Order' }}</label>
-        <input v-model.number="mOrder" type="number" />
-      </div>
+
 
       <div style="margin: 1rem 0; padding: 1rem; background: rgba(0, 0, 0, 0.03); border-radius: 8px; border: 1px dashed var(--border)">
         <h3 style="margin-top: 0; font-size: 0.9rem; color: var(--accent); margin-bottom: 0.75rem">{{ $t('ops.typeConfig') || 'Type Config' }}</h3>

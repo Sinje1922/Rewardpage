@@ -11,12 +11,71 @@ function updateRow(i: number, patch: Partial<MissionRowState>) {
   rows.value = next
 }
 
-function addRow() {
-  rows.value = [...rows.value, emptyMissionRow(rows.value.length)]
+const missionCategories = [
+  {
+    id: 'general',
+    labelKey: 'ops.catGeneral',
+    types: [
+      { id: 'LINK_VISIT', labelKey: 'ops.typeLink', icon: '🔗' },
+      { id: 'CODE', labelKey: 'ops.typeCode', icon: '⌨️' },
+      { id: 'QUIZ', labelKey: 'ops.typeQuiz', icon: '❓' },
+      { id: 'SURVEY', labelKey: 'ops.typeSurvey', icon: '📝' },
+      { id: 'CHECKIN', labelKey: 'ops.typeCheckin', icon: '✅' },
+      { id: 'FILE_UPLOAD', labelKey: 'ops.typeFile', icon: '📁' },
+    ]
+  },
+  {
+    id: 'youtube',
+    labelKey: 'ops.catYouTube',
+    types: [
+      { id: 'YOUTUBE_WATCH', labelKey: 'ops.typeYoutube', icon: '📺' },
+      { id: 'YOUTUBE_SUBSCRIBE', labelKey: 'ops.typeYouTubeSub', icon: '🔴' },
+      { id: 'YOUTUBE_LIKE', labelKey: 'ops.typeYouTubeLike', icon: '👍' },
+    ]
+  },
+  {
+    id: 'telegram',
+    labelKey: 'ops.catTelegram',
+    types: [
+      { id: 'TELEGRAM_CHANNEL', labelKey: 'ops.typeTelegramChannel', icon: '📢' },
+      { id: 'TELEGRAM_GROUP', labelKey: 'ops.typeTelegramGroup', icon: '👥' },
+    ]
+  },
+  {
+    id: 'instagram',
+    labelKey: 'ops.catInstagram',
+    types: [
+      { id: 'INSTAGRAM_FOLLOW', labelKey: 'ops.typeInstagramFollow', icon: '📸' },
+      { id: 'INSTAGRAM_LIKE', labelKey: 'ops.typeInstagramLike', icon: '❤️' },
+    ]
+  },
+  {
+    id: 'discord',
+    labelKey: 'ops.catDiscord',
+    types: [
+      { id: 'DISCORD_JOIN', labelKey: 'ops.typeDiscord', icon: '👾' },
+    ]
+  },
+]
+
+function toggleType(typeId: string) {
+  const existingIdx = rows.value.findIndex((r) => r.type === typeId)
+  if (existingIdx !== -1) {
+    rows.value = rows.value.filter((_, i) => i !== existingIdx)
+  } else {
+    const r = emptyMissionRow(rows.value.length)
+    r.type = typeId
+    const typeLabel = t(missionCategories.flatMap(c => c.types).find(t => t.id === typeId)?.labelKey || '')
+    r.title = typeLabel
+    rows.value = [...rows.value, r]
+  }
+}
+
+function isTypeActive(typeId: string) {
+  return rows.value.some((r) => r.type === typeId)
 }
 
 function removeRow(i: number) {
-  if (rows.value.length <= 1) return
   rows.value = rows.value.filter((_, j) => j !== i)
 }
 
@@ -67,84 +126,40 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
   nextQs[qi] = { ...nextQs[qi], options: nextQs[qi].options.filter((_, j) => j !== oi) }
   updateRow(mi, { surveyQuestions: nextQs })
 }
-
-const missionCategories = [
-  {
-    id: 'general',
-    labelKey: 'ops.catGeneral',
-    types: [
-      { id: 'LINK_VISIT', labelKey: 'ops.typeLink', icon: '🔗' },
-      { id: 'CODE', labelKey: 'ops.typeCode', icon: '⌨️' },
-      { id: 'QUIZ', labelKey: 'ops.typeQuiz', icon: '❓' },
-      { id: 'SURVEY', labelKey: 'ops.typeSurvey', icon: '📝' },
-      { id: 'CHECKIN', labelKey: 'ops.typeCheckin', icon: '✅' },
-      { id: 'FILE_UPLOAD', labelKey: 'ops.typeFile', icon: '📁' },
-    ]
-  },
-  {
-    id: 'youtube',
-    labelKey: 'ops.catYouTube',
-    types: [
-      { id: 'YOUTUBE_WATCH', labelKey: 'ops.typeYoutube', icon: '📺' },
-      { id: 'YOUTUBE_SUBSCRIBE', labelKey: 'ops.typeYouTubeSub', icon: '🔴' },
-      { id: 'YOUTUBE_LIKE', labelKey: 'ops.typeYouTubeLike', icon: '👍' },
-    ]
-  },
-  {
-    id: 'telegram',
-    labelKey: 'ops.catTelegram',
-    types: [
-      { id: 'TELEGRAM_CHANNEL', labelKey: 'ops.typeTelegramChannel', icon: '📢' },
-      { id: 'TELEGRAM_GROUP', labelKey: 'ops.typeTelegramGroup', icon: '👥' },
-    ]
-  },
-  {
-    id: 'instagram',
-    labelKey: 'ops.catInstagram',
-    types: [
-      { id: 'INSTAGRAM_FOLLOW', labelKey: 'ops.typeInstagramFollow', icon: '📸' },
-      { id: 'INSTAGRAM_LIKE', labelKey: 'ops.typeInstagramLike', icon: '❤️' },
-    ]
-  },
-  {
-    id: 'discord',
-    labelKey: 'ops.catDiscord',
-    types: [
-      { id: 'DISCORD_JOIN', labelKey: 'ops.typeDiscord', icon: '👾' },
-    ]
-  },
-
-]
 </script>
 
 <template>
   <div class="mission-list">
-    <div v-for="(row, i) in rows" :key="row.key" class="mission-card card">
-      <div class="mission-head">
-        <span class="idx">{{ t('ops.missionNum', { n: i + 1 }) }}</span>
-        <button type="button" class="btn btn-sm" :disabled="rows.length <= 1" @click="removeRow(i)">{{ t('ops.remove') }}</button>
-      </div>
-      <div class="field">
-        <label>{{ t('ops.type') }}</label>
-        <div class="mission-type-picker">
-          <div v-for="cat in missionCategories" :key="cat.id" class="mission-cat-group">
-            <div class="cat-name">{{ t(cat.labelKey) }}</div>
-            <div class="type-grid">
-              <button
-                v-for="mType in cat.types"
-                :key="mType.id"
-                type="button"
-                class="type-btn"
-                :class="{ active: row.type === mType.id }"
-                @click="updateRow(i, { type: mType.id })"
-              >
-                <span class="type-icon">{{ mType.icon }}</span>
-                <span class="type-label">{{ t(mType.labelKey) }}</span>
-              </button>
-            </div>
-          </div>
+    <!-- Global Type Picker -->
+    <div class="mission-type-picker-global">
+      <div v-for="cat in missionCategories" :key="cat.id" class="mission-cat-group">
+        <div class="cat-name">{{ t(cat.labelKey) }}</div>
+        <div class="type-grid">
+          <button
+            v-for="mType in cat.types"
+            :key="mType.id"
+            type="button"
+            class="type-btn"
+            :class="{ active: isTypeActive(mType.id) }"
+            @click="toggleType(mType.id)"
+          >
+            <span class="type-icon">{{ mType.icon }}</span>
+            <span class="type-label">{{ t(mType.labelKey) }}</span>
+          </button>
         </div>
       </div>
+    </div>
+
+    <!-- Active Missions Configuration -->
+    <div v-for="(row, i) in rows" :key="row.key" class="mission-card card">
+      <div class="mission-head">
+        <div style="display: flex; align-items: center; gap: 0.5rem">
+          <span class="type-badge">{{ t(missionCategories.flatMap(c => c.types).find(t => t.id === row.type)?.labelKey || 'ops.type') }}</span>
+          <span class="idx">{{ t('ops.missionNum', { n: i + 1 }) }}</span>
+        </div>
+        <button type="button" class="btn btn-sm" @click="removeRow(i)">{{ t('ops.remove') }}</button>
+      </div>
+
       <div class="field">
         <label>{{ $t('ops.missionTitle') }}</label>
         <input :value="row.title" :placeholder="t('ops.titlePlaceholder')" @input="updateRow(i, { title: ($event.target as HTMLInputElement).value })" />
@@ -352,7 +367,7 @@ const missionCategories = [
       </div>
     </div>
 
-    <button type="button" class="btn" style="width: 100%" @click="addRow">{{ t('ops.addMissionBtn') }}</button>
+    </div>
   </div>
 </template>
 
@@ -439,7 +454,7 @@ const missionCategories = [
   padding: 0.25rem 0.5rem;
   font-size: 0.85rem;
 }
-.mission-type-picker {
+.mission-type-picker-global {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -447,6 +462,16 @@ const missionCategories = [
   padding: 1.25rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+.type-badge {
+  background: var(--accent);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
 }
 .mission-cat-group {
   display: flex;
