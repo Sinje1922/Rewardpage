@@ -234,16 +234,16 @@ async function setBlock(id: string, blocked: boolean) {
         <div class="card chart-card">
           <h3>📍 {{ $t('admin.countryDist') }}</h3>
           <div class="geo-list">
-            <div v-for="r in dashboard.regions.slice(0, 8)" :key="r.name" class="geo-item">
-              <span class="name">{{ r.name }}</span>
+            <div v-for="c in dashboard.countries.slice(0, 8)" :key="c.name" class="geo-item">
+              <span class="name">{{ c.name }}</span>
               <div class="bar-bg">
                 <div 
                   class="bar-fill" 
                   style="background: var(--mint)"
-                  :style="{ width: (r.count / Math.max(dashboard.summary.users, 1) * 100) + '%' }"
+                  :style="{ width: (c.count / Math.max(dashboard.summary.users, 1) * 100) + '%' }"
                 ></div>
               </div>
-              <span class="count">{{ r.count }}</span>
+              <span class="count">{{ c.count }}</span>
             </div>
           </div>
         </div>

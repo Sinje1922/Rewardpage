@@ -183,7 +183,37 @@ function linkDiscord() {
 function linkTelegram() {
   const botName = import.meta.env.VITE_TELEGRAM_BOT_NAME || 'PickQ_bot'
   window.open(`https://t.me/${botName}?start=${auth.user?.id}`, '_blank')
-  alert("텔레그램 앱에서 '시작(Start)' 버튼을 누르면 연동이 완료됩니다.")
+  alert("텔레그램 앱에서 '시작(Start)' 버튼을 누르면 연동이 완료됩니다. 연동 완료 시 화면이 자동으로 업데이트됩니다.")
+  
+  // 연동 완료 자동 감지를 위한 폴링 시작
+  startTelegramPolling()
+}
+
+let tgPollingInterval: any = null
+function startTelegramPolling() {
+  if (tgPollingInterval) clearInterval(tgPollingInterval)
+  
+  const startTime = Date.now()
+  const maxDuration = 120000 // 최대 2분간 확인
+  
+  tgPollingInterval = setInterval(async () => {
+    if (Date.now() - startTime > maxDuration) {
+      clearInterval(tgPollingInterval)
+      return
+    }
+    
+    try {
+      const { data } = await api.get('/me')
+      if (data.telegramHandle) {
+        telegramHandle.value = data.telegramHandle
+        if (auth.user) auth.user.telegramHandle = data.telegramHandle
+        clearInterval(tgPollingInterval)
+        alert("텔레그램 연동이 완료되었습니다!")
+      }
+    } catch (err) {
+      console.error('Polling failed:', err)
+    }
+  }, 3000) // 3초마다 확인
 }
 
 function linkYouTube() {
