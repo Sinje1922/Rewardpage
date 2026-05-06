@@ -366,8 +366,6 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
 
       </div>
     </div>
-
-    </div>
   </div>
 </template>
 
