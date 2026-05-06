@@ -49,7 +49,7 @@ const trendingList = computed(() => {
       if (mDiff !== 0) return mDiff
       return new Date(b.startsAt || 0).getTime() - new Date(a.startsAt || 0).getTime()
     })
-    .slice(0, 6)
+    .slice(0, 4)
 })
 
 const banners = computed(() => [
