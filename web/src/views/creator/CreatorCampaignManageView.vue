@@ -55,13 +55,13 @@ type Stats = {
   byMission: { missionId: string; title: string; approved: number; pending: number; rejected: number }[]
 }
 
-type TabId = 'compose' | 'missions' | 'subs' | 'stats' | 'draw'
+type TabId = 'compose' | 'participants' | 'winners'
 
 const { t } = useI18n()
 const route = useRoute()
 const camp = ref<CampaignDetail | null>(null)
-const submissions = ref<SubRow[]>([])
-const stats = ref<Stats | null>(null)
+const participants = ref<{ email: string; completed: number; status: string }[]>([])
+const winnersList = ref<{ email: string }[]>([])
 const err = ref('')
 const tab = ref<TabId>('compose')
 const saving = ref(false)
@@ -101,17 +101,7 @@ const cfgTgChannel = ref('')
 const cfgDiscordInvite = ref('')
 const cfgSnsLink = ref('')
 
-function addQuizOption() {
-  cfgQuizOptions.value.push('')
-}
-function removeQuizOption(idx: number) {
-  if (cfgQuizOptions.value.length > 1) {
-    cfgQuizOptions.value.splice(idx, 1)
-    if (cfgQuizCorrect.value >= cfgQuizOptions.value.length) {
-      cfgQuizCorrect.value = cfgQuizOptions.value.length - 1
-    }
-  }
-}
+
 
 function syncDraftFromCamp() {
   const c = camp.value
@@ -141,23 +131,34 @@ async function reload() {
   const { data } = await api.get<CampaignDetail>(`/campaigns/${id}`)
   camp.value = data
   syncDraftFromCamp()
-  if (!isDraftLike.value) {
-    tab.value = 'missions'
-  } else {
-    tab.value = 'compose'
-  }
+  tab.value = 'compose'
 }
 
-async function loadSubs() {
+async function loadParticipants() {
   const id = route.params.id as string
-  const { data } = await api.get<SubRow[]>(`/campaigns/${id}/submissions`)
-  submissions.value = data
+  const { data: allSubs } = await api.get<SubRow[]>(`/campaigns/${id}/submissions`)
+  const missionCount = camp.value?.missions.length || 0
+  const userMap = new Map<string, { email: string; completed: number; status: string }>()
+  
+  allSubs.forEach(s => {
+    if (!userMap.has(s.user.email)) {
+      userMap.set(s.user.email, { email: s.user.email, completed: 0, status: '' })
+    }
+    if (s.status === 'APPROVED') {
+      userMap.get(s.user.email)!.completed++
+    }
+  })
+  
+  participants.value = [...userMap.values()].map(u => ({
+    ...u,
+    status: u.completed >= missionCount ? t('ops.completedLotteryTarget') : t('ops.incomplete')
+  }))
 }
 
-async function loadStats() {
+async function loadWinners() {
   const id = route.params.id as string
-  const { data } = await api.get<Stats>(`/campaigns/${id}/stats`)
-  stats.value = data
+  const { data } = await api.get<any[]>(`/campaigns/${id}/winners`) // Assuming this endpoint exists or will be used
+  winnersList.value = data.map(w => ({ email: w.user.email }))
 }
 
 onMounted(async () => {
@@ -225,87 +226,17 @@ async function saveDraft() {
   }
 }
 
-async function addMission() {
-  err.value = ''
-  const id = route.params.id as string
 
-  let cfg: Record<string, unknown> = {}
-  if (mType.value === 'LINK_VISIT') {
-    cfg = { linkUrl: cfgLinkUrl.value, minDwellSeconds: cfgMinDwell.value }
-  } else if (mType.value === 'CODE') {
-    cfg = { correctCode: cfgCorrectCode.value }
-  } else if (mType.value === 'SURVEY') {
-    cfg = { linkUrl: cfgLinkUrl.value, correctCode: cfgCorrectCode.value, surveyNote: cfgSurveyNote.value }
-  } else if (mType.value === 'QUIZ') {
-    cfg = {
-      quizQuestion: cfgQuizQuestion.value,
-      quizOptions: cfgQuizOptions.value.filter((o) => o.trim()),
-      correctIndex: cfgQuizCorrect.value,
-    }
-  } else if (mType.value === 'FILE_UPLOAD') {
-    cfg = { fileNote: cfgFileNote.value }
-  } else if (mType.value === 'TELEGRAM_JOIN') {
-    cfg = { telegramChannel: cfgTgChannel.value, linkUrl: cfgSnsLink.value }
-  } else if (mType.value === 'DISCORD_JOIN') {
-    cfg = { discordInvite: cfgDiscordInvite.value, linkUrl: cfgSnsLink.value }
-  } else if (mType.value === 'YOUTUBE_WATCH') {
-    cfg = { videoId: cfgYtVideoId.value, targetSeconds: cfgYtTargetSec.value }
-  }
 
-  try {
-    await api.post(`/campaigns/${id}/missions`, {
-      type: mType.value,
-      title: mTitle.value,
-      description: mDesc.value,
-      sortOrder: camp.value?.missions.length || 0,
-      config: cfg,
-    })
-    mTitle.value = ''
-    mDesc.value = ''
-    cfgLinkUrl.value = ''
-    cfgMinDwell.value = 0
-    cfgCorrectCode.value = ''
-    cfgSurveyNote.value = ''
-    cfgQuizQuestion.value = ''
-    cfgQuizOptions.value = ['', '']
-    cfgQuizCorrect.value = 0
-    cfgQuizCorrect.value = 0
-    cfgFileNote.value = ''
-    cfgYtVideoId.value = ''
-    cfgYtTargetSec.value = 10
-    cfgTgChannel.value = ''
-    cfgDiscordInvite.value = ''
-    cfgSnsLink.value = ''
-    await reload()
-  } catch {
-    err.value = t('ops.missionAddFail') || 'Mission Add Fail'
-  }
-}
 
-async function setSubmission(id: string, status: 'APPROVED' | 'REJECTED') {
-  await api.patch(`/submissions/${id}`, { status })
-  await loadSubs()
-  await loadStats()
-}
 
-async function runDraw() {
-  err.value = ''
-  try {
-    const id = route.params.id as string
-    await api.post(`/campaigns/${id}/draw`)
-    await reload()
-    tab.value = 'draw'
-  } catch (e: unknown) {
-    const ax = e as { response?: { data?: { error?: string } } }
-    err.value = ax.response?.data?.error ?? (t('ops.drawFail') || 'Draw Fail')
-  }
-}
+
 
 async function openTab(t: TabId) {
   tab.value = t
   err.value = ''
-  if (t === 'subs') await loadSubs()
-  if (t === 'stats') await loadStats()
+  if (t === 'participants') await loadParticipants()
+  if (t === 'winners') await loadWinners()
 }
 
 function parsePayloadDetail(s: SubRow) {
@@ -461,61 +392,34 @@ async function downloadCsv() {
     </p>
     <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem">
       <button
-        v-if="isDraftLike"
         type="button"
         class="btn"
         :class="{ primary: tab === 'compose' }"
         @click="openTab('compose')"
       >
-        {{ $t('ops.editCompose') || 'Edit Compose' }}
+        {{ $t('ops.tabSettings') || 'Settings' }}
       </button>
       <button
-        v-if="!isDraftLike"
         type="button"
         class="btn"
-        :class="{ primary: tab === 'missions' }"
-        @click="openTab('missions')"
+        :class="{ primary: tab === 'participants' }"
+        @click="openTab('participants')"
       >
-        {{ $t('ops.addMission') || 'Add Mission' }}
+        {{ $t('ops.participants') || 'Participants' }}
       </button>
-      <button type="button" class="btn" :class="{ primary: tab === 'subs' }" @click="openTab('subs')">{{ $t('ops.submissions') || 'Submissions' }}</button>
-      <button type="button" class="btn" :class="{ primary: tab === 'stats' }" @click="openTab('stats')">{{ $t('ops.stats') || 'Stats' }}</button>
-      <button type="button" class="btn" :class="{ primary: tab === 'draw' }" @click="openTab('draw')">{{ $t('ops.draw') || 'Draw' }}</button>
+      <button
+        type="button"
+        class="btn"
+        :class="{ primary: tab === 'winners' }"
+        @click="openTab('winners')"
+      >
+        {{ $t('ops.winners') || 'Winners' }}
+      </button>
     </div>
     <p v-if="err" class="err">{{ err }}</p>
 
-    <section v-if="tab === 'compose' && isDraftLike" class="card">
-      <h2 style="font-size: 1.05rem; color: var(--text-h); margin: 0 0 0.75rem">{{ $t('ops.clientSection') }}</h2>
-      <div class="field">
-        <label>{{ $t('ops.companyName') }}</label>
-        <input v-model="draftCompanyName" />
-      </div>
-      <div class="field">
-        <label>{{ $t('ops.companyLogo') }}</label>
-        <div class="logo-row">
-          <img v-if="draftCompanyLogo" :src="getFileUrl(draftCompanyLogo)" alt="" class="logo-preview" />
-          <div class="logo-actions">
-            <input
-              ref="logoFileInput"
-              type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
-              class="sr-only"
-              @change="onDraftLogoFile"
-            />
-            <button type="button" class="btn" :disabled="logoUploading" @click="logoFileInput?.click()">
-              {{ logoUploading ? $t('ops.uploading') : $t('ops.selectFile') }}
-            </button>
-            <button v-if="draftCompanyLogo" type="button" class="btn" @click="clearDraftLogo">{{ $t('ops.remove') }}</button>
-          </div>
-        </div>
-        <p class="logo-hint">{{ $t('ops.logoHint') }}</p>
-      </div>
-      <div class="field">
-        <label>{{ $t('ops.logoUrl') }}</label>
-        <input v-model="draftCompanyLogo" type="text" placeholder="https://… or /uploads/…" />
-      </div>
-
-      <h2 style="font-size: 1.05rem; color: var(--text-h); margin: 1.25rem 0 0.75rem">{{ $t('ops.campaignSection') }}</h2>
+    <section v-if="tab === 'compose'" class="card">
+      <h2 style="font-size: 1.05rem; color: var(--text-h); margin: 0 0 0.75rem">{{ $t('ops.campaignSection') }}</h2>
       <div class="field">
         <label>{{ $t('ops.campaignTitle') }}</label>
         <input v-model="draftTitle" />
@@ -524,203 +428,93 @@ async function downloadCsv() {
         <label>{{ $t('ops.description') }}</label>
         <textarea v-model="draftDescription" rows="3" />
       </div>
-      <div class="field">
-        <label>{{ $t('ops.winnerCount') }}</label>
-        <input v-model.number="draftWinnerCount" type="number" min="1" />
-      </div>
-      <div class="field">
-        <label>{{ $t('ops.lotteryMode') }}</label>
-        <select v-model="draftLotteryMode">
-          <option value="SIMPLE">SIMPLE</option>
-          <option value="WEIGHTED">WEIGHTED</option>
-        </select>
-      </div>
-      <label style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem">
-        <input v-model="draftAutoApprove" type="checkbox" />
-        {{ $t('ops.autoApprove') }}
-      </label>
-      <div class="field">
-        <label>{{ $t('ops.totalReward') }}</label>
-        <input v-model.number="draftTotalRewardPoints" type="number" min="0" />
-      </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem">
-        <div class="field">
-          <label>{{ $t('ops.startsAt') }}</label>
-          <input v-model="draftStartsAt" type="datetime-local" />
-        </div>
-        <div class="field">
-          <label>{{ $t('ops.endsAt') }}</label>
-          <input v-model="draftEndsAt" type="datetime-local" />
-        </div>
-      </div>
 
-      <h2 style="font-size: 1.05rem; color: var(--text-h); margin: 1.25rem 0 0.75rem">{{ $t('ops.missionSection') }}</h2>
-      <MissionListEditor v-model="missionRows" />
+      <template v-if="isDraftLike">
+        <h2 style="font-size: 1.05rem; color: var(--text-h); margin: 1.25rem 0 0.75rem">{{ $t('ops.clientSection') }}</h2>
+        <div class="field">
+          <label>{{ $t('ops.companyName') }}</label>
+          <input v-model="draftCompanyName" />
+        </div>
+        <div class="field">
+          <label>{{ $t('ops.companyLogo') }}</label>
+          <div class="logo-row">
+            <img v-if="draftCompanyLogo" :src="getFileUrl(draftCompanyLogo)" alt="" class="logo-preview" />
+            <div class="logo-actions">
+              <input
+                ref="logoFileInput"
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+                class="sr-only"
+                @change="onDraftLogoFile"
+              />
+              <button type="button" class="btn" :disabled="logoUploading" @click="logoFileInput?.click()">
+                {{ logoUploading ? $t('ops.uploading') : $t('ops.selectFile') }}
+              </button>
+              <button v-if="draftCompanyLogo" type="button" class="btn" @click="clearDraftLogo">{{ $t('ops.remove') }}</button>
+            </div>
+          </div>
+          <p class="logo-hint">{{ $t('ops.logoHint') }}</p>
+        </div>
+        <div class="field">
+          <label>{{ $t('ops.logoUrl') }}</label>
+          <input v-model="draftCompanyLogo" type="text" placeholder="https://… or /uploads/…" />
+        </div>
+
+        <div class="field">
+          <label>{{ $t('ops.winnerCount') }}</label>
+          <input v-model.number="draftWinnerCount" type="number" min="1" />
+        </div>
+        <div class="field">
+          <label>{{ $t('ops.lotteryMode') }}</label>
+          <select v-model="draftLotteryMode">
+            <option value="SIMPLE">SIMPLE</option>
+            <option value="WEIGHTED">WEIGHTED</option>
+          </select>
+        </div>
+        <label style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem">
+          <input v-model="draftAutoApprove" type="checkbox" />
+          {{ $t('ops.autoApprove') }}
+        </label>
+        <div class="field">
+          <label>{{ $t('ops.totalReward') }}</label>
+          <input v-model.number="draftTotalRewardPoints" type="number" min="0" />
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem">
+          <div class="field">
+            <label>{{ $t('ops.startsAt') }}</label>
+            <input v-model="draftStartsAt" type="datetime-local" />
+          </div>
+          <div class="field">
+            <label>{{ $t('ops.endsAt') }}</label>
+            <input v-model="draftEndsAt" type="datetime-local" />
+          </div>
+        </div>
+
+        <h2 style="font-size: 1.05rem; color: var(--text-h); margin: 1.25rem 0 0.75rem">{{ $t('ops.missionSection') }}</h2>
+        <MissionListEditor v-model="missionRows" />
+      </template>
 
       <button type="button" class="btn primary" style="margin-top: 1rem" :disabled="saving" @click="saveDraft">
         {{ saving ? $t('ops.saving') : $t('ops.saveDraft') }}
       </button>
     </section>
 
-    <section v-if="tab === 'missions' && !isDraftLike" class="card">
-      <h2 style="font-size: 1.05rem; color: var(--text-h); margin: 0 0 0.75rem">{{ $t('ops.addMission') }}</h2>
-      <p style="font-size: 0.9rem; color: var(--muted); margin: 0 0 1rem">
-        {{ $t('ops.addMissionNotice') || 'Public campaigns can add missions one by one.' }}
-      </p>
-      <div class="field">
-        <label>{{ $t('ops.type') || 'Type' }}</label>
-        <select v-model="mType">
-          <option value="LINK_VISIT">LINK_VISIT</option>
-          <option value="SURVEY">SURVEY</option>
-          <option value="CODE">CODE</option>
-          <option value="QUIZ">QUIZ</option>
-          <option value="CHECKIN">CHECKIN</option>
-          <option value="FILE_UPLOAD">FILE_UPLOAD</option>
-          <option value="TELEGRAM_JOIN">TELEGRAM_JOIN</option>
-          <option value="DISCORD_JOIN">DISCORD_JOIN</option>
-          <option value="YOUTUBE_WATCH">YOUTUBE_WATCH</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>{{ $t('ops.missionTitle') || 'Title' }}</label>
-        <input v-model="mTitle" :placeholder="t('ops.titlePlaceholder') || 'e.g. Visit Website'" required />
-      </div>
-      <div class="field">
-        <label>{{ $t('ops.description') }} ({{ $t('common.optional') || 'Optional' }})</label>
-        <textarea v-model="mDesc" rows="2" :placeholder="t('ops.descPlaceholder') || 'Enter mission details'" />
-      </div>
-
-
-      <div style="margin: 1rem 0; padding: 1rem; background: rgba(0, 0, 0, 0.03); border-radius: 8px; border: 1px dashed var(--border)">
-        <h3 style="margin-top: 0; font-size: 0.9rem; color: var(--accent); margin-bottom: 0.75rem">{{ $t('ops.typeConfig') || 'Type Config' }}</h3>
-
-        <template v-if="mType === 'LINK_VISIT'">
-          <div class="field">
-            <label>{{ $t('ops.linkUrl') || 'Link URL' }}</label>
-            <input v-model="cfgLinkUrl" type="url" placeholder="https://..." />
-          </div>
-          <div class="field">
-            <label>{{ $t('ops.minDwell') || 'Min Dwell (sec)' }}</label>
-            <input v-model.number="cfgMinDwell" type="number" min="0" />
-          </div>
-        </template>
-
-        <template v-else-if="mType === 'CODE' || mType === 'SURVEY'">
-          <div class="field">
-            <label>{{ $t('ops.correctCode') || 'Correct Code' }}</label>
-            <input v-model="cfgCorrectCode" type="text" :placeholder="t('ops.codePlaceholder') || 'Code to submit'" />
-          </div>
-          <div v-if="mType === 'SURVEY'" class="field">
-            <label>{{ $t('ops.surveyUrl') || 'Survey URL' }}</label>
-            <input v-model="cfgLinkUrl" type="url" placeholder="https://..." />
-          </div>
-          <div v-if="mType === 'SURVEY'" class="field">
-            <label>{{ $t('ops.surveyNote') || 'Survey Note' }}</label>
-            <textarea v-model="cfgSurveyNote" rows="2" placeholder="Instructions for the user" />
-          </div>
-        </template>
-
-        <template v-else-if="mType === 'QUIZ'">
-          <div class="field">
-            <label>{{ $t('ops.quizQuestion') || 'Quiz Question' }}</label>
-            <input v-model="cfgQuizQuestion" type="text" placeholder="Enter question" />
-          </div>
-          <div class="field">
-            <label>{{ $t('ops.quizOptions') || 'Options' }}</label>
-            <div
-              v-for="(_, idx) in cfgQuizOptions"
-              :key="idx"
-              style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem"
-            >
-              <input type="radio" :value="idx" v-model="cfgQuizCorrect" />
-              <input v-model="cfgQuizOptions[idx]" type="text" :placeholder="t('ops.optionPlaceholder') + ' ' + (idx + 1)" style="flex: 1" />
-              <button type="button" class="btn" style="padding: 0.2rem 0.5rem; font-size: 0.8rem" @click="removeQuizOption(idx)">
-                {{ $t('ops.remove') }}
-              </button>
-            </div>
-            <button type="button" class="btn" style="width: 100%; margin-top: 0.25rem" @click="addQuizOption">+ {{ $t('ops.addOption') || 'Add Option' }}</button>
-          </div>
-        </template>
-
-        <template v-else-if="mType === 'FILE_UPLOAD'">
-          <div class="field">
-            <label>{{ $t('ops.fileNote') || 'Upload Note' }}</label>
-            <input v-model="cfgFileNote" type="text" placeholder="e.g. Upload screenshot" />
-          </div>
-        </template>
-
-        <template v-else-if="mType === 'TELEGRAM_JOIN'">
-          <div class="field">
-            <label>{{ $t('ops.telegramUrl') }}</label>
-            <input v-model="cfgSnsLink" type="url" placeholder="https://t.me/..." />
-          </div>
-          <div class="field">
-            <label>{{ $t('ops.youtubeChannelHint') }}</label>
-            <input v-model="cfgTgChannel" type="text" placeholder="@your_channel" />
-          </div>
-        </template>
-
-        <template v-else-if="mType === 'DISCORD_JOIN'">
-          <div class="field">
-            <label>{{ $t('ops.discordUrl') }}</label>
-            <input v-model="cfgSnsLink" type="url" placeholder="https://discord.gg/..." />
-          </div>
-          <div class="field">
-            <label>{{ $t('ops.discordServerId') }}</label>
-            <input v-model="cfgDiscordInvite" type="text" placeholder="123456789..." />
-          </div>
-        </template>
-
-        <template v-else-if="mType === 'YOUTUBE_WATCH'">
-          <div class="field">
-            <label>{{ $t('ops.youtubeVideoHint') }}</label>
-            <input v-model="cfgYtVideoId" type="text" placeholder="dQw4w9WgXcQ" />
-          </div>
-          <div class="field">
-            <label>{{ $t('ops.youtubeTargetSeconds') }}</label>
-            <input v-model.number="cfgYtTargetSec" type="number" min="1" />
-          </div>
-        </template>
-
-        <template v-else-if="mType === 'CHECKIN'">
-          <p style="font-size: 0.85rem; color: var(--muted); margin: 0">{{ $t('ops.checkinNotice') || 'Simple check-in mission.' }}</p>
-        </template>
-      </div>
-      <button type="button" class="btn primary" @click="addMission">{{ $t('ops.add') || 'Add' }}</button>
-
-      <h3 style="margin: 1rem 0 0.5rem; font-size: 1rem; color: var(--text-h)">{{ $t('ops.registeredMissions') || 'Registered Missions' }}</h3>
-      <ul style="margin: 0; padding-left: 1.1rem">
-        <li v-for="m in camp.missions" :key="m.id">{{ m.title }} ({{ m.type }})</li>
-      </ul>
-    </section>
-
-    <section v-if="tab === 'subs'" class="card">
-      <div
-        v-for="s in submissions"
-        :key="s.id"
-        style="margin-bottom: 0.75rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem"
-      >
-        <strong>{{ s.user.email }}</strong> — {{ s.mission.title }}
-        <span style="color: var(--muted); font-size: 0.9rem">({{ s.status }})</span>
-        <div style="margin-top: 0.35rem; display: flex; gap: 0.35rem">
-          <button type="button" class="btn" @click="setSubmission(s.id, 'APPROVED')">{{ $t('ops.approve') || 'Approve' }}</button>
-          <button type="button" class="btn" @click="setSubmission(s.id, 'REJECTED')">{{ $t('ops.reject') || 'Reject' }}</button>
+    <section v-if="tab === 'participants'" class="card">
+      <div v-for="u in participants" :key="u.email" style="display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border)">
+        <div>
+          <strong>{{ u.email }}</strong>
+          <div style="font-size: 0.85rem; color: var(--muted)">{{ $t('ops.completedMissionCount') }}: {{ u.completed }} / {{ camp.missions.length }}</div>
         </div>
+        <span :style="{ color: u.completed >= camp.missions.length ? 'var(--mint)' : 'var(--muted)' }">{{ u.status }}</span>
       </div>
-      <p v-if="!submissions.length" style="color: var(--muted)">{{ $t('ops.noSubmissions') || 'No Submissions' }}</p>
+      <p v-if="!participants.length" style="color: var(--muted)">{{ $t('ops.noParticipants') || 'No Participants' }}</p>
     </section>
 
-    <section v-if="tab === 'stats' && stats" class="card">
-      <p>{{ $t('ops.totalSubmissions') || 'Total' }} {{ stats.submissions.total }} / {{ $t('ops.approved') || 'App' }} {{ stats.submissions.approved }} / {{ $t('ops.pending') || 'Pen' }} {{ stats.submissions.pending }}</p>
-      <p>{{ $t('ops.winnerCount') }} {{ stats.winners }}</p>
-      <ul style="padding-left: 1.1rem">
-        <li v-for="b in stats.byMission" :key="b.missionId">{{ b.title }}: {{ $t('ops.approved') || 'App' }} {{ b.approved }}, {{ $t('ops.pending') || 'Pen' }} {{ b.pending }}</li>
-      </ul>
-    </section>
-
-    <section v-if="tab === 'draw'" class="card">
-      <p>{{ $t('ops.drawNotice') || 'Run raffle after campaign is ACTIVE.' }}</p>
-      <button type="button" class="btn primary" @click="runDraw">{{ $t('ops.runDraw') || 'Run Raffle' }}</button>
+    <section v-if="tab === 'winners'" class="card">
+      <div v-for="w in winnersList" :key="w.email" style="padding: 0.75rem 0; border-bottom: 1px solid var(--border)">
+        <strong>{{ w.email }}</strong>
+      </div>
+      <p v-if="!winnersList.length" style="color: var(--muted)">{{ $t('ops.noWinners') || 'No Winners' }}</p>
     </section>
   </div>
   <p v-else-if="err && !camp" class="err">{{ err }}</p>
