@@ -49,11 +49,7 @@ type SubRow = {
   mission: { title: string; type: string; config: string }
 }
 
-type Stats = {
-  submissions: { total: number; approved: number; pending: number; rejected: number }
-  winners: number
-  byMission: { missionId: string; title: string; approved: number; pending: number; rejected: number }[]
-}
+
 
 type TabId = 'compose' | 'participants' | 'winners'
 
@@ -84,22 +80,7 @@ const draftStartsAt = ref('')
 const draftEndsAt = ref('')
 const missionRows = ref<MissionRowState[]>([emptyMissionRow(0)])
 
-const mType = ref('LINK_VISIT')
-const mTitle = ref('')
-const mDesc = ref('')
-const cfgLinkUrl = ref('')
-const cfgMinDwell = ref(0)
-const cfgCorrectCode = ref('')
-const cfgSurveyNote = ref('')
-const cfgQuizQuestion = ref('')
-const cfgQuizOptions = ref(['', ''])
-const cfgQuizCorrect = ref(0)
-const cfgFileNote = ref('')
-const cfgYtVideoId = ref('')
-const cfgYtTargetSec = ref(10)
-const cfgTgChannel = ref('')
-const cfgDiscordInvite = ref('')
-const cfgSnsLink = ref('')
+
 
 
 
