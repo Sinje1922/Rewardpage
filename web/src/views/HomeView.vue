@@ -88,20 +88,26 @@ const banners = computed(() => [
       <div v-if="loading" class="skeleton-grid">
         <div v-for="i in 4" :key="i" class="card skeleton"></div>
       </div>
-      <div v-else-if="closingSoonList.length" class="horizontal-scroll">
-        <div v-for="c in closingSoonList" :key="c.id" class="mini-card card">
-          <div class="card-tag">{{ $t('campaign.statusActive') }}</div>
-          <RouterLink :to="`/campaigns/${c.id}`" class="card-body">
+      <div v-else-if="closingSoonList.length" class="trending-grid">
+        <div v-for="c in closingSoonList" :key="c.id" class="trend-card card">
+          <div class="trend-content">
             <div class="company-row" v-if="c.companyName || c.companyLogoUrl">
               <img v-if="c.companyLogoUrl" :src="getFileUrl(c.companyLogoUrl)" class="mini-logo" />
               <span class="company-name">{{ c.companyName }}</span>
             </div>
-            <h3 class="card-title">{{ c.title }}</h3>
-            <div class="card-footer">
-              <span class="points">💰 {{ c.totalRewardPoints.toLocaleString() }} P</span>
-              <span class="deadline">{{ new Date(c.endsAt!).toLocaleDateString() }}</span>
+            <div class="title-row">
+              <h3 class="card-title">{{ c.title }}</h3>
+              <div class="points-badge">💰 {{ (c.totalRewardPoints || 0).toLocaleString() }} P</div>
             </div>
-          </RouterLink>
+            <p class="card-desc">{{ c.description }}</p>
+            <div class="deadline-tag">
+              <span class="clock-icon">⏰</span>
+              {{ $t('campaign.duration', { start: '', end: new Date(c.endsAt!).toLocaleDateString() }).replace(' ~ ', '') }}
+            </div>
+          </div>
+          <div class="trend-actions">
+            <RouterLink :to="`/campaigns/${c.id}`" class="btn primary trend-btn">{{ $t('campaign.join') }}</RouterLink>
+          </div>
         </div>
       </div>
       <p v-else class="empty">{{ $t('home.noClosingSoon') }}</p>
@@ -284,6 +290,16 @@ const banners = computed(() => [
 .mini-card {
   flex: 0 0 300px;
   transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
+}
+
+.deadline-tag {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ff4757;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .mini-card:hover {
