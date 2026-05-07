@@ -104,7 +104,7 @@ const filteredList = computed(() => {
               💰 
               <template v-if="c.rewardsConfig && c.rewardsConfig !== '[]'">
                 <span v-for="(r, idx) in JSON.parse(c.rewardsConfig)" :key="idx">
-                  {{ idx > 0 ? ' + ' : '' }}{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+                  {{ Number(idx) > 0 ? ' + ' : '' }}{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
                 </span>
               </template>
               <template v-else>
@@ -114,7 +114,7 @@ const filteredList = computed(() => {
             <div class="per-person-points">
               <template v-if="c.rewardsConfig && c.rewardsConfig !== '[]'">
                 <span v-for="(r, idx) in JSON.parse(c.rewardsConfig)" :key="idx">
-                  {{ idx > 0 ? ' + ' : '' }}{{ Math.floor(r.amount / (c.winnerCount || 1)).toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+                  {{ Number(idx) > 0 ? ' + ' : '' }}{{ Math.floor(r.amount / (c.winnerCount || 1)).toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
                 </span>
               </template>
               <template v-else>

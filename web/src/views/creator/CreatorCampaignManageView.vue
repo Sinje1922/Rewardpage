@@ -393,7 +393,7 @@ async function downloadCsv() {
         · {{ $t('ops.totalReward') }} 
         <template v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'">
           <span v-for="(r, idx) in JSON.parse(camp.rewardsConfig)" :key="idx">
-            {{ idx > 0 ? ', ' : '' }}
+            {{ Number(idx) > 0 ? ', ' : '' }}
             <strong>{{ r.amount.toLocaleString() }}</strong>{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
           </span>
         </template>

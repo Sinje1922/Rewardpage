@@ -280,9 +280,9 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
         <span class="badge">{{ $t('detail.statusLabel', { status: camp.status }) }}</span>
         <span v-if="camp.missions" class="meta-item">{{ $t('detail.missionsCountLabel', { count: camp.missions.length }) }}</span>
         <span v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'" class="badge accent-badge">
-          <span v-for="(r, idx) in JSON.parse(camp.rewardsConfig)" :key="idx">
-            {{ idx > 0 ? ' + ' : '' }}{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
-          </span>
+            <span v-for="(r, idx) in JSON.parse(camp.rewardsConfig)" :key="idx">
+              {{ Number(idx) > 0 ? ' + ' : '' }}{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+            </span>
         </span>
         <span v-else-if="camp.totalRewardPoints > 0" class="badge accent-badge">
           {{ camp.totalRewardPoints.toLocaleString() }}{{ camp.rewardCurrency === 'POINT' ? 'P' : ' ' + camp.rewardCurrency }}
@@ -296,7 +296,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
         <p v-if="camp.totalRewardPoints > 0 || (camp.rewardsConfig && camp.rewardsConfig !== '[]')" class="reward-notice">
           <template v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'">
             <span v-for="(r, idx) in JSON.parse(camp.rewardsConfig)" :key="idx">
-              {{ idx > 0 ? ' + ' : '' }}{{ Math.floor(r.amount / camp.winnerCount).toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+              {{ Number(idx) > 0 ? ' + ' : '' }}{{ Math.floor(r.amount / camp.winnerCount).toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
             </span>
             {{ $t('campaign.rewardPerPersonSuffix') || 'per person' }}
           </template>
@@ -329,7 +329,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
             (
             <template v-if="w.rewardsConfig && w.rewardsConfig !== '[]'">
               <span v-for="(r, idx) in JSON.parse(w.rewardsConfig)" :key="idx">
-                {{ idx > 0 ? ' + ' : '' }}{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+                {{ Number(idx) > 0 ? ' + ' : '' }}{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
               </span>
             </template>
             <template v-else-if="w.points > 0">

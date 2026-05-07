@@ -128,7 +128,7 @@ const steps = computed(() => [
               💰 
               <template v-if="c.rewardsConfig && c.rewardsConfig !== '[]'">
                 <span v-for="(r, idx) in JSON.parse(c.rewardsConfig)" :key="idx">
-                  {{ idx > 0 ? ' + ' : '' }}{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? ' P' : ' ' + r.currency }}
+                  {{ Number(idx) > 0 ? ' + ' : '' }}{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? ' P' : ' ' + r.currency }}
                 </span>
               </template>
               <template v-else>
