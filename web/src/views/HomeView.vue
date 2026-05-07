@@ -41,16 +41,6 @@ const closingSoonList = computed(() => {
     .slice(0, 4)
 })
 
-// 트렌드 (미션 수 기준 또는 최근 시작일 기준)
-const trendingList = computed(() => {
-  return [...list.value]
-    .sort((a, b) => {
-      const mDiff = (b.missions?.length ?? 0) - (a.missions?.length ?? 0)
-      if (mDiff !== 0) return mDiff
-      return new Date(b.startsAt || 0).getTime() - new Date(a.startsAt || 0).getTime()
-    })
-    .slice(0, 4)
-})
 
 const banners = computed(() => [
   {
