@@ -388,7 +388,7 @@ async function downloadCsv() {
       </div>
     </div>
     <p style="color: var(--muted); margin-bottom: 0.75rem">
-      {{ $t('ops.statusLabel') || 'Status' }} <strong>{{ camp.status }}</strong> · {{ $t('ops.lotteryMode') }} <strong>{{ camp.lotteryMode }}</strong> · {{ $t('ops.winnerCount') }} <strong>{{ camp.winnerCount }}</strong>{{ $t('common.person') || '名' }}
+      {{ $t('ops.statusLabel') || 'Status' }} <strong>{{ $t('campaign.status' + camp.status.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()).join('')) }}</strong> · {{ $t('ops.lotteryMode') }} <strong>{{ $t('ops.lottery' + camp.lotteryMode.charAt(0).toUpperCase() + camp.lotteryMode.slice(1).toLowerCase()) }}</strong> · {{ $t('ops.winnerCount') }} <strong>{{ camp.winnerCount }}</strong>{{ $t('common.person') || '名' }}
       <span v-if="camp.totalRewardPoints > 0 || camp.rewardsConfig !== '[]'">
         · {{ $t('ops.totalReward') }} 
         <template v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'">
@@ -479,8 +479,8 @@ async function downloadCsv() {
         <div class="field">
           <label>{{ $t('ops.lotteryMode') }}</label>
           <select v-model="draftLotteryMode">
-            <option value="SIMPLE">SIMPLE</option>
-            <option value="WEIGHTED">WEIGHTED</option>
+            <option value="SIMPLE">{{ $t('ops.lotterySimple') }}</option>
+            <option value="WEIGHTED">{{ $t('ops.lotteryWeighted') }}</option>
           </select>
         </div>
         <label style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem">
@@ -494,12 +494,18 @@ async function downloadCsv() {
             <select v-model="r.currency" style="width: 120px">
               <option value="POINT">{{ $t('common.point') || 'POINT' }}</option>
               <option value="USDT">USDT</option>
-              <option value="BRL">BRL (헤알)</option>
-              <option value="METAQ">METAQ</option>
+              <option value="BRL">BRL ({{ $t('common.brl') || 'Real' }})</option>
+              <option value="METAQ">METAQ ({{ $t('common.metaq') || 'Coin' }})</option>
             </select>
             <button v-if="draftRewards.length > 1" type="button" class="btn outline" @click="removeDraftReward(idx)">✕</button>
           </div>
           <button type="button" class="btn btn-sm" @click="addDraftReward">+ {{ $t('ops.addReward') || 'Add Reward' }}</button>
+          
+          <div v-if="draftWinnerCount > 0" class="reward-hint" style="margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.8">
+            <p v-for="(r, idx) in draftRewards" :key="idx" style="margin: 0">
+              • {{ r.currency === 'POINT' ? $t('common.point') : r.currency }}: {{ Math.floor(r.amount / draftWinnerCount).toLocaleString() }} / {{ $t('common.person') || 'person' }}
+            </p>
+          </div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem">
           <div class="field">

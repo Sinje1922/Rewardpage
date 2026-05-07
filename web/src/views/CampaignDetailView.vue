@@ -277,7 +277,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
       <div class="description-text ql-editor" v-html="camp.description"></div>
       
       <div class="meta-row">
-        <span class="badge">{{ $t('detail.statusLabel', { status: camp.status }) }}</span>
+        <span class="badge">{{ $t('detail.statusLabel', { status: $t('campaign.status' + camp.status.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()).join('')) }) }}</span>
         <span v-if="camp.missions" class="meta-item">{{ $t('detail.missionsCountLabel', { count: camp.missions.length }) }}</span>
         <span v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'" class="badge accent-badge">
             <span v-for="(r, idx) in JSON.parse(camp.rewardsConfig)" :key="idx">
@@ -301,7 +301,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
             {{ $t('campaign.rewardPerPersonSuffix') || 'per person' }}
           </template>
           <template v-else>
-            {{ $t('campaign.rewardPerPerson', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }}{{ camp.rewardCurrency === 'POINT' ? '' : ' ' + camp.rewardCurrency }}
+            {{ Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }}{{ camp.rewardCurrency === 'POINT' ? 'P' : ' ' + camp.rewardCurrency }} {{ $t('campaign.rewardPerPersonSuffix') || 'per person' }}
           </template>
         </p>
         <p v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]' && JSON.parse(camp.rewardsConfig).some((r: any) => r.currency !== 'POINT')" class="manual-notice">

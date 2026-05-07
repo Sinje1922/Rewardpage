@@ -175,8 +175,8 @@ async function save() {
             <select v-model="r.currency" style="width: 120px">
               <option value="POINT">{{ $t('common.point') || 'POINT' }}</option>
               <option value="USDT">USDT</option>
-              <option value="BRL">BRL (헤알)</option>
-              <option value="METAQ">METAQ</option>
+              <option value="BRL">BRL ({{ $t('common.brl') || 'Real' }})</option>
+              <option value="METAQ">METAQ ({{ $t('common.metaq') || 'Coin' }})</option>
             </select>
             <button v-if="rewards.length > 1" type="button" class="btn outline" @click="removeReward(idx)">✕</button>
           </div>

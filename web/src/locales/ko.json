@@ -55,9 +55,11 @@
     "listLead": "진행 중인 리워드 캠페인을 확인하고 참여해 보세요.",
     "searchPlaceholder": "캠페인 제목이나 설명 검색...",
     "filterAll": "모든 상태",
+    "statusDraft": "초안",
     "statusActive": "진행 중",
     "statusClosed": "종료됨",
     "statusDrawn": "추첨 완료",
+    "statusPendingAdmin": "승인 대기",
     "missionCount": "미션 {count}",
     "totalReward": "{points}P 보상",
     "rewardPerPerson": "인당 {points}P",
@@ -356,7 +358,11 @@
     "fieldProblem": "{field} 항목에 문제가 있습니다: {error}",
     "platform": "플랫폼",
     "support": "고객 지원",
-    "legal": "법적 고지"
+    "legal": "법적 고지",
+    "person": "명",
+    "point": "포인트",
+    "brl": "브라질 헤알",
+    "metaq": "메타큐"
   },
   "mypage": {
     "title": "계정 설정",
