@@ -18,7 +18,7 @@ model analyticsevent {
 model campaign {
   id                String    @id @default(cuid())
   title             String
-  description       String    @default("")
+  description       String    @default("") @db.LongText
   companyName       String    @default("")
   companyLogoUrl    String    @default("")
   status            String    @default("DRAFT")
@@ -43,7 +43,7 @@ model mission {
   campaignId  String
   type        String
   title       String
-  description String       @default("")
+  description String       @default("") @db.LongText
   sortOrder   Int          @default(0)
   config      String       @default("{}") @db.Text
   createdAt   DateTime     @default(now())
