@@ -66,7 +66,8 @@
     "durationUntilEnd": "Until Closed",
     "join": "Join",
     "viewDetail": "View Detail",
-    "noCampaigns": "No campaigns match your criteria."
+    "noCampaigns": "No campaigns match your criteria.",
+    "manualPaymentNotice": "This reward will be paid manually to your wallet."
   },
   "detail": {
     "statusLabel": "Status: {status}",

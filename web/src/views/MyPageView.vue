@@ -13,6 +13,8 @@ type SubRow = {
 
 type WinRow = {
   rank: number
+  points: number
+  currency: string
   campaign: { id: string; title: string }
 }
 
@@ -518,7 +520,10 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
                       <RouterLink :to="`/campaigns/${w.campaign.id}`" class="item-head">
                         {{ w.campaign.title }}
                       </RouterLink>
-                      <p class="winner-label">🏆 {{ $t('activity.winRank', { rank: w.rank }) }}</p>
+                      <p class="winner-label">
+                        🏆 {{ $t('activity.winRank', { rank: w.rank }) }}
+                        <span class="win-reward">({{ w.points.toLocaleString() }}{{ w.currency === 'POINT' ? 'P' : ' ' + w.currency }})</span>
+                      </p>
                     </div>
                   </div>
                   <p v-else class="empty-msg">{{ $t('activity.noWins') }}</p>

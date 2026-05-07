@@ -290,6 +290,9 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
         <p v-if="camp.totalRewardPoints > 0" class="reward-notice">
           {{ $t('campaign.rewardPerPerson', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }}{{ camp.rewardCurrency === 'POINT' ? '' : ' ' + camp.rewardCurrency }}
         </p>
+        <p v-if="camp.rewardCurrency !== 'POINT'" class="manual-notice">
+          * {{ $t('campaign.manualPaymentNotice') || 'This reward will be paid manually to your wallet.' }}
+        </p>
         <div v-if="camp.startsAt || camp.endsAt" class="period-text">
           📅 {{ $t('detail.period', {
             start: camp.startsAt ? new Date(camp.startsAt).toLocaleString() : $t('detail.always'),
@@ -797,6 +800,13 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
 .mb-2 { margin-bottom: 0.5rem; }
 .mb-3 { margin-bottom: 1rem; }
 .center { text-align: center; }
+.manual-notice {
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-weight: 700;
+  margin-top: 0.25rem;
+  margin-bottom: 0.75rem;
+}
 
 .yt-container {
   aspect-ratio: 16/9;
