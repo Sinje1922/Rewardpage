@@ -99,7 +99,6 @@ const banners = computed(() => [
               <h3 class="card-title">{{ c.title }}</h3>
               <div class="points-badge">💰 {{ (c.totalRewardPoints || 0).toLocaleString() }} P</div>
             </div>
-            <p class="card-desc">{{ c.description }}</p>
             <div class="deadline-tag">
               <span class="clock-icon">⏰</span>
               {{ $t('campaign.duration', { start: '', end: new Date(c.endsAt!).toLocaleDateString() }).replace(' ~ ', '') }}
@@ -133,7 +132,6 @@ const banners = computed(() => [
               <h3 class="card-title">{{ c.title }}</h3>
               <div class="points-badge">💰 {{ (c.totalRewardPoints || 0).toLocaleString() }} P</div>
             </div>
-            <p class="card-desc">{{ c.description }}</p>
           </div>
           <div class="trend-actions">
              <RouterLink :to="`/campaigns/${c.id}`" class="btn primary trend-btn">{{ $t('campaign.join') }}</RouterLink>

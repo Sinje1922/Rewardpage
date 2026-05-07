@@ -113,7 +113,6 @@ const filteredList = computed(() => {
             <span v-if="c.companyName" class="company-name">{{ c.companyName }}</span>
           </div>
           <h2 class="card-title">{{ c.title }}</h2>
-          <p class="card-description">{{ c.description }}</p>
         </RouterLink>
 
         <div v-if="c.startsAt || c.endsAt" class="period-info">
