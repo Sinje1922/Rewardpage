@@ -35,6 +35,7 @@ type CampaignDetail = {
   winnerCount: number
   totalRewardPoints: number
   rewardCurrency: string
+  rewardsConfig: string
   autoApprove: boolean
   startsAt: string | null
   endsAt: string | null
@@ -77,8 +78,7 @@ const draftDescription = ref('')
 const draftWinnerCount = ref(1)
 const draftLotteryMode = ref<'SIMPLE' | 'WEIGHTED'>('SIMPLE')
 const draftAutoApprove = ref(true)
-const draftTotalRewardPoints = ref(0)
-const draftRewardCurrency = ref('POINT')
+const draftRewards = ref<{ amount: number; currency: string }[]>([{ amount: 0, currency: 'POINT' }])
 const draftStartsAt = ref('')
 const draftEndsAt = ref('')
 const missionRows = ref<MissionRowState[]>([emptyMissionRow(0)])
@@ -97,8 +97,14 @@ function syncDraftFromCamp() {
   draftWinnerCount.value = c.winnerCount
   draftLotteryMode.value = (c.lotteryMode as 'SIMPLE' | 'WEIGHTED') || 'SIMPLE'
   draftAutoApprove.value = c.autoApprove ?? true
-  draftTotalRewardPoints.value = c.totalRewardPoints ?? 0
-  draftRewardCurrency.value = c.rewardCurrency ?? 'POINT'
+  try {
+    draftRewards.value = JSON.parse(c.rewardsConfig || "[]")
+    if (draftRewards.value.length === 0) {
+      draftRewards.value = [{ amount: c.totalRewardPoints ?? 0, currency: c.rewardCurrency ?? 'POINT' }]
+    }
+  } catch (e) {
+    draftRewards.value = [{ amount: c.totalRewardPoints ?? 0, currency: c.rewardCurrency ?? 'POINT' }]
+  }
   draftStartsAt.value = c.startsAt ? toLocalInput(c.startsAt) : ''
   draftEndsAt.value = c.endsAt ? toLocalInput(c.endsAt) : ''
   missionRows.value =
@@ -174,6 +180,16 @@ function clearDraftLogo() {
   draftCompanyLogo.value = ''
 }
 
+function addDraftReward() {
+  draftRewards.value.push({ amount: 0, currency: 'POINT' })
+}
+
+function removeDraftReward(index: number) {
+  if (draftRewards.value.length > 1) {
+    draftRewards.value.splice(index, 1)
+  }
+}
+
 async function saveDraft() {
   err.value = ''
   const v = validateRows(missionRows.value)
@@ -197,8 +213,9 @@ async function saveDraft() {
       winnerCount: draftWinnerCount.value,
       lotteryMode: draftLotteryMode.value,
       autoApprove: draftAutoApprove.value,
-      totalRewardPoints: draftTotalRewardPoints.value,
-      rewardCurrency: draftRewardCurrency.value,
+      totalRewardPoints: draftRewards.value[0]?.amount || 0,
+      rewardCurrency: draftRewards.value[0]?.currency || "POINT",
+      rewardsConfig: draftRewards.value,
       startsAt: draftStartsAt.value ? new Date(draftStartsAt.value).toISOString() : null,
       endsAt: draftEndsAt.value ? new Date(draftEndsAt.value).toISOString() : null,
       missions,
@@ -372,8 +389,17 @@ async function downloadCsv() {
     </div>
     <p style="color: var(--muted); margin-bottom: 0.75rem">
       {{ $t('ops.statusLabel') || 'Status' }} <strong>{{ camp.status }}</strong> · {{ $t('ops.lotteryMode') }} <strong>{{ camp.lotteryMode }}</strong> · {{ $t('ops.winnerCount') }} <strong>{{ camp.winnerCount }}</strong>{{ $t('common.person') || '名' }}
-      <span v-if="camp.totalRewardPoints > 0">
-        · {{ $t('ops.totalReward') }} <strong>{{ camp.totalRewardPoints.toLocaleString() }}</strong>{{ camp.rewardCurrency === 'POINT' ? 'P' : ' ' + camp.rewardCurrency }} ({{ $t('campaign.rewardPerPerson', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }}{{ camp.rewardCurrency === 'POINT' ? '' : ' ' + camp.rewardCurrency }})
+      <span v-if="camp.totalRewardPoints > 0 || camp.rewardsConfig !== '[]'">
+        · {{ $t('ops.totalReward') }} 
+        <template v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'">
+          <span v-for="(r, idx) in JSON.parse(camp.rewardsConfig)" :key="idx">
+            {{ idx > 0 ? ', ' : '' }}
+            <strong>{{ r.amount.toLocaleString() }}</strong>{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+          </span>
+        </template>
+        <template v-else>
+          <strong>{{ camp.totalRewardPoints.toLocaleString() }}</strong>{{ camp.rewardCurrency === 'POINT' ? 'P' : ' ' + camp.rewardCurrency }}
+        </template>
       </span>
     </p>
     <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem">
@@ -463,15 +489,17 @@ async function downloadCsv() {
         </label>
         <div class="field">
           <label>{{ $t('ops.totalReward') }}</label>
-          <div style="display: flex; gap: 0.5rem">
-            <input v-model.number="draftTotalRewardPoints" type="number" min="0" style="flex: 1" />
-            <select v-model="draftRewardCurrency" style="width: 120px">
+          <div v-for="(r, idx) in draftRewards" :key="idx" style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem">
+            <input v-model.number="r.amount" type="number" min="0" style="flex: 1" />
+            <select v-model="r.currency" style="width: 120px">
               <option value="POINT">{{ $t('common.point') || 'POINT' }}</option>
               <option value="USDT">USDT</option>
               <option value="BRL">BRL (헤알)</option>
               <option value="METAQ">METAQ</option>
             </select>
+            <button v-if="draftRewards.length > 1" type="button" class="btn outline" @click="removeDraftReward(idx)">✕</button>
           </div>
+          <button type="button" class="btn btn-sm" @click="addDraftReward">+ {{ $t('ops.addReward') || 'Add Reward' }}</button>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem">
           <div class="field">

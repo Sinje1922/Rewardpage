@@ -17,8 +17,7 @@ const description = ref('')
 const winnerCount = ref(1)
 const lotteryMode = ref<'SIMPLE' | 'WEIGHTED'>('SIMPLE')
 const autoApprove = ref(true)
-const totalRewardPoints = ref(0)
-const rewardCurrency = ref('POINT')
+const rewards = ref<{ amount: number; currency: string }[]>([{ amount: 0, currency: 'POINT' }])
 const startsAt = ref('')
 const endsAt = ref('')
 const missionRows = ref<MissionRowState[]>([emptyMissionRow(0)])
@@ -47,6 +46,16 @@ function clearLogo() {
   companyLogoUrl.value = ''
 }
 
+function addReward() {
+  rewards.value.push({ amount: 0, currency: 'POINT' })
+}
+
+function removeReward(index: number) {
+  if (rewards.value.length > 1) {
+    rewards.value.splice(index, 1)
+  }
+}
+
 async function save() {
   err.value = ''
   const v = validateRows(missionRows.value)
@@ -68,8 +77,9 @@ async function save() {
       winnerCount: winnerCount.value,
       lotteryMode: lotteryMode.value,
       autoApprove: autoApprove.value,
-      totalRewardPoints: totalRewardPoints.value,
-      rewardCurrency: rewardCurrency.value,
+      totalRewardPoints: rewards.value[0]?.amount || 0, // Legacy fallback
+      rewardCurrency: rewards.value[0]?.currency || "POINT", // Legacy fallback
+      rewardsConfig: rewards.value,
       startsAt: startsAt.value ? new Date(startsAt.value).toISOString() : null,
       endsAt: endsAt.value ? new Date(endsAt.value).toISOString() : null,
       missions,
@@ -160,18 +170,23 @@ async function save() {
 
         <div class="field reward-box">
           <label>{{ $t('ops.totalReward') }}</label>
-          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem">
-            <input v-model.number="totalRewardPoints" type="number" min="0" step="100" placeholder="1000" style="flex: 1" />
-            <select v-model="rewardCurrency" style="width: 120px">
+          <div v-for="(r, idx) in rewards" :key="idx" style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem">
+            <input v-model.number="r.amount" type="number" min="0" step="1" placeholder="1000" style="flex: 1" />
+            <select v-model="r.currency" style="width: 120px">
               <option value="POINT">{{ $t('common.point') || 'POINT' }}</option>
               <option value="USDT">USDT</option>
               <option value="BRL">BRL (헤알)</option>
               <option value="METAQ">METAQ</option>
             </select>
+            <button v-if="rewards.length > 1" type="button" class="btn outline" @click="removeReward(idx)">✕</button>
           </div>
-          <p v-if="winnerCount > 0" class="reward-hint">
-            {{ $t('ops.rewardHint', { points: Math.floor(totalRewardPoints / winnerCount) }) }}
-          </p>
+          <button type="button" class="btn btn-sm" style="margin-bottom: 1rem" @click="addReward">+ {{ $t('ops.addReward') || 'Add Reward' }}</button>
+          
+          <div v-if="winnerCount > 0" class="reward-hint">
+            <p v-for="(r, idx) in rewards" :key="idx">
+              • {{ r.currency }}: {{ Math.floor(r.amount / winnerCount).toLocaleString() }} / {{ $t('common.person') || 'person' }}
+            </p>
+          </div>
         </div>
       </section>
 

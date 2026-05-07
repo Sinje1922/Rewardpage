@@ -14,6 +14,7 @@ type Campaign = {
   winnerCount: number
   totalRewardPoints: number
   rewardCurrency: string
+  rewardsConfig: string
   startsAt: string | null
   endsAt: string | null
   missions?: { id: string }[]
@@ -123,7 +124,17 @@ const steps = computed(() => [
               <span class="company-name">{{ c.companyName }}</span>
             </div>
             <h3 class="card-title">{{ c.title }}</h3>
-            <div class="points-badge">💰 {{ (c.totalRewardPoints || 0).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? ' P' : ' ' + c.rewardCurrency }}</div>
+            <div class="points-badge">
+              💰 
+              <template v-if="c.rewardsConfig && c.rewardsConfig !== '[]'">
+                <span v-for="(r, idx) in JSON.parse(c.rewardsConfig)" :key="idx">
+                  {{ idx > 0 ? ' + ' : '' }}{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? ' P' : ' ' + r.currency }}
+                </span>
+              </template>
+              <template v-else>
+                {{ (c.totalRewardPoints || 0).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? ' P' : ' ' + c.rewardCurrency }}
+              </template>
+            </div>
             
             <div class="progress-container">
               <div class="progress-info">

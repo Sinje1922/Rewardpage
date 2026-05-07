@@ -24,6 +24,7 @@ type CampaignDetail = {
   winnerCount: number
   totalRewardPoints: number
   rewardCurrency: string
+  rewardsConfig: string
   startsAt: string | null
   endsAt: string | null
   missions: Mission[]
@@ -31,7 +32,7 @@ type CampaignDetail = {
 }
 
 type Participant = { email: string }
-type WinnerRow = { rank: number; points: number; currency: string; user: { email: string } }
+type WinnerRow = { rank: number; points: number; currency: string; rewardsConfig: string; user: { email: string } }
 
 const { t } = useI18n()
 const route = useRoute()
@@ -278,7 +279,12 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
       <div class="meta-row">
         <span class="badge">{{ $t('detail.statusLabel', { status: camp.status }) }}</span>
         <span v-if="camp.missions" class="meta-item">{{ $t('detail.missionsCountLabel', { count: camp.missions.length }) }}</span>
-        <span v-if="camp.totalRewardPoints > 0" class="badge accent-badge">
+        <span v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'" class="badge accent-badge">
+          <span v-for="(r, idx) in JSON.parse(camp.rewardsConfig)" :key="idx">
+            {{ idx > 0 ? ' + ' : '' }}{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+          </span>
+        </span>
+        <span v-else-if="camp.totalRewardPoints > 0" class="badge accent-badge">
           {{ camp.totalRewardPoints.toLocaleString() }}{{ camp.rewardCurrency === 'POINT' ? 'P' : ' ' + camp.rewardCurrency }}
         </span>
         <button type="button" class="btn copy-btn" @click="copyLink">
@@ -287,11 +293,22 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
       </div>
 
       <div class="info-footer">
-        <p v-if="camp.totalRewardPoints > 0" class="reward-notice">
-          {{ $t('campaign.rewardPerPerson', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }}{{ camp.rewardCurrency === 'POINT' ? '' : ' ' + camp.rewardCurrency }}
+        <p v-if="camp.totalRewardPoints > 0 || (camp.rewardsConfig && camp.rewardsConfig !== '[]')" class="reward-notice">
+          <template v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'">
+            <span v-for="(r, idx) in JSON.parse(camp.rewardsConfig)" :key="idx">
+              {{ idx > 0 ? ' + ' : '' }}{{ Math.floor(r.amount / camp.winnerCount).toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+            </span>
+            {{ $t('campaign.rewardPerPersonSuffix') || 'per person' }}
+          </template>
+          <template v-else>
+            {{ $t('campaign.rewardPerPerson', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }}{{ camp.rewardCurrency === 'POINT' ? '' : ' ' + camp.rewardCurrency }}
+          </template>
         </p>
-        <p v-if="camp.rewardCurrency !== 'POINT'" class="manual-notice">
-          * {{ $t('campaign.manualPaymentNotice') || 'This reward will be paid manually to your wallet.' }}
+        <p v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]' && JSON.parse(camp.rewardsConfig).some((r: any) => r.currency !== 'POINT')" class="manual-notice">
+          * {{ $t('campaign.manualPaymentNotice') }}
+        </p>
+        <p v-else-if="camp.rewardCurrency !== 'POINT' && camp.totalRewardPoints > 0" class="manual-notice">
+          * {{ $t('campaign.manualPaymentNotice') }}
         </p>
         <div v-if="camp.startsAt || camp.endsAt" class="period-text">
           📅 {{ $t('detail.period', {
@@ -308,7 +325,18 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
       <div class="winners-grid">
         <div v-for="w in winners" :key="w.rank" class="winner-row">
           {{ $t('detail.winnerRow', { rank: w.rank, email: w.user.email }) }} 
-          <span v-if="w.points > 0" class="winner-points">({{ w.points.toLocaleString() }}{{ (w.currency || camp.rewardCurrency) === 'POINT' ? 'P' : ' ' + (w.currency || camp.rewardCurrency) }})</span>
+          <span class="winner-points">
+            (
+            <template v-if="w.rewardsConfig && w.rewardsConfig !== '[]'">
+              <span v-for="(r, idx) in JSON.parse(w.rewardsConfig)" :key="idx">
+                {{ idx > 0 ? ' + ' : '' }}{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+              </span>
+            </template>
+            <template v-else-if="w.points > 0">
+              {{ w.points.toLocaleString() }}{{ (w.currency || camp.rewardCurrency) === 'POINT' ? 'P' : ' ' + (w.currency || camp.rewardCurrency) }}
+            </template>
+            )
+          </span>
         </div>
       </div>
     </section>
@@ -325,8 +353,14 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
         <div class="mission-header">
           <div class="mission-type">
             <span class="type-icon">{{ typeIcons[m.type] || '✨' }}</span>
-            <span v-if="camp.totalRewardPoints > 0" class="point-badge">
-              {{ Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }}{{ camp.rewardCurrency === 'POINT' ? 'P' : ' ' + camp.rewardCurrency }}
+            <span v-if="camp.totalRewardPoints > 0 || (camp.rewardsConfig && camp.rewardsConfig !== '[]')" class="point-badge">
+              <template v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'">
+                {{ Math.floor(JSON.parse(camp.rewardsConfig)[0].amount / camp.winnerCount).toLocaleString() }}{{ JSON.parse(camp.rewardsConfig)[0].currency === 'POINT' ? 'P' : ' ' + JSON.parse(camp.rewardsConfig)[0].currency }}
+                <span v-if="JSON.parse(camp.rewardsConfig).length > 1">+</span>
+              </template>
+              <template v-else>
+                {{ Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }}{{ camp.rewardCurrency === 'POINT' ? 'P' : ' ' + camp.rewardCurrency }}
+              </template>
             </span>
           </div>
           <span class="badge" :class="{ 'badge-done': myStatus(m.id) === 'APPROVED' }">

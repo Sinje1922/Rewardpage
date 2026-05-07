@@ -14,6 +14,7 @@ type Campaign = {
   winnerCount: number
   totalRewardPoints: number
   rewardCurrency: string
+  rewardsConfig: string
   startsAt: string | null
   endsAt: string | null
   missions?: { id: string }[]
@@ -100,10 +101,26 @@ const filteredList = computed(() => {
           </div>
           <div class="reward-box">
             <div class="total-points">
-              💰 {{ (c.totalRewardPoints || 0).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency }}
+              💰 
+              <template v-if="c.rewardsConfig && c.rewardsConfig !== '[]'">
+                <span v-for="(r, idx) in JSON.parse(c.rewardsConfig)" :key="idx">
+                  {{ idx > 0 ? ' + ' : '' }}{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+                </span>
+              </template>
+              <template v-else>
+                {{ (c.totalRewardPoints || 0).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency }}
+              </template>
             </div>
             <div class="per-person-points">
-              {{ Math.floor((c.totalRewardPoints || 0) / (c.winnerCount || 1)).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency }} / {{ $t('common.person') || 'person' }}
+              <template v-if="c.rewardsConfig && c.rewardsConfig !== '[]'">
+                <span v-for="(r, idx) in JSON.parse(c.rewardsConfig)" :key="idx">
+                  {{ idx > 0 ? ' + ' : '' }}{{ Math.floor(r.amount / (c.winnerCount || 1)).toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+                </span>
+              </template>
+              <template v-else>
+                {{ Math.floor((c.totalRewardPoints || 0) / (c.winnerCount || 1)).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency }}
+              </template>
+               / {{ $t('common.person') || 'person' }}
             </div>
           </div>
         </div>
