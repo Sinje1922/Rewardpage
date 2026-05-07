@@ -307,16 +307,32 @@ const banners = computed(() => [
 /* Trending Grid */
 .trending-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 1000px) {
+  .trending-grid {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .trending-grid::-webkit-scrollbar {
+    display: none;
+  }
+  .trend-card {
+    flex: 0 0 280px;
+  }
 }
 
 .trend-card {
-  padding: 2.25rem;
+  padding: 1.5rem;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.25rem;
   border: 1px solid var(--border);
   background: var(--panel);
 }
@@ -363,7 +379,7 @@ const banners = computed(() => [
 
 .card-title {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
 }
@@ -392,12 +408,13 @@ const banners = computed(() => [
 }
 
 .trend-actions {
-  flex-shrink: 0;
+  width: 100%;
 }
 
 .trend-btn {
-  padding: 0.8rem 1.8rem;
-  font-size: 1rem;
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 0.95rem;
   box-shadow: 0 4px 12px var(--accent-soft);
 }
 
@@ -432,33 +449,7 @@ const banners = computed(() => [
 @media (max-width: 768px) {
   .banner-card { padding: 2rem; aspect-ratio: 16 / 10; min-height: 320px; }
   .banner-title { font-size: 2rem; }
-  .trending-grid { grid-template-columns: 1fr; }
   
-  .trend-card {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 1.75rem;
-    gap: 1.5rem;
-  }
-  
-  .trend-content {
-    width: 100%;
-  }
-
-  .title-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .trend-actions {
-    width: 100%;
-  }
-
-  .trend-btn {
-    width: 100%;
-  }
-
   .mini-card {
     flex: 0 0 280px;
   }
