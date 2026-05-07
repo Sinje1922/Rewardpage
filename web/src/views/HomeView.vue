@@ -13,6 +13,7 @@ type Campaign = {
   status: string
   winnerCount: number
   totalRewardPoints: number
+  rewardCurrency: string
   startsAt: string | null
   endsAt: string | null
   missions?: { id: string }[]
@@ -122,7 +123,7 @@ const steps = computed(() => [
               <span class="company-name">{{ c.companyName }}</span>
             </div>
             <h3 class="card-title">{{ c.title }}</h3>
-            <div class="points-badge">💰 {{ (c.totalRewardPoints || 0).toLocaleString() }} P</div>
+            <div class="points-badge">💰 {{ (c.totalRewardPoints || 0).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? ' P' : ' ' + c.rewardCurrency }}</div>
             
             <div class="progress-container">
               <div class="progress-info">

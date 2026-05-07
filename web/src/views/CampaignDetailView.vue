@@ -23,6 +23,7 @@ type CampaignDetail = {
   status: string
   winnerCount: number
   totalRewardPoints: number
+  rewardCurrency: string
   startsAt: string | null
   endsAt: string | null
   missions: Mission[]
@@ -30,7 +31,7 @@ type CampaignDetail = {
 }
 
 type Participant = { email: string }
-type WinnerRow = { rank: number; points: number; user: { email: string } }
+type WinnerRow = { rank: number; points: number; currency: string; user: { email: string } }
 
 const { t } = useI18n()
 const route = useRoute()
@@ -278,7 +279,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
         <span class="badge">{{ $t('detail.statusLabel', { status: camp.status }) }}</span>
         <span v-if="camp.missions" class="meta-item">{{ $t('detail.missionsCountLabel', { count: camp.missions.length }) }}</span>
         <span v-if="camp.totalRewardPoints > 0" class="badge accent-badge">
-          {{ $t('detail.rewardLabel', { points: camp.totalRewardPoints.toLocaleString() }) }}
+          {{ camp.totalRewardPoints.toLocaleString() }}{{ camp.rewardCurrency === 'POINT' ? 'P' : ' ' + camp.rewardCurrency }}
         </span>
         <button type="button" class="btn copy-btn" @click="copyLink">
           🔗 {{ showCopyMsg ? $t('detail.copied') : $t('detail.copyLink') }}
@@ -287,7 +288,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
 
       <div class="info-footer">
         <p v-if="camp.totalRewardPoints > 0" class="reward-notice">
-          {{ $t('detail.rewardPerWinner', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }}
+          {{ $t('campaign.rewardPerPerson', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }}{{ camp.rewardCurrency === 'POINT' ? '' : ' ' + camp.rewardCurrency }}
         </p>
         <div v-if="camp.startsAt || camp.endsAt" class="period-text">
           📅 {{ $t('detail.period', {
@@ -304,7 +305,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
       <div class="winners-grid">
         <div v-for="w in winners" :key="w.rank" class="winner-row">
           {{ $t('detail.winnerRow', { rank: w.rank, email: w.user.email }) }} 
-          <span v-if="w.points > 0" class="winner-points">({{ w.points.toLocaleString() }}P)</span>
+          <span v-if="w.points > 0" class="winner-points">({{ w.points.toLocaleString() }}{{ (w.currency || camp.rewardCurrency) === 'POINT' ? 'P' : ' ' + (w.currency || camp.rewardCurrency) }})</span>
         </div>
       </div>
     </section>
@@ -322,7 +323,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
           <div class="mission-type">
             <span class="type-icon">{{ typeIcons[m.type] || '✨' }}</span>
             <span v-if="camp.totalRewardPoints > 0" class="point-badge">
-              {{ $t('detail.missionWait', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }}
+              {{ Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }}{{ camp.rewardCurrency === 'POINT' ? 'P' : ' ' + camp.rewardCurrency }}
             </span>
           </div>
           <span class="badge" :class="{ 'badge-done': myStatus(m.id) === 'APPROVED' }">

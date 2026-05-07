@@ -34,6 +34,7 @@ type CampaignDetail = {
   lotteryMode: string
   winnerCount: number
   totalRewardPoints: number
+  rewardCurrency: string
   autoApprove: boolean
   startsAt: string | null
   endsAt: string | null
@@ -77,6 +78,7 @@ const draftWinnerCount = ref(1)
 const draftLotteryMode = ref<'SIMPLE' | 'WEIGHTED'>('SIMPLE')
 const draftAutoApprove = ref(true)
 const draftTotalRewardPoints = ref(0)
+const draftRewardCurrency = ref('POINT')
 const draftStartsAt = ref('')
 const draftEndsAt = ref('')
 const missionRows = ref<MissionRowState[]>([emptyMissionRow(0)])
@@ -96,6 +98,7 @@ function syncDraftFromCamp() {
   draftLotteryMode.value = (c.lotteryMode as 'SIMPLE' | 'WEIGHTED') || 'SIMPLE'
   draftAutoApprove.value = c.autoApprove ?? true
   draftTotalRewardPoints.value = c.totalRewardPoints ?? 0
+  draftRewardCurrency.value = c.rewardCurrency ?? 'POINT'
   draftStartsAt.value = c.startsAt ? toLocalInput(c.startsAt) : ''
   draftEndsAt.value = c.endsAt ? toLocalInput(c.endsAt) : ''
   missionRows.value =
@@ -195,6 +198,7 @@ async function saveDraft() {
       lotteryMode: draftLotteryMode.value,
       autoApprove: draftAutoApprove.value,
       totalRewardPoints: draftTotalRewardPoints.value,
+      rewardCurrency: draftRewardCurrency.value,
       startsAt: draftStartsAt.value ? new Date(draftStartsAt.value).toISOString() : null,
       endsAt: draftEndsAt.value ? new Date(draftEndsAt.value).toISOString() : null,
       missions,
@@ -369,7 +373,7 @@ async function downloadCsv() {
     <p style="color: var(--muted); margin-bottom: 0.75rem">
       {{ $t('ops.statusLabel') || 'Status' }} <strong>{{ camp.status }}</strong> · {{ $t('ops.lotteryMode') }} <strong>{{ camp.lotteryMode }}</strong> · {{ $t('ops.winnerCount') }} <strong>{{ camp.winnerCount }}</strong>{{ $t('common.person') || '名' }}
       <span v-if="camp.totalRewardPoints > 0">
-        · {{ $t('ops.totalReward') }} <strong>{{ camp.totalRewardPoints.toLocaleString() }}</strong>P ({{ $t('campaign.rewardPerPerson', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }})
+        · {{ $t('ops.totalReward') }} <strong>{{ camp.totalRewardPoints.toLocaleString() }}</strong>{{ camp.rewardCurrency === 'POINT' ? 'P' : ' ' + camp.rewardCurrency }} ({{ $t('campaign.rewardPerPerson', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }}{{ camp.rewardCurrency === 'POINT' ? '' : ' ' + camp.rewardCurrency }})
       </span>
     </p>
     <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem">
@@ -459,7 +463,15 @@ async function downloadCsv() {
         </label>
         <div class="field">
           <label>{{ $t('ops.totalReward') }}</label>
-          <input v-model.number="draftTotalRewardPoints" type="number" min="0" />
+          <div style="display: flex; gap: 0.5rem">
+            <input v-model.number="draftTotalRewardPoints" type="number" min="0" style="flex: 1" />
+            <select v-model="draftRewardCurrency" style="width: 120px">
+              <option value="POINT">{{ $t('common.point') || 'POINT' }}</option>
+              <option value="USDT">USDT</option>
+              <option value="BRL">BRL (헤알)</option>
+              <option value="METAQ">METAQ</option>
+            </select>
+          </div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem">
           <div class="field">

@@ -18,6 +18,7 @@ const winnerCount = ref(1)
 const lotteryMode = ref<'SIMPLE' | 'WEIGHTED'>('SIMPLE')
 const autoApprove = ref(true)
 const totalRewardPoints = ref(0)
+const rewardCurrency = ref('POINT')
 const startsAt = ref('')
 const endsAt = ref('')
 const missionRows = ref<MissionRowState[]>([emptyMissionRow(0)])
@@ -68,6 +69,7 @@ async function save() {
       lotteryMode: lotteryMode.value,
       autoApprove: autoApprove.value,
       totalRewardPoints: totalRewardPoints.value,
+      rewardCurrency: rewardCurrency.value,
       startsAt: startsAt.value ? new Date(startsAt.value).toISOString() : null,
       endsAt: endsAt.value ? new Date(endsAt.value).toISOString() : null,
       missions,
@@ -158,7 +160,15 @@ async function save() {
 
         <div class="field reward-box">
           <label>{{ $t('ops.totalReward') }}</label>
-          <input v-model.number="totalRewardPoints" type="number" min="0" step="100" placeholder="1000" />
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem">
+            <input v-model.number="totalRewardPoints" type="number" min="0" step="100" placeholder="1000" style="flex: 1" />
+            <select v-model="rewardCurrency" style="width: 120px">
+              <option value="POINT">{{ $t('common.point') || 'POINT' }}</option>
+              <option value="USDT">USDT</option>
+              <option value="BRL">BRL (헤알)</option>
+              <option value="METAQ">METAQ</option>
+            </select>
+          </div>
           <p v-if="winnerCount > 0" class="reward-hint">
             {{ $t('ops.rewardHint', { points: Math.floor(totalRewardPoints / winnerCount) }) }}
           </p>

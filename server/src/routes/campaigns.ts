@@ -45,6 +45,7 @@ const campaignFieldsSchema = z.object({
   lotteryMode: z.enum(["SIMPLE", "WEIGHTED"]).optional(),
   autoApprove: z.boolean().optional(),
   totalRewardPoints: z.number().int().nonnegative().optional(),
+  rewardCurrency: z.string().optional(),
   startsAt: z.string().datetime().optional().nullable(),
   endsAt: z.string().datetime().optional().nullable(),
 });
@@ -97,6 +98,7 @@ router.post("/", authRequired, requireRoles("MANAGER", "ADMIN"), async (req: Aut
           creatorId: req.user!.id,
           winnerCount: b.winnerCount ?? 1,
           totalRewardPoints: b.totalRewardPoints ?? 0,
+          rewardCurrency: b.rewardCurrency ?? "POINT",
           lotteryMode: b.lotteryMode ?? "SIMPLE",
           autoApprove: b.autoApprove ?? true,
           startsAt: b.startsAt ? new Date(b.startsAt) : null,
@@ -179,6 +181,7 @@ router.patch("/:id", authRequired, async (req: AuthedRequest, res) => {
     b.lotteryMode !== undefined ||
     b.autoApprove !== undefined ||
     b.totalRewardPoints !== undefined ||
+    b.rewardCurrency !== undefined ||
     b.startsAt !== undefined ||
     b.endsAt !== undefined;
 
@@ -194,6 +197,7 @@ router.patch("/:id", authRequired, async (req: AuthedRequest, res) => {
         ...(b.lotteryMode !== undefined && { lotteryMode: b.lotteryMode }),
         ...(b.autoApprove !== undefined && { autoApprove: b.autoApprove }),
         ...(b.totalRewardPoints !== undefined && { totalRewardPoints: b.totalRewardPoints }),
+        ...(b.rewardCurrency !== undefined && { rewardCurrency: b.rewardCurrency }),
         ...(b.startsAt !== undefined && { startsAt: b.startsAt ? new Date(b.startsAt) : null }),
         ...(b.endsAt !== undefined && { endsAt: b.endsAt ? new Date(b.endsAt) : null }),
       },

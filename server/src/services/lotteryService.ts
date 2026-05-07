@@ -69,15 +69,18 @@ export async function runCampaignDraw(campaignId: string) {
           userId,
           rank: i + 1,
           points: pointsPerPerson,
+          currency: c.rewardCurrency,
         },
       }),
     ),
-    ...picked.map((userId) =>
-      prisma.user.update({
-        where: { id: userId },
-        data: { pointBalance: { increment: pointsPerPerson } },
-      }),
-    ),
+    ...(c.rewardCurrency === "POINT"
+      ? picked.map((userId) =>
+          prisma.user.update({
+            where: { id: userId },
+            data: { pointBalance: { increment: pointsPerPerson } },
+          }),
+        )
+      : []),
     prisma.campaign.update({
       where: { id: c.id },
       data: { status: "DRAWN", drawnAt: new Date() },

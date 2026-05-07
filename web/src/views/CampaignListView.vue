@@ -13,6 +13,7 @@ type Campaign = {
   status: string
   winnerCount: number
   totalRewardPoints: number
+  rewardCurrency: string
   startsAt: string | null
   endsAt: string | null
   missions?: { id: string }[]
@@ -99,10 +100,10 @@ const filteredList = computed(() => {
           </div>
           <div class="reward-box">
             <div class="total-points">
-              💰 {{ $t('campaign.totalReward', { points: (c.totalRewardPoints || 0).toLocaleString() }) }}
+              💰 {{ (c.totalRewardPoints || 0).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency }}
             </div>
             <div class="per-person-points">
-              {{ $t('campaign.rewardPerPerson', { points: Math.floor((c.totalRewardPoints || 0) / (c.winnerCount || 1)).toLocaleString() }) }}
+              {{ Math.floor((c.totalRewardPoints || 0) / (c.winnerCount || 1)).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency }} / {{ $t('common.person') || 'person' }}
             </div>
           </div>
         </div>
