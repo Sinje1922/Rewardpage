@@ -205,6 +205,10 @@ body {
   box-shadow: 0 0 0 4px var(--accent-soft);
 }
 
+textarea {
+  resize: vertical;
+}
+
 .badge {
   font-size: 0.75rem;
   font-weight: 700;
@@ -274,6 +278,59 @@ body {
 .field input, .field select, .field textarea {
   width: 100%;
   box-sizing: border-box;
+}
+
+/* Rich Text Content Styles */
+.ql-editor {
+  padding: 0 !important;
+  height: auto !important;
+  overflow-y: visible !important;
+  line-height: 1.6;
+  font-size: 1.05rem;
+  color: var(--text);
+  text-align: left;
+}
+
+.ql-editor p {
+  margin-bottom: 1rem;
+}
+
+.ql-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  margin: 1rem 0;
+}
+
+.ql-editor ul, .ql-editor ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.ql-editor h1, .ql-editor h2, .ql-editor h3 {
+  margin: 1.5rem 0 1rem;
+  color: var(--text-h);
+  font-weight: 800;
+}
+
+.ql-editor h1 { font-size: 1.8rem; }
+.ql-editor h2 { font-size: 1.5rem; }
+.ql-editor h3 { font-size: 1.25rem; }
+
+.ql-editor blockquote {
+  border-left: 4px solid var(--accent);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.description-text.ql-editor {
+  text-align: center; /* Header section is centered */
+}
+
+.description-text.ql-editor * {
+  text-align: left; /* But content inside should be left-aligned usually, except maybe centered images */
 }
 
 /* General Mobile Polish */

@@ -6,6 +6,7 @@ import { api, getFileUrl } from '../../api/client'
 import { uploadCompanyLogo } from '../../api/upload'
 import * as XLSX from 'xlsx'
 import MissionListEditor from '../../components/ops/MissionListEditor.vue'
+import RichEditor from '../../components/common/RichEditor.vue'
 import {
   apiMissionToRow,
   emptyMissionRow,
@@ -407,7 +408,7 @@ async function downloadCsv() {
       </div>
       <div class="field">
         <label>{{ $t('ops.description') }}</label>
-        <textarea v-model="draftDescription" rows="3" />
+        <RichEditor v-model="draftDescription" :placeholder="t('ops.descPlaceholder')" />
       </div>
 
       <template v-if="isDraftLike">

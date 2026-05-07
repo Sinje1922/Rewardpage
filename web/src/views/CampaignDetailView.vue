@@ -272,7 +272,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
         <span v-if="camp.companyName" class="brand-name">{{ camp.companyName }}</span>
       </div>
       <h1 class="page-title">{{ camp.title }}</h1>
-      <p class="description-text">{{ camp.description }}</p>
+      <div class="description-text ql-editor" v-html="camp.description"></div>
       
       <div class="meta-row">
         <span class="badge">{{ $t('detail.statusLabel', { status: camp.status }) }}</span>

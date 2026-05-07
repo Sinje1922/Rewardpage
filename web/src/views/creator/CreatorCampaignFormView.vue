@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { api, getFileUrl } from '../../api/client'
 import { uploadCompanyLogo } from '../../api/upload'
 import MissionListEditor from '../../components/ops/MissionListEditor.vue'
+import RichEditor from '../../components/common/RichEditor.vue'
 import { emptyMissionRow, rowToPayload, validateRows, type MissionRowState } from '../../utils/missionRow'
 
 const { t } = useI18n()
@@ -126,7 +127,7 @@ async function save() {
         </div>
         <div class="field">
           <label>{{ $t('ops.description') }}</label>
-          <textarea v-model="description" rows="3" />
+          <RichEditor v-model="description" :placeholder="t('ops.descPlaceholder')" />
         </div>
         <div class="field">
           <label>{{ $t('ops.winnerCount') }}</label>
