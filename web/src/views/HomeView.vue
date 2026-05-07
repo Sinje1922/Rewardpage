@@ -61,11 +61,25 @@ const banners = computed(() => [
     link: '/campaigns'
   }
 ])
+
+const faqs = ref([
+  { q: t('home.faq1Q'), a: t('home.faq1A'), open: false },
+  { q: t('home.faq2Q'), a: t('home.faq2A'), open: false },
+  { q: t('home.faq3Q'), a: t('home.faq3A'), open: false },
+  { q: t('home.faq4Q'), a: t('home.faq4A'), open: false },
+])
+
+const steps = computed(() => [
+  { n: 1, title: t('home.step1Title'), desc: t('home.step1Desc'), icon: '👤' },
+  { n: 2, title: t('home.step2Title'), desc: t('home.step2Desc'), icon: '🎯' },
+  { n: 3, title: t('home.step3Title'), desc: t('home.step3Desc'), icon: '💰' },
+])
+
 </script>
 
 <template>
   <div class="home-container">
-    <!-- Banner Section -->
+    <!-- Hero Section -->
     <section class="banner-area">
       <div v-for="b in banners" :key="b.id" class="banner-card">
         <img :src="b.image" alt="" class="banner-bg" />
@@ -78,10 +92,32 @@ const banners = computed(() => [
       </div>
     </section>
 
-    <!-- Closing Soon Section -->
-    <section class="home-section">
+    <!-- Steps Section -->
+    <section class="landing-section centered">
+      <span class="section-tag">{{ $t('home.stepsTag') }}</span>
+      <h2 class="section-title">{{ $t('home.stepsTitle') }}</h2>
+      <p class="section-desc">{{ $t('home.stepsDesc') }}</p>
+      
+      <div class="step-grid">
+        <div v-for="s in steps" :key="s.n" class="card step-card">
+          <div class="step-number">{{ s.n }}</div>
+          <h3 class="step-title">{{ s.title }}</h3>
+          <p class="step-desc">{{ s.desc }}</p>
+        </div>
+      </div>
+      
+      <RouterLink to="/campaigns" class="btn primary" style="margin-top: 2rem">
+        {{ $t('home.startNow') }}
+      </RouterLink>
+    </section>
+
+    <!-- Campaigns Section (Closing Soon) -->
+    <section class="landing-section">
       <div class="section-head">
-        <h2>{{ $t('home.sectionClosingSoon') }}</h2>
+        <div>
+          <span class="section-tag">{{ $t('home.campaignsTag') }}</span>
+          <h2 class="section-title">{{ $t('home.sectionClosingSoon') }}</h2>
+        </div>
         <RouterLink to="/campaigns" class="view-all">{{ $t('home.viewAll') }} →</RouterLink>
       </div>
       
@@ -95,13 +131,17 @@ const banners = computed(() => [
               <img v-if="c.companyLogoUrl" :src="getFileUrl(c.companyLogoUrl)" class="mini-logo" />
               <span class="company-name">{{ c.companyName }}</span>
             </div>
-            <div class="title-row">
-              <h3 class="card-title">{{ c.title }}</h3>
-              <div class="points-badge">💰 {{ (c.totalRewardPoints || 0).toLocaleString() }} P</div>
-            </div>
-            <div class="deadline-tag">
-              <span class="clock-icon">⏰</span>
-              {{ $t('campaign.duration', { start: '', end: new Date(c.endsAt!).toLocaleDateString() }).replace(' ~ ', '') }}
+            <h3 class="card-title">{{ c.title }}</h3>
+            <div class="points-badge">💰 {{ (c.totalRewardPoints || 0).toLocaleString() }} P</div>
+            
+            <div class="progress-container">
+              <div class="progress-info">
+                <span>{{ $t('home.progressLabel') }}</span>
+                <span>{{ Math.min(100, Math.floor((c.missions?.length ?? 0) * 20)) }}%</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" :style="{ width: Math.min(100, (c.missions?.length ?? 0) * 20) + '%' }"></div>
+              </div>
             </div>
           </div>
           <div class="trend-actions">
@@ -109,39 +149,40 @@ const banners = computed(() => [
           </div>
         </div>
       </div>
-      <p v-else class="empty">{{ $t('home.noClosingSoon') }}</p>
     </section>
 
-    <!-- Trending Section -->
-    <section class="home-section">
-      <div class="section-head">
-        <h2>{{ $t('home.sectionTrending') }}</h2>
+    <!-- Proof Section -->
+    <section class="landing-section centered">
+      <span class="section-tag">{{ $t('home.proofTag') }}</span>
+      <h2 class="section-title">{{ $t('home.proofTitle') }}</h2>
+      <p class="section-desc">{{ $t('home.proofDesc') }}</p>
+      
+      <div class="proof-grid">
+        <div v-for="i in 4" :key="i" class="card proof-card">
+          <img :src="`/proof_mockup_${i}.png`" class="proof-img" @error="($event.target as HTMLImageElement).src = 'https://via.placeholder.com/300x533?text=Earnings+Proof'" />
+        </div>
       </div>
+      
+      <button class="btn primary" style="margin-top: 2rem">{{ $t('home.exploreMore') }}</button>
+    </section>
 
-      <div v-if="loading" class="skeleton-grid">
-        <div v-for="i in 6" :key="i" class="card skeleton"></div>
-      </div>
-      <div v-else-if="trendingList.length" class="trending-grid">
-        <div v-for="c in trendingList" :key="c.id" class="trend-card card">
-          <div class="trend-content">
-             <div class="company-row" v-if="c.companyName || c.companyLogoUrl">
-              <img v-if="c.companyLogoUrl" :src="getFileUrl(c.companyLogoUrl)" class="mini-logo" />
-              <span class="company-name">{{ c.companyName }}</span>
-            </div>
-            <div class="title-row">
-              <h3 class="card-title">{{ c.title }}</h3>
-              <div class="points-badge">💰 {{ (c.totalRewardPoints || 0).toLocaleString() }} P</div>
-            </div>
+    <!-- FAQ Section -->
+    <section class="landing-section centered">
+      <span class="section-tag">{{ $t('home.faqTag') }}</span>
+      <h2 class="section-title">{{ $t('home.faqTitle') }}</h2>
+      
+      <div class="faq-list">
+        <div v-for="(f, i) in faqs" :key="i" class="faq-item">
+          <div class="faq-q" @click="f.open = !f.open">
+            <span>{{ f.q }}</span>
+            <span>{{ f.open ? '−' : '+' }}</span>
           </div>
-          <div class="trend-actions">
-             <RouterLink :to="`/campaigns/${c.id}`" class="btn primary trend-btn">{{ $t('campaign.join') }}</RouterLink>
+          <div v-if="f.open" class="faq-a">
+            {{ f.a }}
           </div>
         </div>
       </div>
-      <p v-else class="empty">{{ $t('home.noTrending') }}</p>
     </section>
-
-
   </div>
 </template>
 
