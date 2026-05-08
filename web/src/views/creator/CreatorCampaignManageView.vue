@@ -583,4 +583,9 @@ async function downloadCsv() {
   font-size: 0.82rem;
   color: var(--muted);
 }
+@media (max-width: 768px) {
+  .logo-row { flex-direction: column; align-items: flex-start; }
+  .logo-actions { width: 100%; }
+  .logo-actions button { flex: 1; }
+}
 </style>

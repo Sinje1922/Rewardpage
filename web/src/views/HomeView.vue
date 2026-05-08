@@ -490,11 +490,43 @@ const steps = computed(() => [
 }
 
 @media (max-width: 768px) {
-  .banner-card { padding: 2rem; aspect-ratio: 16 / 10; min-height: 320px; }
-  .banner-title { font-size: 2rem; }
+  .banner-card { 
+    padding: 2.5rem 1.5rem; 
+    aspect-ratio: auto; 
+    min-height: 450px; 
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+  .banner-card::after {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+  }
+  .banner-content {
+    max-width: 100%;
+  }
+  .banner-title { 
+    font-size: 2.4rem; 
+    margin-top: 1rem;
+  }
+  .banner-sub {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+  }
   
   .mini-card {
-    flex: 0 0 280px;
+    flex: 0 0 260px;
+  }
+
+  .section-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .banner-title {
+    font-size: 2rem;
   }
 }
 </style>

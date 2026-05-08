@@ -865,9 +865,19 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
 }
 
 @media (max-width: 768px) {
-  .meta-row { flex-direction: column; align-items: stretch; }
-  .copy-btn { width: 100%; height: 44px; }
+  .detail-header { margin-bottom: 2rem; }
+  .meta-row { flex-direction: column; align-items: stretch; gap: 0.6rem; }
+  .copy-btn { width: 100%; height: 44px; margin-top: 0.5rem; }
   .winners-grid { grid-template-columns: 1fr; }
   .participants-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .mission-card { padding: 1.25rem; }
+  .mission-title { font-size: 1.15rem; }
+  .type-icon { font-size: 1.5rem; }
+  .participants-card { padding: 1.5rem; margin-top: 2rem; }
+}
+
+@media (max-width: 480px) {
+  .description-text { font-size: 0.95rem; }
+  .reward-notice { font-size: 0.85rem; }
 }
 </style>

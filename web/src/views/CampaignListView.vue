@@ -324,6 +324,7 @@ const filteredList = computed(() => {
   .list-head {
     flex-direction: column;
     align-items: stretch;
+    margin-bottom: 1.5rem;
   }
   .search-wrap {
     min-width: 100%;
@@ -334,6 +335,7 @@ const filteredList = computed(() => {
   }
   .filter-select {
     width: 100%;
+    border-radius: 999px;
   }
   .card-header {
     flex-direction: column;
@@ -342,6 +344,15 @@ const filteredList = computed(() => {
   }
   .reward-box {
     text-align: left;
+  }
+  .card-title {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .card-description {
+    -webkit-line-clamp: 2;
   }
 }
 </style>

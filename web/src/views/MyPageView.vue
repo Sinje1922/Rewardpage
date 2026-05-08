@@ -1216,16 +1216,23 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
 @media (max-width: 950px) {
-  .dashboard-layout { flex-direction: column-reverse; gap: 3rem; }
+  .mypage-dashboard { padding: 0.5rem; }
+  .dashboard-layout { flex-direction: column-reverse; gap: 2rem; align-items: stretch; }
+  .dashboard-main { width: 100%; }
   .dashboard-sidebar { width: 100%; position: static; }
   .sidebar-nav { flex-direction: row; }
   .nav-item { padding: 1rem; justify-content: center; }
   .nav-item .lbl { display: none; }
   
-  .dashboard-card { padding: 1.5rem; }
+  .dashboard-card { padding: 1.25rem; width: 100%; box-sizing: border-box; }
   .sub-tabs { display: none; }
   .sub-tabs-mobile { display: block; }
   .form-grid-split { grid-template-columns: 1fr; }
   .mini-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .dashboard-card { padding: 1rem; border-radius: 1.25rem; }
+  .card-title { font-size: 1.25rem; margin-bottom: 1.5rem; }
+  .item-head { font-size: 1rem; }
 }
 </style>
