@@ -157,9 +157,11 @@ async function loadParticipants() {
     if (!userMap.has(s.user.email)) {
       userMap.set(s.user.email, { 
         email: s.user.email, 
-        wallet: s.user.walletAddress,
-        telegram: s.user.telegramHandle,
-        discord: s.user.discordHandle,
+        wallet: s.user.walletAddress || '',
+        telegram: s.user.telegramHandle || '',
+        discord: s.user.discordHandle || '',
+        youtube: s.user.youtubeHandle || '',
+        instagram: s.user.instagramHandle || '',
         completed: 0, 
         status: '' 
       })
@@ -330,9 +332,12 @@ async function exportToExcel() {
       if (!userMap.has(s.user.email)) {
         userMap.set(s.user.email, { 
           email: s.user.email, 
-          wallet: s.user.walletAddress,
-          telegram: s.user.telegramHandle,
-          discord: s.user.discordHandle,
+          nickname: s.user.nickname || '',
+          wallet: s.user.walletAddress || '',
+          telegram: s.user.telegramHandle || '',
+          discord: s.user.discordHandle || '',
+          youtube: s.user.youtubeHandle || '',
+          instagram: s.user.instagramHandle || '',
           completed: 0, 
           status: t('common.insufficient') 
         })
@@ -344,9 +349,12 @@ async function exportToExcel() {
     
     const summaryRows = [...userMap.values()].map(u => ({
       [t('auth.email')]: u.email,
+      [t('mypage.nickname') || 'Nickname']: u.nickname,
       [t('mypage.walletAddress') || 'Wallet']: u.wallet,
       'Telegram': u.telegram,
       'Discord': u.discord,
+      'YouTube': u.youtube,
+      'Instagram': u.instagram,
       [t('ops.completedMissionCount')]: u.completed,
       [t('ops.totalMissionCount')]: missionCount,
       [t('ops.allMissionsCompleted')]: u.completed >= missionCount ? t('ops.completedLotteryTarget') : t('ops.incomplete')
@@ -360,9 +368,12 @@ async function exportToExcel() {
       const mSubs = allSubs.filter(s => s.missionId === m.id)
       const rows = mSubs.map(s => ({
         [t('auth.email')]: s.user.email,
-        [t('mypage.walletAddress') || 'Wallet']: s.user.walletAddress,
-        'Telegram': s.user.telegramHandle,
-        'Discord': s.user.discordHandle,
+        [t('mypage.nickname') || 'Nickname']: s.user.nickname || '',
+        [t('mypage.walletAddress') || 'Wallet']: s.user.walletAddress || '',
+        'Telegram': s.user.telegramHandle || '',
+        'Discord': s.user.discordHandle || '',
+        'YouTube': s.user.youtubeHandle || '',
+        'Instagram': s.user.instagramHandle || '',
         [t('ops.statusLabel')]: s.status,
         [t('ops.answerContent')]: parsePayloadDetail(s),
         [t('ops.submitTime')]: new Date(s.createdAt).toLocaleString()

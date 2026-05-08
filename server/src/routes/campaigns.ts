@@ -261,17 +261,7 @@ router.get("/:id/submissions", authRequired, async (req: AuthedRequest, res) => 
   const list = await prisma.submission.findMany({
     where: { mission: { campaignId: c.id } },
     include: { 
-      user: { 
-        select: { 
-          id: true, 
-          email: true,
-          walletAddress: true,
-          telegramHandle: true,
-          discordHandle: true,
-          youtubeHandle: true,
-          instagramHandle: true
-        } 
-      }, 
+      user: true, 
       mission: true 
     },
     orderBy: { createdAt: "desc" },
