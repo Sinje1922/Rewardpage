@@ -351,13 +351,13 @@ router.get("/:id/participants", authOptional, async (req: AuthedRequest, res) =>
 
   const approved = await prisma.submission.findMany({
     where: { missionId: { in: missionIds }, status: "APPROVED" },
-    select: { userId: true, missionId: true, user: { select: { email: true } } },
+    select: { userId: true, missionId: true, user: { select: { email: true, nickname: true } } },
   });
 
-  const byUser = new Map<string, { email: string; completed: Set<string> }>();
+  const byUser = new Map<string, { email: string; nickname: string | null; completed: Set<string> }>();
   for (const s of approved) {
     if (!byUser.has(s.userId)) {
-      byUser.set(s.userId, { email: s.user.email, completed: new Set() });
+      byUser.set(s.userId, { email: s.user.email, nickname: s.user.nickname, completed: new Set() });
     }
     byUser.get(s.userId)!.completed.add(s.missionId);
   }
@@ -366,8 +366,17 @@ router.get("/:id/participants", authOptional, async (req: AuthedRequest, res) =>
     .filter((u) => u.completed.size === missionIds.length)
     .map((u) => {
       const [name, domain] = u.email.split("@");
-      const masked = name.length > 2 ? name.substring(0, 2) + "***" : name + "***";
-      return { email: `${masked}@${domain}` };
+      const maskedEmail = name.length > 2 ? name.substring(0, 2) + "***" : name + "***";
+      let maskedNickname = u.nickname;
+      if (u.nickname && u.nickname.length > 2) {
+        maskedNickname = u.nickname.substring(0, 2) + "***";
+      } else if (u.nickname) {
+        maskedNickname = u.nickname + "***";
+      }
+      return { 
+        email: `${maskedEmail}@${domain}`,
+        nickname: maskedNickname
+      };
     });
 
   res.json({

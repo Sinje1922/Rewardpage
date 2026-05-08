@@ -31,7 +31,7 @@ type CampaignDetail = {
   mySubmissions?: { missionId: string; status: string }[]
 }
 
-type Participant = { email: string }
+type Participant = { email: string; nickname?: string }
 type WinnerRow = { rank: number; points: number; currency: string; rewardsConfig: string; user: { email: string } }
 
 const { t } = useI18n()
@@ -502,7 +502,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
       
       <div v-if="participants.length > 0" class="participants-tags">
         <div v-for="(p, idx) in participants" :key="idx" class="p-tag">
-          {{ p.email }}
+          {{ p.nickname || p.email }}
         </div>
       </div>
       <div v-else class="empty-participants">
@@ -824,6 +824,22 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+  max-height: 120px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+.participants-tags::-webkit-scrollbar {
+  width: 4px;
+}
+.participants-tags::-webkit-scrollbar-track {
+  background: transparent;
+}
+.participants-tags::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+.participants-tags::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
 }
 
 .p-tag {
