@@ -260,7 +260,20 @@ router.get("/:id/submissions", authRequired, async (req: AuthedRequest, res) => 
   }
   const list = await prisma.submission.findMany({
     where: { mission: { campaignId: c.id } },
-    include: { user: { select: { id: true, email: true } }, mission: true },
+    include: { 
+      user: { 
+        select: { 
+          id: true, 
+          email: true,
+          walletAddress: true,
+          telegramHandle: true,
+          discordHandle: true,
+          youtubeHandle: true,
+          instagramHandle: true
+        } 
+      }, 
+      mission: true 
+    },
     orderBy: { createdAt: "desc" },
   });
   res.json(list);
@@ -437,7 +450,7 @@ router.get("/:id/export", authRequired, async (req: AuthedRequest, res) => {
     });
 
     // CSV Header
-    let csv = "SubmissionID,CreatedAt,UserEmail,UserNickname,Gender,Age,Region,MissionType,MissionTitle,Payload\n";
+    let csv = "SubmissionID,CreatedAt,UserEmail,UserNickname,WalletAddress,Telegram,Discord,YouTube,Instagram,Gender,Age,Region,MissionType,MissionTitle,Payload\n";
 
     for (const s of list) {
       const age = s.user.birthYear ? new Date().getFullYear() - s.user.birthYear : "Unknown";
@@ -446,12 +459,17 @@ router.get("/:id/export", authRequired, async (req: AuthedRequest, res) => {
         s.createdAt.toISOString(),
         s.user.email,
         `"${(s.user.nickname || "").replace(/"/g, '""')}"`,
+        `"${(s.user.walletAddress || "").replace(/"/g, '""')}"`,
+        `"${(s.user.telegramHandle || "").replace(/"/g, '""')}"`,
+        `"${(s.user.discordHandle || "").replace(/"/g, '""')}"`,
+        `"${(s.user.youtubeHandle || "").replace(/"/g, '""')}"`,
+        `"${(s.user.instagramHandle || "").replace(/"/g, '""')}"`,
         s.user.gender || "Unknown",
         age,
         s.user.region || "Unknown",
         s.mission.type,
         `"${s.mission.title.replace(/"/g, '""')}"`,
-        `"${s.payload.replace(/"/g, '""')}"`,
+        `"${formatPayloadForCsv(s.mission.type, s.payload).replace(/"/g, '""')}"`,
       ];
       csv += row.join(",") + "\n";
     }
@@ -464,5 +482,27 @@ router.get("/:id/export", authRequired, async (req: AuthedRequest, res) => {
     res.status(500).json({ error: "Failed to export data" });
   }
 });
+
+function formatPayloadForCsv(type: string, payloadStr: string): string {
+  try {
+    const p = JSON.parse(payloadStr);
+    if (type === "SURVEY") {
+      if (p.answers) {
+        return Object.entries(p.answers)
+          .map(([q, a]) => `${q}: ${a}`)
+          .join(" | ");
+      }
+    } else if (type === "QUIZ") {
+      return `Selected: ${p.selectedIndex ?? "N/A"}`;
+    } else if (type === "CODE" || type === "FILE_UPLOAD") {
+      return p.code || p.fileUrl || payloadStr;
+    } else if (type === "LINK_VISIT") {
+      return `Dwell: ${p.dwellSeconds ?? 0}s`;
+    }
+    return payloadStr;
+  } catch {
+    return payloadStr;
+  }
+}
 
 export default router;

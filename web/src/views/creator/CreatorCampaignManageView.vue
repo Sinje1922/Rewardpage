@@ -48,16 +48,32 @@ type SubRow = {
   payload: string
   createdAt: string
   missionId: string
-  user: { email: string }
+  user: { 
+    email: string;
+    walletAddress?: string;
+    telegramHandle?: string;
+    discordHandle?: string;
+    youtubeHandle?: string;
+    instagramHandle?: string;
+  }
   mission: { title: string; type: string; config: string }
+}
+
+type CampaignStats = {
+  campaignId: string
+  missions: number
+  submissions: { total: number; approved: number; pending: number; rejected: number }
+  winners: number
+  byMission: { missionId: string; title: string; approved: number; pending: number; rejected: number }[]
 }
 
 
 
-type TabId = 'compose' | 'participants' | 'winners'
+type TabId = 'compose' | 'stats' | 'participants' | 'winners'
 
 const { t } = useI18n()
 const route = useRoute()
+const stats = ref<CampaignStats | null>(null)
 const camp = ref<CampaignDetail | null>(null)
 const participants = ref<{ email: string; completed: number; status: string }[]>([])
 const winnersList = ref<{ email: string }[]>([])
@@ -125,15 +141,28 @@ async function reload() {
   tab.value = 'compose'
 }
 
+async function loadStats() {
+  const id = route.params.id as string
+  const { data } = await api.get<CampaignStats>(`/campaigns/${id}/stats`)
+  stats.value = data
+}
+
 async function loadParticipants() {
   const id = route.params.id as string
   const { data: allSubs } = await api.get<SubRow[]>(`/campaigns/${id}/submissions`)
   const missionCount = camp.value?.missions.length || 0
-  const userMap = new Map<string, { email: string; completed: number; status: string }>()
+  const userMap = new Map<string, any>()
   
   allSubs.forEach(s => {
     if (!userMap.has(s.user.email)) {
-      userMap.set(s.user.email, { email: s.user.email, completed: 0, status: '' })
+      userMap.set(s.user.email, { 
+        email: s.user.email, 
+        wallet: s.user.walletAddress,
+        telegram: s.user.telegramHandle,
+        discord: s.user.discordHandle,
+        completed: 0, 
+        status: '' 
+      })
     }
     if (s.status === 'APPROVED') {
       userMap.get(s.user.email)!.completed++
@@ -230,16 +259,11 @@ async function saveDraft() {
 }
 
 
-
-
-
-
-
-async function openTab(t: TabId) {
-  tab.value = t
-  err.value = ''
-  if (t === 'participants') await loadParticipants()
-  if (t === 'winners') await loadWinners()
+async function openTab(id: TabId) {
+  tab.value = id
+  if (id === 'participants') loadParticipants()
+  if (id === 'winners') loadWinners()
+  if (id === 'stats') loadStats()
 }
 
 function parsePayloadDetail(s: SubRow) {
@@ -313,6 +337,9 @@ async function exportToExcel() {
     
     const summaryRows = [...userMap.values()].map(u => ({
       [t('auth.email')]: u.email,
+      [t('mypage.walletAddress') || 'Wallet']: u.wallet,
+      'Telegram': u.telegram,
+      'Discord': u.discord,
       [t('ops.completedMissionCount')]: u.completed,
       [t('ops.totalMissionCount')]: missionCount,
       [t('ops.allMissionsCompleted')]: u.completed >= missionCount ? t('ops.completedLotteryTarget') : t('ops.incomplete')
@@ -326,6 +353,9 @@ async function exportToExcel() {
       const mSubs = allSubs.filter(s => s.missionId === m.id)
       const rows = mSubs.map(s => ({
         [t('auth.email')]: s.user.email,
+        [t('mypage.walletAddress') || 'Wallet']: s.user.walletAddress,
+        'Telegram': s.user.telegramHandle,
+        'Discord': s.user.discordHandle,
         [t('ops.statusLabel')]: s.status,
         [t('ops.answerContent')]: parsePayloadDetail(s),
         [t('ops.submitTime')]: new Date(s.createdAt).toLocaleString()
@@ -414,10 +444,18 @@ async function downloadCsv() {
       <button
         type="button"
         class="btn"
+        :class="{ primary: tab === 'stats' }"
+        @click="openTab('stats')"
+      >
+        📊 {{ $t('ops.tabStats') || 'Statistics' }}
+      </button>
+      <button
+        type="button"
+        class="btn"
         :class="{ primary: tab === 'participants' }"
         @click="openTab('participants')"
       >
-        {{ $t('ops.participants') || 'Participants' }}
+        👥 {{ $t('ops.participants') || 'Participants' }}
       </button>
       <button
         type="button"
@@ -429,6 +467,45 @@ async function downloadCsv() {
       </button>
     </div>
     <p v-if="err" class="err">{{ err }}</p>
+
+    <section v-if="tab === 'stats' && stats" class="card stats-section">
+      <div class="stats-overview">
+        <div class="stat-box">
+          <label>{{ $t('ops.totalSubmissions') || 'Total Submissions' }}</label>
+          <div class="val">{{ stats.submissions.total }}</div>
+        </div>
+        <div class="stat-box">
+          <label>{{ $t('ops.approvedSubs') || 'Approved' }}</label>
+          <div class="val text-mint">{{ stats.submissions.approved }}</div>
+        </div>
+        <div class="stat-box">
+          <label>{{ $t('ops.pendingSubs') || 'Pending' }}</label>
+          <div class="val text-orange">{{ stats.submissions.pending }}</div>
+        </div>
+        <div class="stat-box">
+          <label>{{ $t('ops.winnersCount') || 'Winners' }}</label>
+          <div class="val text-accent">{{ stats.winners }}</div>
+        </div>
+      </div>
+
+      <div class="mission-stats-list">
+        <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem">{{ $t('ops.missionStats') || 'Missions Performance' }}</h3>
+        <div v-for="m in stats.byMission" :key="m.missionId" class="m-stat-row">
+          <div class="m-stat-info">
+            <strong>{{ m.title }}</strong>
+            <div class="m-stat-bars">
+              <div class="bar-fill approved" :style="{ width: (m.approved / (m.approved + m.pending + m.rejected || 1) * 100) + '%' }"></div>
+              <div class="bar-fill pending" :style="{ width: (m.pending / (m.approved + m.pending + m.rejected || 1) * 100) + '%' }"></div>
+            </div>
+          </div>
+          <div class="m-stat-counts">
+            <span class="c-approved">{{ m.approved }}</span> / 
+            <span class="c-pending">{{ m.pending }}</span> / 
+            <span class="c-rejected">{{ m.rejected }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <section v-if="tab === 'compose'" class="card">
       <h2 style="font-size: 1.05rem; color: var(--text-h); margin: 0 0 0.75rem">{{ $t('ops.campaignSection') }}</h2>
@@ -588,4 +665,54 @@ async function downloadCsv() {
   .logo-actions { width: 100%; }
   .logo-actions button { flex: 1; }
 }
+
+/* Stats Styles */
+.stats-section {
+  padding: 1.5rem;
+}
+.stats-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+.stat-box {
+  background: var(--bg-deep);
+  padding: 1.5rem;
+  border-radius: 20px;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+.stat-box label { font-size: 0.85rem; color: var(--muted); font-weight: 700; display: block; margin-bottom: 0.5rem; }
+.stat-box .val { font-size: 1.75rem; font-weight: 900; }
+.text-mint { color: var(--mint); }
+.text-orange { color: #f97316; }
+.text-accent { color: var(--accent); }
+
+.m-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--bg-deep);
+  border-radius: 16px;
+  margin-bottom: 0.75rem;
+  gap: 1.5rem;
+}
+.m-stat-info { flex: 1; }
+.m-stat-bars {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  margin-top: 0.5rem;
+  display: flex;
+  overflow: hidden;
+}
+.bar-fill { height: 100%; }
+.bar-fill.approved { background: var(--mint); }
+.bar-fill.pending { background: #f97316; }
+.m-stat-counts { font-size: 0.9rem; font-weight: 700; white-space: nowrap; }
+.c-approved { color: var(--mint); }
+.c-pending { color: #f97316; }
+.c-rejected { color: #ef4444; }
 </style>
