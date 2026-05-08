@@ -50,6 +50,7 @@ type SubRow = {
   missionId: string
   user: { 
     email: string;
+    nickname?: string;
     walletAddress?: string;
     telegramHandle?: string;
     discordHandle?: string;
