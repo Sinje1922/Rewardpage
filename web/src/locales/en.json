@@ -63,6 +63,7 @@
     "missionCount": "{count} Missions",
     "totalReward": "{points}P Reward",
     "rewardPerPerson": "{points}P per person",
+    "rewardPerPersonPrefix": "Reward per person:",
     "rewardPerPersonSuffix": "per person",
     "duration": "📅 {start} ~ {end}",
     "person": "pers.",

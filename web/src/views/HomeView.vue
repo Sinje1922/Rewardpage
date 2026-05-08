@@ -124,15 +124,18 @@ const steps = computed(() => [
               <span class="company-name">{{ c.companyName }}</span>
             </div>
             <h3 class="card-title">{{ c.title }}</h3>
-            <div class="points-badge">
-              💰 
+            <div class="reward-badges-mini">
               <template v-if="c.rewardsConfig && c.rewardsConfig !== '[]'">
-                <span v-for="(r, idx) in JSON.parse(c.rewardsConfig)" :key="idx">
-                  {{ Number(idx) > 0 ? ' + ' : '' }}{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? ' P' : ' ' + r.currency }}
-                </span>
+                <div v-for="(r, idx) in JSON.parse(c.rewardsConfig)" :key="idx" class="reward-chip-mini" :class="r.currency.toLowerCase()">
+                  <span class="reward-icon">{{ r.currency === 'POINT' ? '🪙' : r.currency === 'USDT' ? '💵' : r.currency === 'METAQ' ? '💎' : '🎁' }}</span>
+                  <span class="reward-amount">{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}</span>
+                </div>
               </template>
               <template v-else>
-                {{ (c.totalRewardPoints || 0).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? ' P' : ' ' + c.rewardCurrency }}
+                <div class="reward-chip-mini point">
+                  <span class="reward-icon">🪙</span>
+                  <span class="reward-amount">{{ (c.totalRewardPoints || 0).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency }}</span>
+                </div>
               </template>
             </div>
             
@@ -427,16 +430,30 @@ const steps = computed(() => [
   letter-spacing: -0.02em;
 }
 
-.points-badge {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: var(--accent);
-  background: var(--accent-soft);
-  padding: 0.4rem 0.9rem;
-  border-radius: 99px;
-  white-space: nowrap;
-  border: 1px solid var(--accent-border);
+.reward-badges-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0 1rem;
 }
+
+.reward-chip-mini {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.5rem;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 0.85rem;
+  border: 1px solid var(--accent-border);
+  white-space: nowrap;
+}
+
+.reward-chip-mini.usdt { background: #e6fffa; color: #008a76; border-color: #b2f5ea; }
+.reward-chip-mini.metaq { background: #fff5f7; color: #d53f8c; border-color: #fed7e2; }
+.reward-chip-mini.point { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-border); }
 
 .card-desc {
   margin: 0.25rem 0 0;

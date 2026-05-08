@@ -100,18 +100,22 @@ const filteredList = computed(() => {
             </span>
           </div>
           <div class="reward-box">
-            <div class="total-points">
-              💰 
+            <div class="reward-badges">
               <template v-if="c.rewardsConfig && c.rewardsConfig !== '[]'">
-                <span v-for="(r, idx) in JSON.parse(c.rewardsConfig)" :key="idx">
-                  {{ Number(idx) > 0 ? ' + ' : '' }}{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
-                </span>
+                <div v-for="(r, idx) in JSON.parse(c.rewardsConfig)" :key="idx" class="reward-chip" :class="r.currency.toLowerCase()">
+                  <span class="reward-icon">{{ r.currency === 'POINT' ? '🪙' : r.currency === 'USDT' ? '💵' : r.currency === 'METAQ' ? '💎' : '🎁' }}</span>
+                  <span class="reward-amount">{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}</span>
+                </div>
               </template>
               <template v-else>
-                {{ (c.totalRewardPoints || 0).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency }}
+                <div class="reward-chip point">
+                  <span class="reward-icon">🪙</span>
+                  <span class="reward-amount">{{ (c.totalRewardPoints || 0).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency }}</span>
+                </div>
               </template>
             </div>
             <div class="per-person-points">
+              {{ $t('campaign.rewardPerPersonPrefix') || 'Each' }}
               <template v-if="c.rewardsConfig && c.rewardsConfig !== '[]'">
                 <span v-for="(r, idx) in JSON.parse(c.rewardsConfig)" :key="idx">
                   {{ Number(idx) > 0 ? ' + ' : '' }}{{ Math.floor(r.amount / (c.winnerCount || 1)).toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
@@ -120,7 +124,6 @@ const filteredList = computed(() => {
               <template v-else>
                 {{ Math.floor((c.totalRewardPoints || 0) / (c.winnerCount || 1)).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency }}
               </template>
-               / {{ $t('common.person') || 'person' }}
             </div>
           </div>
         </div>
@@ -231,20 +234,45 @@ const filteredList = computed(() => {
 
 .reward-box {
   text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
-.total-points {
-  font-weight: 900;
+.reward-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  align-items: flex-end;
+}
+
+.reward-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.6rem;
+  background: var(--accent-soft);
   color: var(--accent);
-  font-size: 1.3rem;
+  font-weight: 800;
+  font-size: 0.95rem;
+  border: 1px solid var(--accent-border);
+  white-space: nowrap;
+}
+
+.reward-chip.usdt { background: #e6fffa; color: #008a76; border-color: #b2f5ea; }
+.reward-chip.metaq { background: #fff5f7; color: #d53f8c; border-color: #fed7e2; }
+.reward-chip.point { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-border); }
+
+.reward-amount {
   line-height: 1;
 }
 
 .per-person-points {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--muted);
-  margin-top: 0.2rem;
-  font-weight: 600;
+  margin-top: 0.4rem;
+  font-weight: 700;
 }
 
 .card-link {
@@ -344,6 +372,10 @@ const filteredList = computed(() => {
   }
   .reward-box {
     text-align: left;
+    align-items: flex-start;
+  }
+  .reward-badges {
+    align-items: flex-start;
   }
   .card-title {
     font-size: 1.25rem;

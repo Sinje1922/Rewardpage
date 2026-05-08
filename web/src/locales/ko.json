@@ -63,6 +63,7 @@
     "missionCount": "미션 {count}",
     "totalReward": "{points}P 보상",
     "rewardPerPerson": "인당 {points}P",
+    "rewardPerPersonPrefix": "인당 지급액:",
     "rewardPerPersonSuffix": "인당",
     "duration": "📅 {start} ~ {end}",
     "person": "명",
