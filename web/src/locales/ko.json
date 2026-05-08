@@ -272,7 +272,13 @@
     "submitTime": "제출 시각",
     "approve": "승인",
     "reject": "거절",
-    "add": "추가"
+    "add": "추가",
+    "tabStats": "통계",
+    "approvedSubs": "승인됨",
+    "pendingSubs": "승인 대기",
+    "winnersCount": "당첨자",
+    "missionStats": "미션별 참여 현황",
+    "statusLabel": "상태"
   },
   "admin": {
     "title": "관리자",

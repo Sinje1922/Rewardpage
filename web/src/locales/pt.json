@@ -272,7 +272,13 @@
     "submitTime": "Hora do Envio",
     "approve": "Aprovar",
     "reject": "Rejeitar",
-    "add": "Adicionar"
+    "add": "Adicionar",
+    "tabStats": "Estatísticas",
+    "approvedSubs": "Aprovado",
+    "pendingSubs": "Pendente",
+    "winnersCount": "Ganhadores",
+    "missionStats": "Desempenho da Missão",
+    "statusLabel": "Status"
   },
   "admin": {
     "title": "Administrador",

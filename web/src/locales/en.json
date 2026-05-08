@@ -272,7 +272,13 @@
     "submitTime": "Submit Time",
     "approve": "Approve",
     "reject": "Reject",
-    "add": "Add"
+    "add": "Add",
+    "tabStats": "Statistics",
+    "approvedSubs": "Approved",
+    "pendingSubs": "Pending",
+    "winnersCount": "Winners",
+    "missionStats": "Mission Performance",
+    "statusLabel": "Status"
   },
   "admin": {
     "title": "Admin",
