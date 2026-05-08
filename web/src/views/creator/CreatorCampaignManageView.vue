@@ -324,11 +324,18 @@ async function exportToExcel() {
     
     // 1. 참여자 요약 시트
     const missionCount = camp.value.missions.length
-    const userMap = new Map<string, { email: string; completed: number; status: string }>()
+    const userMap = new Map<string, any>()
     
     allSubs.forEach(s => {
       if (!userMap.has(s.user.email)) {
-        userMap.set(s.user.email, { email: s.user.email, completed: 0, status: t('common.insufficient') })
+        userMap.set(s.user.email, { 
+          email: s.user.email, 
+          wallet: s.user.walletAddress,
+          telegram: s.user.telegramHandle,
+          discord: s.user.discordHandle,
+          completed: 0, 
+          status: t('common.insufficient') 
+        })
       }
       if (s.status === 'APPROVED') {
         userMap.get(s.user.email)!.completed++
