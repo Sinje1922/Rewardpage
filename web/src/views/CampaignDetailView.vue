@@ -91,7 +91,7 @@ async function copyLink() {
 async function loadParticipants() {
   const id = route.params.id as string
   try {
-    const p = await api.get<{ count: number; participants: Participant[] }>(`/campaigns/${id}/participants`)
+    const p = await api.get<{ count: number; participants: Participant[] }>(`/campaigns/${id}/participants?t=${Date.now()}`)
     participants.value = p.data.participants
     participantCount.value = p.data.count
   } catch {
