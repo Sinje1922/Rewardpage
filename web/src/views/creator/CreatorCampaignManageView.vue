@@ -369,8 +369,16 @@ async function exportToExcel() {
       }))
       
       const sheet = XLSX.utils.json_to_sheet(rows)
-      // 시트명 금지 문자 제거 및 길이 제한 (31자)
-      const sheetName = m.title.replace(/[\\/?*[\]]/g, '').slice(0, 25) + `_${m.type.slice(0, 4)}`
+      // 시트명 금지 문자(\ / ? * : [ ]) 제거 및 길이 제한 (31자), 중복 방지
+      const cleanTitle = m.title.replace(/[\\/?*:[\]]/g, '').slice(0, 20)
+      let sheetName = `${cleanTitle}_${m.type.slice(0, 4)}`
+      
+      // 중복 시트명 처리
+      let counter = 1
+      while (workbook.SheetNames.includes(sheetName)) {
+        sheetName = `${cleanTitle.slice(0, 17)}_${counter++}`
+      }
+      
       XLSX.utils.book_append_sheet(workbook, sheet, sheetName)
     })
     
