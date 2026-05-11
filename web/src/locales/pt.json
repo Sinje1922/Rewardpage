@@ -48,7 +48,11 @@
     "faq3Q": "Qualquer um pode participar?",
     "faq3A": "Sim, qualquer usuário com uma conta pode participar de campanhas e ganhar recompensas.",
     "faq4Q": "Como as recompensas são pagas?",
-    "faq4A": "As recompensas são pagas em pontos da plataforma, que podem ser trocados por ativos de blockchain."
+    "faq4A": "Pago em pontos da plataforma, que podem ser trocados por ativos blockchain via endereço de carteira.",
+    "remainingDays": "faltam {n} dias",
+    "remainingHours": "faltam {n} horas",
+    "remainingMinutes": "faltam {n} min",
+    "closed": "Encerrado"
   },
   "campaign": {
     "listTitle": "Todas as Campanhas",

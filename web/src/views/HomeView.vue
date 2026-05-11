@@ -67,6 +67,22 @@ const steps = computed(() => [
   { n: 3, title: t('home.step3Title'), desc: t('home.step3Desc'), icon: '💰' },
 ])
 
+function getRemainingTime(endsAt: string | null) {
+  if (!endsAt) return ''
+  const end = new Date(endsAt)
+  const now = new Date()
+  const diff = end.getTime() - now.getTime()
+  if (diff <= 0) return t('home.closed')
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  
+  if (days > 0) return t('home.remainingDays', { n: days })
+  if (hours > 0) return t('home.remainingHours', { n: hours })
+  return t('home.remainingMinutes', { n: minutes })
+}
+
 </script>
 
 <template>
@@ -139,14 +155,9 @@ const steps = computed(() => [
               </template>
             </div>
             
-            <div class="progress-container">
-              <div class="progress-info">
-                <span>{{ $t('home.progressLabel') }}</span>
-                <span>{{ Math.min(100, Math.floor((c.missions?.length ?? 0) * 20)) }}%</span>
-              </div>
-              <div class="progress-track">
-                <div class="progress-fill" :style="{ width: Math.min(100, (c.missions?.length ?? 0) * 20) + '%' }"></div>
-              </div>
+            <div class="time-remaining">
+              <span class="clock-icon">⏰</span>
+              <span class="time-text">{{ getRemainingTime(c.endsAt) }}</span>
             </div>
           </div>
           <div class="trend-actions">

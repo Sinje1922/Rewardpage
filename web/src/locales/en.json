@@ -48,7 +48,11 @@
     "faq3Q": "Can anyone participate?",
     "faq3A": "Yes, any user with an account can participate in campaigns and earn rewards.",
     "faq4Q": "How are rewards paid?",
-    "faq4A": "Rewards are paid in platform points, which can be exchanged for blockchain assets."
+    "faq4A": "Paid in platform points, which can be exchanged for blockchain assets via wallet address.",
+    "remainingDays": "{n} days left",
+    "remainingHours": "{n} hours left",
+    "remainingMinutes": "{n} mins left",
+    "closed": "Closed"
   },
   "campaign": {
     "listTitle": "All Campaigns",
