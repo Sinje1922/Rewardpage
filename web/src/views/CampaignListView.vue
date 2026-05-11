@@ -25,6 +25,7 @@ const list = ref<Campaign[]>([])
 const err = ref('')
 const searchQuery = ref('')
 const filterStatus = ref('ALL')
+const sortBy = ref('LATEST')
 
 onMounted(async () => {
   try {
@@ -55,6 +56,15 @@ const filteredList = computed(() => {
     const scoreA = statusScore[a.status] ?? 99
     const scoreB = statusScore[b.status] ?? 99
     if (scoreA !== scoreB) return scoreA - scoreB
+
+    if (sortBy.value === 'ENDING_SOON') {
+      if (a.endsAt && b.endsAt) {
+        return new Date(a.endsAt).getTime() - new Date(b.endsAt).getTime()
+      }
+      if (a.endsAt) return -1
+      if (b.endsAt) return 1
+    }
+
     return new Date(b.startsAt || 0).getTime() - new Date(a.startsAt || 0).getTime()
   })
 })
@@ -76,6 +86,10 @@ const filteredList = computed(() => {
             <option value="ACTIVE">{{ $t('campaign.statusActive') }}</option>
             <option value="CLOSED">{{ $t('campaign.statusClosed') }}</option>
             <option value="DRAWN">{{ $t('campaign.statusDrawn') }}</option>
+          </select>
+          <select v-model="sortBy" class="btn filter-select">
+            <option value="LATEST">{{ $t('campaign.sortByLatest') }}</option>
+            <option value="ENDING_SOON">{{ $t('campaign.sortByEndingSoon') }}</option>
           </select>
         </div>
       </div>

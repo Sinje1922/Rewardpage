@@ -59,6 +59,8 @@
     "listLead": "Descubra campanhas de recompensa ativas e participe.",
     "searchPlaceholder": "Pesquisar por título ou descrição...",
     "filterAll": "Todos os Estados",
+    "sortByLatest": "Mais Recente",
+    "sortByEndingSoon": "Terminando em Breve",
     "statusDraft": "Rascunho",
     "statusActive": "Ativo",
     "statusClosed": "Fechado",

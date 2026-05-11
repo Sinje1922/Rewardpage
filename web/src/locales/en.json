@@ -59,6 +59,8 @@
     "listLead": "Discover active reward campaigns and join them.",
     "searchPlaceholder": "Search by title or description...",
     "filterAll": "All Status",
+    "sortByLatest": "Latest",
+    "sortByEndingSoon": "Ending Soon",
     "statusDraft": "Draft",
     "statusActive": "Active",
     "statusClosed": "Closed",
