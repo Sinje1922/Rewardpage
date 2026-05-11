@@ -615,7 +615,8 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
   font-weight: 800;
   font-size: 1rem;
   border: 1px solid var(--accent-border);
-  white-space: nowrap;
+  white-space: normal;
+  word-break: keep-all;
 }
 
 .reward-chip.usdt { background: #e6fffa; color: #008a76; border-color: #b2f5ea; }
@@ -710,6 +711,8 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
   margin: 0 0 0.75rem;
   color: var(--text-h);
   font-weight: 800;
+  line-height: 1.3;
+  overflow-wrap: break-word;
 }
 
 .mission-desc {

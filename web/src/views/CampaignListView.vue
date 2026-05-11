@@ -1,176 +1,254 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { api, getFileUrl } from '../api/client'
+import { computed, onMounted, ref } from "vue";
+import { RouterLink } from "vue-router";
+import { useI18n } from "vue-i18n";
+import { api, getFileUrl } from "../api/client";
 
 type Campaign = {
-  id: string
-  title: string
-  description: string
-  companyName: string
-  companyLogoUrl: string
-  status: string
-  winnerCount: number
-  totalRewardPoints: number
-  rewardCurrency: string
-  rewardsConfig: string
-  startsAt: string | null
-  endsAt: string | null
-  missions?: { id: string }[]
-}
+  id: string;
+  title: string;
+  description: string;
+  companyName: string;
+  companyLogoUrl: string;
+  status: string;
+  winnerCount: number;
+  totalRewardPoints: number;
+  rewardCurrency: string;
+  rewardsConfig: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  missions?: { id: string }[];
+};
 
-const { t } = useI18n()
-const list = ref<Campaign[]>([])
-const err = ref('')
-const searchQuery = ref('')
-const filterStatus = ref('ALL')
-const sortBy = ref('LATEST')
+const { t } = useI18n();
+const list = ref<Campaign[]>([]);
+const err = ref("");
+const searchQuery = ref("");
+const filterStatus = ref("ALL");
+const sortBy = ref("LATEST");
 
 onMounted(async () => {
   try {
-    const { data } = await api.get<Campaign[]>('/campaigns')
-    list.value = data
+    const { data } = await api.get<Campaign[]>("/campaigns");
+    list.value = data;
   } catch {
-    err.value = t('campaign.errorLoad')
+    err.value = t("campaign.errorLoad");
   }
-})
+});
 
 const filteredList = computed(() => {
-  const filtered = list.value.filter(c => {
+  const filtered = list.value.filter((c) => {
     const matchesSearch =
       c.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       c.description.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      (c.companyName && c.companyName.toLowerCase().includes(searchQuery.value.toLowerCase()))
-    const matchesStatus = filterStatus.value === 'ALL' || c.status === filterStatus.value
-    return matchesSearch && matchesStatus
-  })
+      (c.companyName &&
+        c.companyName.toLowerCase().includes(searchQuery.value.toLowerCase()));
+    const matchesStatus =
+      filterStatus.value === "ALL" || c.status === filterStatus.value;
+    return matchesSearch && matchesStatus;
+  });
 
   const statusScore: Record<string, number> = {
     ACTIVE: 0,
     CLOSED: 1,
     DRAWN: 2,
-  }
+  };
 
   return [...filtered].sort((a, b) => {
-    const scoreA = statusScore[a.status] ?? 99
-    const scoreB = statusScore[b.status] ?? 99
-    if (scoreA !== scoreB) return scoreA - scoreB
+    const scoreA = statusScore[a.status] ?? 99;
+    const scoreB = statusScore[b.status] ?? 99;
+    if (scoreA !== scoreB) return scoreA - scoreB;
 
-    if (sortBy.value === 'ENDING_SOON') {
+    if (sortBy.value === "ENDING_SOON") {
       if (a.endsAt && b.endsAt) {
-        return new Date(a.endsAt).getTime() - new Date(b.endsAt).getTime()
+        return new Date(a.endsAt).getTime() - new Date(b.endsAt).getTime();
       }
-      if (a.endsAt) return -1
-      if (b.endsAt) return 1
+      if (a.endsAt) return -1;
+      if (b.endsAt) return 1;
     }
 
-    return new Date(b.startsAt || 0).getTime() - new Date(a.startsAt || 0).getTime()
-  })
-})
+    return (
+      new Date(b.startsAt || 0).getTime() - new Date(a.startsAt || 0).getTime()
+    );
+  });
+});
 </script>
 
 <template>
   <div class="list-container">
     <div class="list-head">
       <div class="head-text">
-        <h1 class="page-title">{{ $t('campaign.listTitle') }}</h1>
-        <p class="lead-text">{{ $t('campaign.listLead') }}</p>
+        <h1 class="page-title">{{ $t("campaign.listTitle") }}</h1>
+        <p class="lead-text">{{ $t("campaign.listLead") }}</p>
       </div>
-      
+
       <div class="search-wrap">
         <div class="search-bar">
-          <input v-model="searchQuery" type="text" :placeholder="$t('campaign.searchPlaceholder')" />
+          <input
+            v-model="searchQuery"
+            type="text"
+            :placeholder="$t('campaign.searchPlaceholder')"
+          />
           <select v-model="filterStatus" class="btn filter-select">
-            <option value="ALL">{{ $t('campaign.filterAll') }}</option>
-            <option value="ACTIVE">{{ $t('campaign.statusActive') }}</option>
-            <option value="CLOSED">{{ $t('campaign.statusClosed') }}</option>
-            <option value="DRAWN">{{ $t('campaign.statusDrawn') }}</option>
+            <option value="ALL">{{ $t("campaign.filterAll") }}</option>
+            <option value="ACTIVE">{{ $t("campaign.statusActive") }}</option>
+            <option value="CLOSED">{{ $t("campaign.statusClosed") }}</option>
+            <option value="DRAWN">{{ $t("campaign.statusDrawn") }}</option>
           </select>
           <select v-model="sortBy" class="btn filter-select">
-            <option value="LATEST">{{ $t('campaign.sortByLatest') }}</option>
-            <option value="ENDING_SOON">{{ $t('campaign.sortByEndingSoon') }}</option>
+            <option value="LATEST">{{ $t("campaign.sortByLatest") }}</option>
+            <option value="ENDING_SOON">
+              {{ $t("campaign.sortByEndingSoon") }}
+            </option>
           </select>
         </div>
       </div>
     </div>
 
     <p v-if="err" class="err">{{ err }}</p>
-    
+
     <div class="grid">
-      <div 
-        v-for="c in filteredList" 
-        :key="c.id" 
+      <div
+        v-for="c in filteredList"
+        :key="c.id"
         class="card campaign-card"
         :class="{ 'card-inactive': c.status !== 'ACTIVE' }"
       >
         <div class="card-header">
           <div class="badge-row">
-            <span class="badge" :class="{ 'badge-active': c.status === 'ACTIVE' }">
-              {{ c.status === 'ACTIVE' ? $t('campaign.statusActive') : c.status === 'CLOSED' ? $t('campaign.statusClosed') : $t('campaign.statusDrawn') }}
+            <span
+              class="badge"
+              :class="{ 'badge-active': c.status === 'ACTIVE' }"
+            >
+              {{
+                c.status === "ACTIVE"
+                  ? $t("campaign.statusActive")
+                  : c.status === "CLOSED"
+                    ? $t("campaign.statusClosed")
+                    : $t("campaign.statusDrawn")
+              }}
             </span>
             <span class="mission-count-badge">
-              {{ $t('campaign.missionCount', { count: c.missions?.length ?? 0 }) }}
+              {{
+                $t("campaign.missionCount", { count: c.missions?.length ?? 0 })
+              }}
             </span>
           </div>
           <div class="reward-box">
             <div class="reward-badges">
               <template v-if="c.rewardsConfig && c.rewardsConfig !== '[]'">
-                <div v-for="(r, idx) in JSON.parse(c.rewardsConfig)" :key="idx" class="reward-chip" :class="r.currency.toLowerCase()">
-                  <span class="reward-icon">{{ r.currency === 'POINT' ? '🪙' : r.currency === 'USDT' ? '💵' : r.currency === 'METAQ' ? '💎' : '🎁' }}</span>
-                  <span class="reward-amount">{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}</span>
+                <div
+                  v-for="(r, idx) in JSON.parse(c.rewardsConfig)"
+                  :key="idx"
+                  class="reward-chip"
+                  :class="r.currency.toLowerCase()"
+                >
+                  <span class="reward-icon">{{
+                    r.currency === "POINT"
+                      ? "🪙"
+                      : r.currency === "USDT"
+                        ? "💵"
+                        : r.currency === "METAQ"
+                          ? "💎"
+                          : "🎁"
+                  }}</span>
+                  <span class="reward-amount"
+                    >{{ r.amount.toLocaleString()
+                    }}{{
+                      r.currency === "POINT" ? "P" : " " + r.currency
+                    }}</span
+                  >
                 </div>
               </template>
               <template v-else>
                 <div class="reward-chip point">
                   <span class="reward-icon">🪙</span>
-                  <span class="reward-amount">{{ (c.totalRewardPoints || 0).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency }}</span>
+                  <span class="reward-amount"
+                    >{{ (c.totalRewardPoints || 0).toLocaleString()
+                    }}{{
+                      c.rewardCurrency === "POINT"
+                        ? "P"
+                        : " " + c.rewardCurrency
+                    }}</span
+                  >
                 </div>
               </template>
             </div>
             <div class="per-person-points">
-              {{ $t('campaign.rewardPerPersonPrefix') || 'Each' }}
+              {{ $t("campaign.rewardPerPersonPrefix") || "Each" }}
               <template v-if="c.rewardsConfig && c.rewardsConfig !== '[]'">
-                <span v-for="(r, idx) in JSON.parse(c.rewardsConfig)" :key="idx">
-                  {{ Number(idx) > 0 ? ' + ' : '' }}{{ Math.floor(r.amount / (c.winnerCount || 1)).toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+                <span
+                  v-for="(r, idx) in JSON.parse(c.rewardsConfig)"
+                  :key="idx"
+                >
+                  {{ Number(idx) > 0 ? " + " : ""
+                  }}{{
+                    Math.floor(
+                      r.amount / (c.winnerCount || 1),
+                    ).toLocaleString()
+                  }}{{ r.currency === "POINT" ? "P" : " " + r.currency }}
                 </span>
               </template>
               <template v-else>
-                {{ Math.floor((c.totalRewardPoints || 0) / (c.winnerCount || 1)).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency }}
+                {{
+                  Math.floor(
+                    (c.totalRewardPoints || 0) / (c.winnerCount || 1),
+                  ).toLocaleString()
+                }}{{
+                  c.rewardCurrency === "POINT" ? "P" : " " + c.rewardCurrency
+                }}
               </template>
             </div>
           </div>
         </div>
-        
+
         <RouterLink :to="`/campaigns/${c.id}`" class="card-link">
           <div v-if="c.companyName || c.companyLogoUrl" class="company-info">
-            <img v-if="c.companyLogoUrl" :src="getFileUrl(c.companyLogoUrl)" alt="" class="company-mini-logo" />
-            <span v-if="c.companyName" class="company-name">{{ c.companyName }}</span>
+            <img
+              v-if="c.companyLogoUrl"
+              :src="getFileUrl(c.companyLogoUrl)"
+              alt=""
+              class="company-mini-logo"
+            />
+            <span v-if="c.companyName" class="company-name">{{
+              c.companyName
+            }}</span>
           </div>
           <h2 class="card-title">{{ c.title }}</h2>
         </RouterLink>
 
         <div v-if="c.startsAt || c.endsAt" class="period-info">
-          📅 {{ $t('campaign.duration', {
-            start: c.startsAt ? new Date(c.startsAt).toLocaleDateString() : $t('campaign.durationAlways'),
-            end: c.endsAt ? new Date(c.endsAt).toLocaleDateString() : $t('campaign.durationUntilEnd')
-          }) }}
+          📅
+          {{
+            $t("campaign.duration", {
+              start: c.startsAt
+                ? new Date(c.startsAt).toLocaleDateString()
+                : $t("campaign.durationAlways"),
+              end: c.endsAt
+                ? new Date(c.endsAt).toLocaleDateString()
+                : $t("campaign.durationUntilEnd"),
+            })
+          }}
         </div>
-        
+
         <div class="card-action">
-          <RouterLink 
-            :to="`/campaigns/${c.id}`" 
-            :class="['btn', c.status === 'ACTIVE' ? 'primary' : '']" 
+          <RouterLink
+            :to="`/campaigns/${c.id}`"
+            :class="['btn', c.status === 'ACTIVE' ? 'primary' : '']"
             class="full-btn"
           >
-            {{ c.status === 'ACTIVE' ? $t('campaign.join') : $t('campaign.viewDetail') }}
+            {{
+              c.status === "ACTIVE"
+                ? $t("campaign.join")
+                : $t("campaign.viewDetail")
+            }}
           </RouterLink>
         </div>
       </div>
     </div>
 
     <p v-if="!err && filteredList.length === 0" class="empty-msg">
-      {{ $t('campaign.noCampaigns') }}
+      {{ $t("campaign.noCampaigns") }}
     </p>
   </div>
 </template>
@@ -197,13 +275,20 @@ const filteredList = computed(() => {
 .search-wrap {
   flex: 1;
   min-width: 320px;
-  max-width: 500px;
+  max-width: 1000px;
 }
 
 .filter-select {
   border-radius: 999px;
-  padding-right: 2.2rem;
-  min-width: 120px;
+  padding: 0.75rem 2.5rem 0.75rem 1.25rem;
+  min-width: 140px;
+  flex-shrink: 0;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.8rem center;
+  background-size: 1rem;
 }
 
 .campaign-card {
@@ -271,12 +356,25 @@ const filteredList = computed(() => {
   font-weight: 800;
   font-size: 0.95rem;
   border: 1px solid var(--accent-border);
-  white-space: nowrap;
+  white-space: normal;
+  word-break: keep-all;
 }
 
-.reward-chip.usdt { background: #e6fffa; color: #008a76; border-color: #b2f5ea; }
-.reward-chip.metaq { background: #fff5f7; color: #d53f8c; border-color: #fed7e2; }
-.reward-chip.point { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-border); }
+.reward-chip.usdt {
+  background: #e6fffa;
+  color: #008a76;
+  border-color: #b2f5ea;
+}
+.reward-chip.metaq {
+  background: #fff5f7;
+  color: #d53f8c;
+  border-color: #fed7e2;
+}
+.reward-chip.point {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
 
 .reward-amount {
   line-height: 1;

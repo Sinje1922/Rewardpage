@@ -439,6 +439,8 @@ function getRemainingTime(endsAt: string | null) {
   font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
+  line-height: 1.3;
+  overflow-wrap: break-word;
 }
 
 .reward-badges-mini {
@@ -459,7 +461,8 @@ function getRemainingTime(endsAt: string | null) {
   font-weight: 800;
   font-size: 0.85rem;
   border: 1px solid var(--accent-border);
-  white-space: nowrap;
+  white-space: normal;
+  word-break: keep-all;
 }
 
 .reward-chip-mini.usdt { background: #e6fffa; color: #008a76; border-color: #b2f5ea; }
