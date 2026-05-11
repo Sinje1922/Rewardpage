@@ -164,7 +164,7 @@ const steps = computed(() => [
       
       <div class="proof-grid">
         <div v-for="i in 4" :key="i" class="card proof-card">
-          <img :src="`/proof_mockup_${i}.png`" class="proof-img" @error="($event.target as HTMLImageElement).src = 'https://via.placeholder.com/300x533?text=Earnings+Proof'" />
+          <img :src="`/proof_mockup_${i}.png`" class="proof-img" @error="($event.target as HTMLImageElement).src = 'https://placehold.co/300x533?text=Earnings+Proof'" />
         </div>
       </div>
       
