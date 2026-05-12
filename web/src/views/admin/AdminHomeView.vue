@@ -510,9 +510,16 @@ function generateLinePath(history: { count: number }[]) {
   to { opacity: 1; transform: translateY(0); }
 }
 
-@media (max-width: 600px) {
-  .charts-grid {
-    grid-template-columns: 1fr;
-  }
+@media (max-width: 900px) {
+  .admin-header { flex-direction: column; align-items: stretch; gap: 1rem; }
+  .tab-group { width: 100%; }
+  .tab-btn { flex: 1; text-align: center; }
+  .stats-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .charts-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr; }
+  .stat-card .value { font-size: 1.5rem; }
 }
 </style>

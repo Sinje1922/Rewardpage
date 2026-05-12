@@ -13,6 +13,8 @@ type Campaign = {
   status: string
   winnerCount: number
   totalRewardPoints: number
+  rewardCurrency: string
+  rewardsConfig: string
   startsAt: string | null
   endsAt: string | null
   missions?: { id: string }[]
@@ -41,16 +43,6 @@ const closingSoonList = computed(() => {
     .slice(0, 4)
 })
 
-// 트렌드 (미션 수 기준 또는 최근 시작일 기준)
-const trendingList = computed(() => {
-  return [...list.value]
-    .sort((a, b) => {
-      const mDiff = (b.missions?.length ?? 0) - (a.missions?.length ?? 0)
-      if (mDiff !== 0) return mDiff
-      return new Date(b.startsAt || 0).getTime() - new Date(a.startsAt || 0).getTime()
-    })
-    .slice(0, 4)
-})
 
 const banners = computed(() => [
   {
@@ -61,11 +53,41 @@ const banners = computed(() => [
     link: '/campaigns'
   }
 ])
+
+const faqs = ref([
+  { q: t('home.faq1Q'), a: t('home.faq1A'), open: false },
+  { q: t('home.faq2Q'), a: t('home.faq2A'), open: false },
+  { q: t('home.faq3Q'), a: t('home.faq3A'), open: false },
+  { q: t('home.faq4Q'), a: t('home.faq4A'), open: false },
+])
+
+const steps = computed(() => [
+  { n: 1, title: t('home.step1Title'), desc: t('home.step1Desc'), icon: '👤' },
+  { n: 2, title: t('home.step2Title'), desc: t('home.step2Desc'), icon: '🎯' },
+  { n: 3, title: t('home.step3Title'), desc: t('home.step3Desc'), icon: '💰' },
+])
+
+function getRemainingTime(endsAt: string | null) {
+  if (!endsAt) return ''
+  const end = new Date(endsAt)
+  const now = new Date()
+  const diff = end.getTime() - now.getTime()
+  if (diff <= 0) return t('home.closed')
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  
+  if (days > 0) return t('home.remainingDays', { n: days })
+  if (hours > 0) return t('home.remainingHours', { n: hours })
+  return t('home.remainingMinutes', { n: minutes })
+}
+
 </script>
 
 <template>
   <div class="home-container">
-    <!-- Banner Section -->
+    <!-- Hero Section -->
     <section class="banner-area">
       <div v-for="b in banners" :key="b.id" class="banner-card">
         <img :src="b.image" alt="" class="banner-bg" />
@@ -78,10 +100,32 @@ const banners = computed(() => [
       </div>
     </section>
 
-    <!-- Closing Soon Section -->
-    <section class="home-section">
+    <!-- Steps Section -->
+    <section class="landing-section centered">
+      <span class="section-tag">{{ $t('home.stepsTag') }}</span>
+      <h2 class="section-title">{{ $t('home.stepsTitle') }}</h2>
+      <p class="section-desc">{{ $t('home.stepsDesc') }}</p>
+      
+      <div class="step-grid">
+        <div v-for="s in steps" :key="s.n" class="card step-card">
+          <div class="step-number">{{ s.n }}</div>
+          <h3 class="step-title">{{ s.title }}</h3>
+          <p class="step-desc">{{ s.desc }}</p>
+        </div>
+      </div>
+      
+      <RouterLink to="/campaigns" class="btn primary" style="margin-top: 2rem">
+        {{ $t('home.startNow') }}
+      </RouterLink>
+    </section>
+
+    <!-- Campaigns Section (Closing Soon) -->
+    <section class="landing-section">
       <div class="section-head">
-        <h2>{{ $t('home.sectionClosingSoon') }}</h2>
+        <div>
+          <span class="section-tag">{{ $t('home.campaignsTag') }}</span>
+          <h2 class="section-title">{{ $t('home.sectionClosingSoon') }}</h2>
+        </div>
         <RouterLink to="/campaigns" class="view-all">{{ $t('home.viewAll') }} →</RouterLink>
       </div>
       
@@ -95,14 +139,25 @@ const banners = computed(() => [
               <img v-if="c.companyLogoUrl" :src="getFileUrl(c.companyLogoUrl)" class="mini-logo" />
               <span class="company-name">{{ c.companyName }}</span>
             </div>
-            <div class="title-row">
-              <h3 class="card-title">{{ c.title }}</h3>
-              <div class="points-badge">💰 {{ (c.totalRewardPoints || 0).toLocaleString() }} P</div>
+            <h3 class="card-title">{{ c.title }}</h3>
+            <div class="reward-badges-mini">
+              <template v-if="c.rewardsConfig && c.rewardsConfig !== '[]'">
+                <div v-for="(r, idx) in JSON.parse(c.rewardsConfig)" :key="idx" class="reward-chip-mini" :class="r.currency.toLowerCase()">
+                  <span class="reward-icon">{{ r.currency === 'POINT' ? '🪙' : r.currency === 'USDT' ? '💵' : r.currency === 'METAQ' ? '💎' : '🎁' }}</span>
+                  <span class="reward-amount">{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}</span>
+                </div>
+              </template>
+              <template v-else>
+                <div class="reward-chip-mini point">
+                  <span class="reward-icon">🪙</span>
+                  <span class="reward-amount">{{ (c.totalRewardPoints || 0).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency }}</span>
+                </div>
+              </template>
             </div>
-            <p class="card-desc">{{ c.description }}</p>
-            <div class="deadline-tag">
+            
+            <div class="time-remaining">
               <span class="clock-icon">⏰</span>
-              {{ $t('campaign.duration', { start: '', end: new Date(c.endsAt!).toLocaleDateString() }).replace(' ~ ', '') }}
+              <span class="time-text">{{ getRemainingTime(c.endsAt) }}</span>
             </div>
           </div>
           <div class="trend-actions">
@@ -110,40 +165,40 @@ const banners = computed(() => [
           </div>
         </div>
       </div>
-      <p v-else class="empty">{{ $t('home.noClosingSoon') }}</p>
     </section>
 
-    <!-- Trending Section -->
-    <section class="home-section">
-      <div class="section-head">
-        <h2>{{ $t('home.sectionTrending') }}</h2>
+    <!-- Proof Section -->
+    <section class="landing-section centered">
+      <span class="section-tag">{{ $t('home.proofTag') }}</span>
+      <h2 class="section-title">{{ $t('home.proofTitle') }}</h2>
+      <p class="section-desc">{{ $t('home.proofDesc') }}</p>
+      
+      <div class="proof-grid">
+        <div v-for="i in 4" :key="i" class="card proof-card">
+          <img :src="`/proof_mockup_${i}.png`" class="proof-img" @error="($event.target as HTMLImageElement).src = 'https://placehold.co/300x533?text=Earnings+Proof'" />
+        </div>
       </div>
+      
+      <button class="btn primary" style="margin-top: 2rem">{{ $t('home.exploreMore') }}</button>
+    </section>
 
-      <div v-if="loading" class="skeleton-grid">
-        <div v-for="i in 6" :key="i" class="card skeleton"></div>
-      </div>
-      <div v-else-if="trendingList.length" class="trending-grid">
-        <div v-for="c in trendingList" :key="c.id" class="trend-card card">
-          <div class="trend-content">
-             <div class="company-row" v-if="c.companyName || c.companyLogoUrl">
-              <img v-if="c.companyLogoUrl" :src="getFileUrl(c.companyLogoUrl)" class="mini-logo" />
-              <span class="company-name">{{ c.companyName }}</span>
-            </div>
-            <div class="title-row">
-              <h3 class="card-title">{{ c.title }}</h3>
-              <div class="points-badge">💰 {{ (c.totalRewardPoints || 0).toLocaleString() }} P</div>
-            </div>
-            <p class="card-desc">{{ c.description }}</p>
+    <!-- FAQ Section -->
+    <section class="landing-section centered">
+      <span class="section-tag">{{ $t('home.faqTag') }}</span>
+      <h2 class="section-title">{{ $t('home.faqTitle') }}</h2>
+      
+      <div class="faq-list">
+        <div v-for="(f, i) in faqs" :key="i" class="faq-item">
+          <div class="faq-q" @click="f.open = !f.open">
+            <span>{{ f.q }}</span>
+            <span>{{ f.open ? '−' : '+' }}</span>
           </div>
-          <div class="trend-actions">
-             <RouterLink :to="`/campaigns/${c.id}`" class="btn primary trend-btn">{{ $t('campaign.join') }}</RouterLink>
+          <div v-if="f.open" class="faq-a">
+            {{ f.a }}
           </div>
         </div>
       </div>
-      <p v-else class="empty">{{ $t('home.noTrending') }}</p>
     </section>
-
-
   </div>
 </template>
 
@@ -309,16 +364,32 @@ const banners = computed(() => [
 /* Trending Grid */
 .trending-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 1000px) {
+  .trending-grid {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .trending-grid::-webkit-scrollbar {
+    display: none;
+  }
+  .trend-card {
+    flex: 0 0 280px;
+  }
 }
 
 .trend-card {
-  padding: 2.25rem;
+  padding: 1.5rem;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.25rem;
   border: 1px solid var(--border);
   background: var(--panel);
 }
@@ -365,21 +436,38 @@ const banners = computed(() => [
 
 .card-title {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
+  line-height: 1.3;
+  overflow-wrap: break-word;
 }
 
-.points-badge {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: var(--accent);
-  background: var(--accent-soft);
-  padding: 0.4rem 0.9rem;
-  border-radius: 99px;
-  white-space: nowrap;
-  border: 1px solid var(--accent-border);
+.reward-badges-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0 1rem;
 }
+
+.reward-chip-mini {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.5rem;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 0.85rem;
+  border: 1px solid var(--accent-border);
+  white-space: normal;
+  word-break: keep-all;
+}
+
+.reward-chip-mini.usdt { background: #e6fffa; color: #008a76; border-color: #b2f5ea; }
+.reward-chip-mini.metaq { background: #fff5f7; color: #d53f8c; border-color: #fed7e2; }
+.reward-chip-mini.point { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-border); }
 
 .card-desc {
   margin: 0.25rem 0 0;
@@ -394,12 +482,13 @@ const banners = computed(() => [
 }
 
 .trend-actions {
-  flex-shrink: 0;
+  width: 100%;
 }
 
 .trend-btn {
-  padding: 0.8rem 1.8rem;
-  font-size: 1rem;
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 0.95rem;
   box-shadow: 0 4px 12px var(--accent-soft);
 }
 
@@ -432,37 +521,43 @@ const banners = computed(() => [
 }
 
 @media (max-width: 768px) {
-  .banner-card { padding: 2rem; aspect-ratio: 16 / 10; min-height: 320px; }
-  .banner-title { font-size: 2rem; }
-  .trending-grid { grid-template-columns: 1fr; }
-  
-  .trend-card {
+  .banner-card { 
+    padding: 2.5rem 1.5rem; 
+    aspect-ratio: auto; 
+    min-height: 450px; 
     flex-direction: column;
-    align-items: flex-start;
-    padding: 1.75rem;
-    gap: 1.5rem;
+    justify-content: center;
+    text-align: center;
+  }
+  .banner-card::after {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+  }
+  .banner-content {
+    max-width: 100%;
+  }
+  .banner-title { 
+    font-size: 2.4rem; 
+    margin-top: 1rem;
+  }
+  .banner-sub {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
   }
   
-  .trend-content {
-    width: 100%;
+  .mini-card {
+    flex: 0 0 260px;
   }
 
-  .title-row {
+  .section-head {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
   }
+}
 
-  .trend-actions {
-    width: 100%;
-  }
-
-  .trend-btn {
-    width: 100%;
-  }
-
-  .mini-card {
-    flex: 0 0 280px;
+@media (max-width: 480px) {
+  .banner-title {
+    font-size: 2rem;
   }
 }
 </style>

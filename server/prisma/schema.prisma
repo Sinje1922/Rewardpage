@@ -29,6 +29,8 @@ model campaign {
   lotteryMode       String    @default("SIMPLE")
   autoApprove       Boolean   @default(true)
   totalRewardPoints Int       @default(0)
+  rewardCurrency    String    @default("POINT")
+  rewardsConfig     String    @default("[]") @db.Text
   createdAt         DateTime  @default(now())
   drawnAt           DateTime?
   creator           user?     @relation(fields: [creatorId], references: [id], map: "Campaign_creatorId_fkey")
@@ -102,6 +104,8 @@ model winner {
   userId     String
   rank       Int
   points     Int      @default(0)
+  currency   String   @default("POINT")
+  rewardsConfig String   @default("[]") @db.Text
   createdAt  DateTime @default(now())
   campaign   campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade, map: "Winner_campaignId_fkey")
   user       user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Winner_userId_fkey")

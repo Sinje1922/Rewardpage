@@ -34,6 +34,10 @@
   background: var(--bg);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  
+  /* Text Overflow Prevention */
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 *, *::before, *::after {
@@ -99,12 +103,21 @@ body {
   border-radius: var(--radius);
   padding: 1.5rem;
   background: var(--panel);
-  backdrop-filter: blur(16px); /* 블러 입자 정밀화 */
+  backdrop-filter: blur(16px);
   box-shadow: var(--shadow);
-  transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1); /* 부드러운 관성 애니메이션 */
+  transition: all 0.3s cubic-bezier(0.2, 1, 0.2, 1);
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   animation: revealUp 0.6s cubic-bezier(0.2, 1, 0.2, 1) backwards;
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 1.25rem;
+    border-radius: 1.25rem;
+  }
 }
 
 .card:hover {
@@ -168,9 +181,15 @@ body {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.25rem;
   margin-bottom: 2rem;
+}
+
+@media (max-width: 680px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .field label {
@@ -336,16 +355,17 @@ textarea {
 /* General Mobile Polish */
 @media (max-width: 600px) {
   :root {
-    font-size: 16px;
+    font-size: 15px;
   }
   
   .card {
-    padding: 1.25rem;
-    border-radius: 1.25rem;
+    padding: 1rem;
+    border-radius: 1rem;
   }
   
   .page-title {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1rem;
+    font-size: 1.8rem;
   }
 
   .stack-mobile {
@@ -356,10 +376,198 @@ textarea {
 
   .grid {
     grid-template-columns: 1fr !important;
+    gap: 1rem;
   }
 
   .search-bar {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.5rem;
   }
 }
+
+/* Landing Page Components */
+.landing-section {
+  padding: 6rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  animation: revealUp 0.8s cubic-bezier(0.2, 1, 0.2, 1) backwards;
+}
+
+@media (max-width: 768px) {
+  .landing-section {
+    padding: 3rem 0;
+    gap: 2rem;
+  }
+}
+
+.section-tag {
+  display: inline-block;
+  padding: 0.4rem 1rem;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 99px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.section-title {
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  margin-bottom: 1rem;
+  line-height: 1.1;
+  color: var(--text-h);
+}
+
+.section-desc {
+  font-size: 1.1rem;
+  color: var(--muted);
+  max-width: 600px;
+  margin-bottom: 2rem;
+}
+
+.centered {
+  text-align: center;
+  align-items: center;
+}
+
+/* Step Cards */
+.step-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  width: 100%;
+}
+
+.step-card {
+  text-align: center;
+  padding: 2.5rem;
+}
+
+.step-number {
+  width: 48px;
+  height: 48px;
+  background: var(--accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 800;
+  margin: 0 auto 1.5rem;
+  box-shadow: 0 4px 12px var(--accent-soft);
+}
+
+.step-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+}
+
+.step-desc {
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+/* Progress Bar for Campaigns */
+/* Time Remaining for Campaigns */
+.time-remaining {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.5rem 0.8rem;
+  background: var(--bg-deep);
+  border-radius: 0.75rem;
+  width: fit-content;
+}
+
+.clock-icon {
+  font-size: 1rem;
+}
+
+.time-text {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* Proof Section */
+.proof-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+
+.proof-card {
+  padding: 0;
+  overflow: hidden;
+  aspect-ratio: 9 / 16;
+}
+
+.proof-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* FAQ Section */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.faq-item {
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.faq-q {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background 0.2s;
+}
+
+.faq-q:hover {
+  background: var(--accent-soft);
+}
+
+.faq-a {
+  padding: 0 1.5rem 1.5rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .step-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .proof-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .proof-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

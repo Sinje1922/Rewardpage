@@ -13,11 +13,14 @@ import uploadRouter from "./routes/upload.js";
 import verifyRouter from "./routes/verify.js";
 import oauthRouter from "./routes/oauth.js";
 import { startLotteryWorker } from "./workers/lotteryWorker.js";
+import { startTelegramBot } from "./lib/telegram.js";
 // BigInt JSON 직렬화 지원
 BigInt.prototype.toJSON = function () {
     return Number(this);
 };
 const app = express();
+// 배경 서비스 시작
+startTelegramBot();
 const uploadsRoot = path.join(process.cwd(), "uploads");
 fs.mkdirSync(uploadsRoot, { recursive: true });
 const rawCorsOrigin = process.env.CORS_ORIGIN;
@@ -48,7 +51,8 @@ app.use(cors({
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
 }));
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use("/uploads", express.static(uploadsRoot));
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 app.use("/api/auth", authRouter);

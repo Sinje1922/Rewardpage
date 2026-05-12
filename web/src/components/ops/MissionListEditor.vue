@@ -522,6 +522,8 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
   font-weight: 700;
   text-align: center;
   color: var(--text-h);
+  line-height: 1.2;
+  word-break: keep-all;
 }
 .type-btn.active .type-icon,
 .type-btn.active .type-label {

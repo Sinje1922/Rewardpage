@@ -34,6 +34,8 @@ type CampaignDetail = {
   lotteryMode: string
   winnerCount: number
   totalRewardPoints: number
+  rewardCurrency: string
+  rewardsConfig: string
   autoApprove: boolean
   startsAt: string | null
   endsAt: string | null
@@ -46,16 +48,33 @@ type SubRow = {
   payload: string
   createdAt: string
   missionId: string
-  user: { email: string }
+  user: { 
+    email: string;
+    nickname?: string;
+    walletAddress?: string;
+    telegramHandle?: string;
+    discordHandle?: string;
+    youtubeHandle?: string;
+    instagramHandle?: string;
+  }
   mission: { title: string; type: string; config: string }
+}
+
+type CampaignStats = {
+  campaignId: string
+  missions: number
+  submissions: { total: number; approved: number; pending: number; rejected: number }
+  winners: number
+  byMission: { missionId: string; title: string; approved: number; pending: number; rejected: number }[]
 }
 
 
 
-type TabId = 'compose' | 'participants' | 'winners'
+type TabId = 'compose' | 'stats' | 'participants' | 'winners'
 
 const { t } = useI18n()
 const route = useRoute()
+const stats = ref<CampaignStats | null>(null)
 const camp = ref<CampaignDetail | null>(null)
 const participants = ref<{ email: string; completed: number; status: string }[]>([])
 const winnersList = ref<{ email: string }[]>([])
@@ -76,7 +95,7 @@ const draftDescription = ref('')
 const draftWinnerCount = ref(1)
 const draftLotteryMode = ref<'SIMPLE' | 'WEIGHTED'>('SIMPLE')
 const draftAutoApprove = ref(true)
-const draftTotalRewardPoints = ref(0)
+const draftRewards = ref<{ amount: number; currency: string }[]>([{ amount: 0, currency: 'POINT' }])
 const draftStartsAt = ref('')
 const draftEndsAt = ref('')
 const missionRows = ref<MissionRowState[]>([emptyMissionRow(0)])
@@ -95,7 +114,14 @@ function syncDraftFromCamp() {
   draftWinnerCount.value = c.winnerCount
   draftLotteryMode.value = (c.lotteryMode as 'SIMPLE' | 'WEIGHTED') || 'SIMPLE'
   draftAutoApprove.value = c.autoApprove ?? true
-  draftTotalRewardPoints.value = c.totalRewardPoints ?? 0
+  try {
+    draftRewards.value = JSON.parse(c.rewardsConfig || "[]")
+    if (draftRewards.value.length === 0) {
+      draftRewards.value = [{ amount: c.totalRewardPoints ?? 0, currency: c.rewardCurrency ?? 'POINT' }]
+    }
+  } catch (e) {
+    draftRewards.value = [{ amount: c.totalRewardPoints ?? 0, currency: c.rewardCurrency ?? 'POINT' }]
+  }
   draftStartsAt.value = c.startsAt ? toLocalInput(c.startsAt) : ''
   draftEndsAt.value = c.endsAt ? toLocalInput(c.endsAt) : ''
   missionRows.value =
@@ -116,15 +142,30 @@ async function reload() {
   tab.value = 'compose'
 }
 
+async function loadStats() {
+  const id = route.params.id as string
+  const { data } = await api.get<CampaignStats>(`/campaigns/${id}/stats`)
+  stats.value = data
+}
+
 async function loadParticipants() {
   const id = route.params.id as string
   const { data: allSubs } = await api.get<SubRow[]>(`/campaigns/${id}/submissions`)
   const missionCount = camp.value?.missions.length || 0
-  const userMap = new Map<string, { email: string; completed: number; status: string }>()
+  const userMap = new Map<string, any>()
   
   allSubs.forEach(s => {
     if (!userMap.has(s.user.email)) {
-      userMap.set(s.user.email, { email: s.user.email, completed: 0, status: '' })
+      userMap.set(s.user.email, { 
+        email: s.user.email, 
+        wallet: s.user.walletAddress || '',
+        telegram: s.user.telegramHandle || '',
+        discord: s.user.discordHandle || '',
+        youtube: s.user.youtubeHandle || '',
+        instagram: s.user.instagramHandle || '',
+        completed: 0, 
+        status: '' 
+      })
     }
     if (s.status === 'APPROVED') {
       userMap.get(s.user.email)!.completed++
@@ -171,6 +212,16 @@ function clearDraftLogo() {
   draftCompanyLogo.value = ''
 }
 
+function addDraftReward() {
+  draftRewards.value.push({ amount: 0, currency: 'POINT' })
+}
+
+function removeDraftReward(index: number) {
+  if (draftRewards.value.length > 1) {
+    draftRewards.value.splice(index, 1)
+  }
+}
+
 async function saveDraft() {
   err.value = ''
   const v = validateRows(missionRows.value)
@@ -194,7 +245,9 @@ async function saveDraft() {
       winnerCount: draftWinnerCount.value,
       lotteryMode: draftLotteryMode.value,
       autoApprove: draftAutoApprove.value,
-      totalRewardPoints: draftTotalRewardPoints.value,
+      totalRewardPoints: draftRewards.value[0]?.amount || 0,
+      rewardCurrency: draftRewards.value[0]?.currency || "POINT",
+      rewardsConfig: draftRewards.value,
       startsAt: draftStartsAt.value ? new Date(draftStartsAt.value).toISOString() : null,
       endsAt: draftEndsAt.value ? new Date(draftEndsAt.value).toISOString() : null,
       missions,
@@ -209,16 +262,11 @@ async function saveDraft() {
 }
 
 
-
-
-
-
-
-async function openTab(t: TabId) {
-  tab.value = t
-  err.value = ''
-  if (t === 'participants') await loadParticipants()
-  if (t === 'winners') await loadWinners()
+async function openTab(id: TabId) {
+  tab.value = id
+  if (id === 'participants') loadParticipants()
+  if (id === 'winners') loadWinners()
+  if (id === 'stats') loadStats()
 }
 
 function parsePayloadDetail(s: SubRow) {
@@ -279,11 +327,21 @@ async function exportToExcel() {
     
     // 1. 참여자 요약 시트
     const missionCount = camp.value.missions.length
-    const userMap = new Map<string, { email: string; completed: number; status: string }>()
+    const userMap = new Map<string, any>()
     
     allSubs.forEach(s => {
       if (!userMap.has(s.user.email)) {
-        userMap.set(s.user.email, { email: s.user.email, completed: 0, status: t('common.insufficient') })
+        userMap.set(s.user.email, { 
+          email: s.user.email, 
+          nickname: s.user.nickname || '',
+          wallet: s.user.walletAddress || '',
+          telegram: s.user.telegramHandle || '',
+          discord: s.user.discordHandle || '',
+          youtube: s.user.youtubeHandle || '',
+          instagram: s.user.instagramHandle || '',
+          completed: 0, 
+          status: t('common.insufficient') 
+        })
       }
       if (s.status === 'APPROVED') {
         userMap.get(s.user.email)!.completed++
@@ -292,6 +350,12 @@ async function exportToExcel() {
     
     const summaryRows = [...userMap.values()].map(u => ({
       [t('auth.email')]: u.email,
+      [t('mypage.nickname') || 'Nickname']: u.nickname,
+      [t('mypage.walletAddress') || 'Wallet']: u.wallet,
+      'Telegram': u.telegram,
+      'Discord': u.discord,
+      'YouTube': u.youtube,
+      'Instagram': u.instagram,
       [t('ops.completedMissionCount')]: u.completed,
       [t('ops.totalMissionCount')]: missionCount,
       [t('ops.allMissionsCompleted')]: u.completed >= missionCount ? t('ops.completedLotteryTarget') : t('ops.incomplete')
@@ -305,14 +369,28 @@ async function exportToExcel() {
       const mSubs = allSubs.filter(s => s.missionId === m.id)
       const rows = mSubs.map(s => ({
         [t('auth.email')]: s.user.email,
+        [t('mypage.nickname') || 'Nickname']: s.user.nickname || '',
+        [t('mypage.walletAddress') || 'Wallet']: s.user.walletAddress || '',
+        'Telegram': s.user.telegramHandle || '',
+        'Discord': s.user.discordHandle || '',
+        'YouTube': s.user.youtubeHandle || '',
+        'Instagram': s.user.instagramHandle || '',
         [t('ops.statusLabel')]: s.status,
         [t('ops.answerContent')]: parsePayloadDetail(s),
         [t('ops.submitTime')]: new Date(s.createdAt).toLocaleString()
       }))
       
       const sheet = XLSX.utils.json_to_sheet(rows)
-      // 시트명 금지 문자 제거 및 길이 제한 (31자)
-      const sheetName = m.title.replace(/[\\/?*[\]]/g, '').slice(0, 25) + `_${m.type.slice(0, 4)}`
+      // 시트명 금지 문자(\ / ? * : [ ]) 제거 및 길이 제한 (31자), 중복 방지
+      const cleanTitle = m.title.replace(/[\\/?*:[\]]/g, '').slice(0, 20)
+      let sheetName = `${cleanTitle}_${m.type.slice(0, 4)}`
+      
+      // 중복 시트명 처리
+      let counter = 1
+      while (workbook.SheetNames.includes(sheetName)) {
+        sheetName = `${cleanTitle.slice(0, 17)}_${counter++}`
+      }
+      
       XLSX.utils.book_append_sheet(workbook, sheet, sheetName)
     })
     
@@ -367,9 +445,18 @@ async function downloadCsv() {
       </div>
     </div>
     <p style="color: var(--muted); margin-bottom: 0.75rem">
-      {{ $t('ops.statusLabel') || 'Status' }} <strong>{{ camp.status }}</strong> · {{ $t('ops.lotteryMode') }} <strong>{{ camp.lotteryMode }}</strong> · {{ $t('ops.winnerCount') }} <strong>{{ camp.winnerCount }}</strong>{{ $t('common.person') || '名' }}
-      <span v-if="camp.totalRewardPoints > 0">
-        · {{ $t('ops.totalReward') }} <strong>{{ camp.totalRewardPoints.toLocaleString() }}</strong>P ({{ $t('campaign.rewardPerPerson', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }})
+      {{ $t('ops.statusLabel') || 'Status' }} <strong>{{ $t('campaign.status' + camp.status.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()).join('')) }}</strong> · {{ $t('ops.lotteryMode') }} <strong>{{ $t('ops.lottery' + camp.lotteryMode.charAt(0).toUpperCase() + camp.lotteryMode.slice(1).toLowerCase()) }}</strong> · {{ $t('ops.winnerCount') }} <strong>{{ camp.winnerCount }}</strong>{{ $t('common.person') || '名' }}
+      <span v-if="camp.totalRewardPoints > 0 || camp.rewardsConfig !== '[]'">
+        · {{ $t('ops.totalReward') }} 
+        <template v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'">
+          <span v-for="(r, idx) in JSON.parse(camp.rewardsConfig)" :key="idx">
+            {{ Number(idx) > 0 ? ', ' : '' }}
+            <strong>{{ r.amount.toLocaleString() }}</strong>{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+          </span>
+        </template>
+        <template v-else>
+          <strong>{{ camp.totalRewardPoints.toLocaleString() }}</strong>{{ camp.rewardCurrency === 'POINT' ? 'P' : ' ' + camp.rewardCurrency }}
+        </template>
       </span>
     </p>
     <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem">
@@ -384,10 +471,18 @@ async function downloadCsv() {
       <button
         type="button"
         class="btn"
+        :class="{ primary: tab === 'stats' }"
+        @click="openTab('stats')"
+      >
+        📊 {{ $t('ops.tabStats') || 'Statistics' }}
+      </button>
+      <button
+        type="button"
+        class="btn"
         :class="{ primary: tab === 'participants' }"
         @click="openTab('participants')"
       >
-        {{ $t('ops.participants') || 'Participants' }}
+        👥 {{ $t('ops.participants') || 'Participants' }}
       </button>
       <button
         type="button"
@@ -399,6 +494,45 @@ async function downloadCsv() {
       </button>
     </div>
     <p v-if="err" class="err">{{ err }}</p>
+
+    <section v-if="tab === 'stats' && stats" class="card stats-section">
+      <div class="stats-overview">
+        <div class="stat-box">
+          <label>{{ $t('ops.totalSubmissions') || 'Total Submissions' }}</label>
+          <div class="val">{{ stats.submissions.total }}</div>
+        </div>
+        <div class="stat-box">
+          <label>{{ $t('ops.approvedSubs') || 'Approved' }}</label>
+          <div class="val text-mint">{{ stats.submissions.approved }}</div>
+        </div>
+        <div class="stat-box">
+          <label>{{ $t('ops.pendingSubs') || 'Pending' }}</label>
+          <div class="val text-orange">{{ stats.submissions.pending }}</div>
+        </div>
+        <div class="stat-box">
+          <label>{{ $t('ops.winnersCount') || 'Winners' }}</label>
+          <div class="val text-accent">{{ stats.winners }}</div>
+        </div>
+      </div>
+
+      <div class="mission-stats-list">
+        <h3 style="margin: 1.5rem 0 1rem; font-size: 1.1rem">{{ $t('ops.missionStats') || 'Missions Performance' }}</h3>
+        <div v-for="m in stats.byMission" :key="m.missionId" class="m-stat-row">
+          <div class="m-stat-info">
+            <strong>{{ m.title }}</strong>
+            <div class="m-stat-bars">
+              <div class="bar-fill approved" :style="{ width: (m.approved / (m.approved + m.pending + m.rejected || 1) * 100) + '%' }"></div>
+              <div class="bar-fill pending" :style="{ width: (m.pending / (m.approved + m.pending + m.rejected || 1) * 100) + '%' }"></div>
+            </div>
+          </div>
+          <div class="m-stat-counts">
+            <span class="c-approved">{{ m.approved }}</span> / 
+            <span class="c-pending">{{ m.pending }}</span> / 
+            <span class="c-rejected">{{ m.rejected }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <section v-if="tab === 'compose'" class="card">
       <h2 style="font-size: 1.05rem; color: var(--text-h); margin: 0 0 0.75rem">{{ $t('ops.campaignSection') }}</h2>
@@ -449,8 +583,8 @@ async function downloadCsv() {
         <div class="field">
           <label>{{ $t('ops.lotteryMode') }}</label>
           <select v-model="draftLotteryMode">
-            <option value="SIMPLE">SIMPLE</option>
-            <option value="WEIGHTED">WEIGHTED</option>
+            <option value="SIMPLE">{{ $t('ops.lotterySimple') }}</option>
+            <option value="WEIGHTED">{{ $t('ops.lotteryWeighted') }}</option>
           </select>
         </div>
         <label style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem">
@@ -459,7 +593,23 @@ async function downloadCsv() {
         </label>
         <div class="field">
           <label>{{ $t('ops.totalReward') }}</label>
-          <input v-model.number="draftTotalRewardPoints" type="number" min="0" />
+          <div v-for="(r, idx) in draftRewards" :key="idx" style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem">
+            <input v-model.number="r.amount" type="number" min="0" style="flex: 1" />
+            <select v-model="r.currency" style="width: 120px">
+              <option value="POINT">{{ $t('common.point') || 'POINT' }}</option>
+              <option value="USDT">USDT</option>
+              <option value="BRL">BRL ({{ $t('common.brl') || 'Real' }})</option>
+              <option value="METAQ">METAQ ({{ $t('common.metaq') || 'Coin' }})</option>
+            </select>
+            <button v-if="draftRewards.length > 1" type="button" class="btn outline" @click="removeDraftReward(idx)">✕</button>
+          </div>
+          <button type="button" class="btn btn-sm" @click="addDraftReward">+ {{ $t('ops.addReward') || 'Add Reward' }}</button>
+          
+          <div v-if="draftWinnerCount > 0" class="reward-hint" style="margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.8">
+            <p v-for="(r, idx) in draftRewards" :key="idx" style="margin: 0">
+              • {{ r.currency === 'POINT' ? $t('common.point') : r.currency }}: {{ Math.floor(r.amount / draftWinnerCount).toLocaleString() }} / {{ $t('common.person') || 'person' }}
+            </p>
+          </div>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem">
           <div class="field">
@@ -537,4 +687,59 @@ async function downloadCsv() {
   font-size: 0.82rem;
   color: var(--muted);
 }
+@media (max-width: 768px) {
+  .logo-row { flex-direction: column; align-items: flex-start; }
+  .logo-actions { width: 100%; }
+  .logo-actions button { flex: 1; }
+}
+
+/* Stats Styles */
+.stats-section {
+  padding: 1.5rem;
+}
+.stats-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+.stat-box {
+  background: var(--bg-deep);
+  padding: 1.5rem;
+  border-radius: 20px;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+.stat-box label { font-size: 0.85rem; color: var(--muted); font-weight: 700; display: block; margin-bottom: 0.5rem; }
+.stat-box .val { font-size: 1.75rem; font-weight: 900; }
+.text-mint { color: var(--mint); }
+.text-orange { color: #f97316; }
+.text-accent { color: var(--accent); }
+
+.m-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--bg-deep);
+  border-radius: 16px;
+  margin-bottom: 0.75rem;
+  gap: 1.5rem;
+}
+.m-stat-info { flex: 1; }
+.m-stat-bars {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  margin-top: 0.5rem;
+  display: flex;
+  overflow: hidden;
+}
+.bar-fill { height: 100%; }
+.bar-fill.approved { background: var(--mint); }
+.bar-fill.pending { background: #f97316; }
+.m-stat-counts { font-size: 0.9rem; font-weight: 700; white-space: nowrap; }
+.c-approved { color: var(--mint); }
+.c-pending { color: #f97316; }
+.c-rejected { color: #ef4444; }
 </style>

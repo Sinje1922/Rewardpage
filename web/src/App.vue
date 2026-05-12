@@ -415,9 +415,12 @@ watch(() => route.path, () => {
 @media (max-width: 900px) {
   .pc-only { display: none; }
   .mobile-only { display: flex; }
-  .top { top: 0.5rem; }
-  .top-content { padding: 0.75rem; }
-  .nav-utils { width: 100%; justify-content: space-between; }
-  .main { padding: 1.5rem 1rem 8rem; }
+  .top { top: 0.5rem; width: calc(100% - 1rem); }
+  .top-content { padding: 0.5rem 0.75rem; border-radius: 1rem; }
+  .nav-utils { width: 100%; justify-content: flex-end; gap: 0.75rem; }
+  .main { padding: 1rem 0.75rem 8rem; }
+  .bottom-nav { width: calc(100% - 1.5rem); bottom: 1rem; padding: 0.4rem; }
+  .b-nav-item .icon { font-size: 1.25rem; }
+  .b-nav-item .label { font-size: 0.7rem; }
 }
 </style>

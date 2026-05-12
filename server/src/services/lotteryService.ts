@@ -52,14 +52,26 @@ export async function runCampaignDraw(campaignId: string) {
   if (picked.length === 0)
     return { winners: [], msg: "NO_ELIGIBLE_PARTICIPANTS" };
 
-  const pointsPerPerson =
-    c.totalRewardPoints > 0
-      ? Math.floor(c.totalRewardPoints / picked.length)
-      : 0;
+  let rewards = [];
+  try {
+    rewards = JSON.parse(c.rewardsConfig || "[]");
+  } catch (e) {
+    rewards = [{ amount: c.totalRewardPoints, currency: c.rewardCurrency }];
+  }
+  if (rewards.length === 0) {
+    rewards = [{ amount: c.totalRewardPoints, currency: c.rewardCurrency }];
+  }
 
-  console.log(
-    `[LotteryService] Distributing ${c.totalRewardPoints} points to ${picked.length} winners (${pointsPerPerson}P each) for campaign: ${c.title}`,
-  );
+  const rewardsPerWinner = rewards.map((r: any) => ({
+    amount: Math.floor(r.amount / picked.length),
+    currency: r.currency,
+  }));
+
+  const totalPointsPerWinner = rewardsPerWinner
+    .filter((r: any) => r.currency === "POINT")
+    .reduce((sum: number, r: any) => sum + r.amount, 0);
+
+  const rewardsJsonPerWinner = JSON.stringify(rewardsPerWinner);
 
   await prisma.$transaction([
     ...picked.map((userId, i) =>
@@ -68,16 +80,20 @@ export async function runCampaignDraw(campaignId: string) {
           campaignId: c.id,
           userId,
           rank: i + 1,
-          points: pointsPerPerson,
+          points: totalPointsPerWinner,
+          currency: "POINT", // Legacy fallback
+          rewardsConfig: rewardsJsonPerWinner,
         },
       }),
     ),
-    ...picked.map((userId) =>
-      prisma.user.update({
-        where: { id: userId },
-        data: { pointBalance: { increment: pointsPerPerson } },
-      }),
-    ),
+    ...(totalPointsPerWinner > 0
+      ? picked.map((userId) =>
+          prisma.user.update({
+            where: { id: userId },
+            data: { pointBalance: { increment: totalPointsPerWinner } },
+          }),
+        )
+      : []),
     prisma.campaign.update({
       where: { id: c.id },
       data: { status: "DRAWN", drawnAt: new Date() },

@@ -23,14 +23,16 @@ type CampaignDetail = {
   status: string
   winnerCount: number
   totalRewardPoints: number
+  rewardCurrency: string
+  rewardsConfig: string
   startsAt: string | null
   endsAt: string | null
   missions: Mission[]
   mySubmissions?: { missionId: string; status: string }[]
 }
 
-type Participant = { email: string }
-type WinnerRow = { rank: number; points: number; user: { email: string } }
+type Participant = { email: string; nickname?: string }
+type WinnerRow = { rank: number; points: number; currency: string; rewardsConfig: string; user: { email: string } }
 
 const { t } = useI18n()
 const route = useRoute()
@@ -89,7 +91,7 @@ async function copyLink() {
 async function loadParticipants() {
   const id = route.params.id as string
   try {
-    const p = await api.get<{ count: number; participants: Participant[] }>(`/campaigns/${id}/participants`)
+    const p = await api.get<{ count: number; participants: Participant[] }>(`/campaigns/${id}/participants?t=${Date.now()}`)
     participants.value = p.data.participants
     participantCount.value = p.data.count
   } catch {
@@ -275,10 +277,16 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
       <div class="description-text ql-editor" v-html="camp.description"></div>
       
       <div class="meta-row">
-        <span class="badge">{{ $t('detail.statusLabel', { status: camp.status }) }}</span>
+        <span class="badge">{{ $t('detail.statusLabel', { status: $t('campaign.status' + camp.status.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()).join('')) }) }}</span>
         <span v-if="camp.missions" class="meta-item">{{ $t('detail.missionsCountLabel', { count: camp.missions.length }) }}</span>
-        <span v-if="camp.totalRewardPoints > 0" class="badge accent-badge">
-          {{ $t('detail.rewardLabel', { points: camp.totalRewardPoints.toLocaleString() }) }}
+        <div v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'" class="detail-reward-badges">
+            <div v-for="(r, idx) in JSON.parse(camp.rewardsConfig)" :key="idx" class="reward-chip" :class="r.currency.toLowerCase()">
+              <span class="reward-icon">{{ r.currency === 'POINT' ? '🪙' : r.currency === 'USDT' ? '💵' : r.currency === 'METAQ' ? '💎' : '🎁' }}</span>
+              <span class="reward-amount">{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}</span>
+            </div>
+        </div>
+        <span v-else-if="camp.totalRewardPoints > 0" class="badge accent-badge">
+          {{ camp.totalRewardPoints.toLocaleString() }}{{ camp.rewardCurrency === 'POINT' ? 'P' : ' ' + camp.rewardCurrency }}
         </span>
         <button type="button" class="btn copy-btn" @click="copyLink">
           🔗 {{ showCopyMsg ? $t('detail.copied') : $t('detail.copyLink') }}
@@ -286,8 +294,22 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
       </div>
 
       <div class="info-footer">
-        <p v-if="camp.totalRewardPoints > 0" class="reward-notice">
-          {{ $t('detail.rewardPerWinner', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }}
+        <p v-if="camp.totalRewardPoints > 0 || (camp.rewardsConfig && camp.rewardsConfig !== '[]')" class="reward-notice">
+          {{ $t('campaign.rewardPerPersonPrefix') || 'Each' }}
+          <template v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'">
+            <span v-for="(r, idx) in JSON.parse(camp.rewardsConfig)" :key="idx" class="per-person-item">
+              {{ Number(idx) > 0 ? ' + ' : '' }}{{ Math.floor(r.amount / camp.winnerCount).toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+            </span>
+          </template>
+          <template v-else>
+            {{ Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }}{{ camp.rewardCurrency === 'POINT' ? 'P' : ' ' + camp.rewardCurrency }}
+          </template>
+        </p>
+        <p v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]' && JSON.parse(camp.rewardsConfig).some((r: any) => r.currency !== 'POINT')" class="manual-notice">
+          * {{ $t('campaign.manualPaymentNotice') }}
+        </p>
+        <p v-else-if="camp.rewardCurrency !== 'POINT' && camp.totalRewardPoints > 0" class="manual-notice">
+          * {{ $t('campaign.manualPaymentNotice') }}
         </p>
         <div v-if="camp.startsAt || camp.endsAt" class="period-text">
           📅 {{ $t('detail.period', {
@@ -304,7 +326,18 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
       <div class="winners-grid">
         <div v-for="w in winners" :key="w.rank" class="winner-row">
           {{ $t('detail.winnerRow', { rank: w.rank, email: w.user.email }) }} 
-          <span v-if="w.points > 0" class="winner-points">({{ w.points.toLocaleString() }}P)</span>
+          <span class="winner-points">
+            (
+            <template v-if="w.rewardsConfig && w.rewardsConfig !== '[]'">
+              <span v-for="(r, idx) in JSON.parse(w.rewardsConfig)" :key="idx">
+                {{ Number(idx) > 0 ? ' + ' : '' }}{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+              </span>
+            </template>
+            <template v-else-if="w.points > 0">
+              {{ w.points.toLocaleString() }}{{ (w.currency || camp.rewardCurrency) === 'POINT' ? 'P' : ' ' + (w.currency || camp.rewardCurrency) }}
+            </template>
+            )
+          </span>
         </div>
       </div>
     </section>
@@ -321,8 +354,14 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
         <div class="mission-header">
           <div class="mission-type">
             <span class="type-icon">{{ typeIcons[m.type] || '✨' }}</span>
-            <span v-if="camp.totalRewardPoints > 0" class="point-badge">
-              {{ $t('detail.missionWait', { points: Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }) }}
+            <span v-if="camp.totalRewardPoints > 0 || (camp.rewardsConfig && camp.rewardsConfig !== '[]')" class="point-badge">
+              <template v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'">
+                {{ Math.floor(JSON.parse(camp.rewardsConfig)[0].amount / camp.winnerCount).toLocaleString() }}{{ JSON.parse(camp.rewardsConfig)[0].currency === 'POINT' ? 'P' : ' ' + JSON.parse(camp.rewardsConfig)[0].currency }}
+                <span v-if="JSON.parse(camp.rewardsConfig).length > 1">+</span>
+              </template>
+              <template v-else>
+                {{ Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }}{{ camp.rewardCurrency === 'POINT' ? 'P' : ' ' + camp.rewardCurrency }}
+              </template>
             </span>
           </div>
           <span class="badge" :class="{ 'badge-done': myStatus(m.id) === 'APPROVED' }">
@@ -463,7 +502,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
       
       <div v-if="participants.length > 0" class="participants-tags">
         <div v-for="(p, idx) in participants" :key="idx" class="p-tag">
-          {{ p.email }}
+          {{ p.nickname || p.email }}
         </div>
       </div>
       <div v-else class="empty-participants">
@@ -558,6 +597,36 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
   margin-bottom: 0.5rem;
 }
 
+.detail-reward-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.reward-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 0.75rem;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 800;
+  font-size: 1rem;
+  border: 1px solid var(--accent-border);
+  white-space: normal;
+  word-break: keep-all;
+}
+
+.reward-chip.usdt { background: #e6fffa; color: #008a76; border-color: #b2f5ea; }
+.reward-chip.metaq { background: #fff5f7; color: #d53f8c; border-color: #fed7e2; }
+.reward-chip.point { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-border); }
+
+.per-person-item {
+  color: var(--accent);
+}
+
 .period-text {
   font-size: 0.9rem;
   color: var(--muted);
@@ -642,6 +711,8 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
   margin: 0 0 0.75rem;
   color: var(--text-h);
   font-weight: 800;
+  line-height: 1.3;
+  overflow-wrap: break-word;
 }
 
 .mission-desc {
@@ -756,6 +827,22 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+  max-height: 120px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+.participants-tags::-webkit-scrollbar {
+  width: 4px;
+}
+.participants-tags::-webkit-scrollbar-track {
+  background: transparent;
+}
+.participants-tags::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+.participants-tags::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
 }
 
 .p-tag {
@@ -796,6 +883,13 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
 .mb-2 { margin-bottom: 0.5rem; }
 .mb-3 { margin-bottom: 1rem; }
 .center { text-align: center; }
+.manual-notice {
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-weight: 700;
+  margin-top: 0.25rem;
+  margin-bottom: 0.75rem;
+}
 
 .yt-container {
   aspect-ratio: 16/9;
@@ -820,9 +914,21 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
 }
 
 @media (max-width: 768px) {
-  .meta-row { flex-direction: column; align-items: stretch; }
-  .copy-btn { width: 100%; height: 44px; }
+  .detail-header { margin-bottom: 2rem; }
+  .meta-row { flex-direction: column; align-items: stretch; gap: 0.8rem; }
+  .detail-reward-badges { justify-content: stretch; }
+  .detail-reward-badges .reward-chip { justify-content: center; }
+  .copy-btn { width: 100%; height: 44px; margin-top: 0.5rem; }
   .winners-grid { grid-template-columns: 1fr; }
   .participants-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .mission-card { padding: 1.25rem; }
+  .mission-title { font-size: 1.15rem; }
+  .type-icon { font-size: 1.5rem; }
+  .participants-card { padding: 1.5rem; margin-top: 2rem; }
+}
+
+@media (max-width: 480px) {
+  .description-text { font-size: 0.95rem; }
+  .reward-notice { font-size: 0.85rem; }
 }
 </style>
