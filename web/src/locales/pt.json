@@ -427,6 +427,8 @@
     "missionTitleRequired": "Missão {n}: Insira um título.",
     "missionQuizMinOptions": "Missão {n}: Insira pelo menos 2 opções de quiz.",
     "missionQuizAnswerRequired": "Missão {n}: Selecione a resposta correta.",
-    "missionLinkRequired": "Missão {n}: Insira uma URL de link."
+    "missionLinkRequired": "Missão {n}: Insira uma URL de link.",
+    "logisticsRequired": "Por favor, complete o Passo 2 (Vencedores e recompensas)",
+    "missionsRequired": "Por favor, adicione pelo menos uma missão"
   }
 }

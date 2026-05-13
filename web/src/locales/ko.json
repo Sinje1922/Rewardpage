@@ -434,6 +434,8 @@
     "missionTitleRequired": "미션 {n}: 제목을 입력해 주세요.",
     "missionQuizMinOptions": "미션 {n}: 퀴즈 보기를 2개 이상 입력해 주세요.",
     "missionQuizAnswerRequired": "미션 {n}: 정답 보기를 선택해 주세요.",
-    "missionLinkRequired": "미션 {n}: 링크 URL을 입력해 주세요."
+    "missionLinkRequired": "미션 {n}: 링크 URL을 입력해 주세요.",
+    "logisticsRequired": "운영 및 보상 설정을 완료해 주세요 (당첨 인원 및 보상)",
+    "missionsRequired": "최소 한 개 이상의 미션을 추가해 주세요"
   }
 }

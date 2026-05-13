@@ -58,6 +58,18 @@ function removeReward(index: number) {
   }
 }
 
+const isStep1Valid = computed(() => !!title.value.trim())
+const isStep2Valid = computed(() => winnerCount.value > 0 && rewards.value.some(r => r.amount > 0))
+const isStep3Valid = computed(() => missionRows.value.length > 0)
+
+const isAllValid = computed(() => isStep1Valid.value && isStep2Valid.value && isStep3Valid.value)
+
+function goToStep(step: number) {
+  err.value = ''
+  currentStep.value = step
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 function nextStep() {
   err.value = ''
   if (currentStep.value === 1) {
@@ -81,6 +93,23 @@ function prevStep() {
 
 async function save() {
   err.value = ''
+  
+  if (!isStep1Valid.value) {
+    err.value = t('ops.titleRequired')
+    currentStep.value = 1
+    return
+  }
+  if (!isStep2Valid.value) {
+    err.value = t('error.logisticsRequired') || 'Please complete Step 2 (Winner count and rewards)'
+    currentStep.value = 2
+    return
+  }
+  if (!isStep3Valid.value) {
+    err.value = t('error.missionsRequired') || 'Please add at least one mission'
+    currentStep.value = 3
+    return
+  }
+
   const v = validateRows(missionRows.value)
   if (v) {
     err.value = v
@@ -116,8 +145,22 @@ async function save() {
     
     <!-- Step Indicator -->
     <div class="step-indicator">
-      <div v-for="step in 3" :key="step" class="step-item" :class="{ active: currentStep === step, completed: currentStep > step }">
-        <div class="step-num">{{ currentStep > step ? '✓' : step }}</div>
+      <div 
+        v-for="step in 3" 
+        :key="step" 
+        class="step-item" 
+        :class="{ 
+          active: currentStep === step, 
+          completed: (step === 1 && isStep1Valid) || (step === 2 && isStep2Valid) || (step === 3 && isStep3Valid)
+        }"
+        @click="goToStep(step)"
+      >
+        <div class="step-num">
+          <template v-if="step === 1 && isStep1Valid">✓</template>
+          <template v-else-if="step === 2 && isStep2Valid">✓</template>
+          <template v-else-if="step === 3 && isStep3Valid">✓</template>
+          <template v-else>{{ step }}</template>
+        </div>
         <span class="step-label">
           {{ step === 1 ? $t('ops.step1') || 'Basic' : step === 2 ? $t('ops.step2') || 'Logistics' : $t('ops.step3') || 'Missions' }}
         </span>
@@ -288,6 +331,14 @@ async function save() {
   gap: 0.5rem;
   color: var(--muted);
   transition: all 0.3s ease;
+  cursor: pointer;
+}
+.step-item:hover {
+  transform: translateY(-2px);
+}
+.step-item:hover .step-num {
+  border-color: var(--accent);
+  box-shadow: 0 5px 15px var(--accent-soft);
 }
 .step-num {
   width: 36px;

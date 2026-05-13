@@ -434,6 +434,8 @@
     "missionTitleRequired": "Mission {n}: Please enter a title.",
     "missionQuizMinOptions": "Mission {n}: Please enter at least 2 quiz options.",
     "missionQuizAnswerRequired": "Mission {n}: Please select the correct answer.",
-    "missionLinkRequired": "Mission {n}: Please enter a link URL."
+    "missionLinkRequired": "Mission {n}: Please enter a link URL.",
+    "logisticsRequired": "Please complete Step 2 (Winner count and rewards)",
+    "missionsRequired": "Please add at least one mission"
   }
 }
