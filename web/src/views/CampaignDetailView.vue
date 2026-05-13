@@ -52,13 +52,19 @@ const typeIcons: Record<string, string> = {
   CHECKIN: '📍',
   FILE_UPLOAD: '📁',
   TELEGRAM_JOIN: '✈️',
+  TELEGRAM_CHANNEL: '📢',
+  TELEGRAM_GROUP: '👥',
   DISCORD_JOIN: '👾',
-  YOUTUBE_WATCH: '📺'
+  YOUTUBE_WATCH: '📺',
+  YOUTUBE_SUBSCRIBE: '🔴',
+  YOUTUBE_LIKE: '👍',
+  INSTAGRAM_FOLLOW: '📸',
+  INSTAGRAM_LIKE: '❤️'
 }
 
 function parseCfg(raw: string) {
   try {
-    return JSON.parse(raw || '{}') as Record<string, unknown>
+    return JSON.parse(raw || '{}') as Record<string, any>
   } catch {
     return {}
   }
@@ -73,6 +79,8 @@ const surveyAnswers = ref<Record<string, Record<string, string | number>>>({})
 const checkConfirm = ref<Record<string, boolean>>({})
 const ytRemaining = ref<Record<string, number>>({})
 const ytTimer = ref<Record<string, any>>({})
+const isVerifying = ref<Record<string, boolean>>({})
+const verifyStatus = ref<Record<string, { ok: boolean; msg: string }>>({})
 
 const showCopyMsg = ref(false)
 
@@ -175,16 +183,64 @@ function stopTimer(mid: string) {
   }
 }
 
-
-async function handleSNSLinkVisit(m: Mission, type: 'telegram' | 'discord') {
-  const isLinked = type === 'telegram' ? !!auth.user?.telegramHandle : !!auth.user?.discordHandle
-  
-  if (!isLinked) {
-    alert(t('detail.snsLinkRequired', { type: type === 'telegram' ? 'Telegram' : 'Discord' }))
+async function handleSNSMission(m: Mission) {
+  if (!auth.token) {
+    err.value = t('common.loginRequired')
     return
   }
 
-  logVisit(m)
+  const cfg = parseCfg(m.config)
+  const url = cfg.linkUrl || ''
+  
+  if (m.type === 'YOUTUBE_SUBSCRIBE') {
+    if (!auth.user?.youtubeHandle) {
+      alert(t('detail.snsLinkRequired', { type: 'YouTube' }))
+      return
+    }
+    if (url) window.open(url, '_blank')
+    await verifySNS(m, '/verify/youtube/subscribe', { channelId: cfg.youtubeChannelId })
+  } else if (m.type === 'YOUTUBE_LIKE') {
+    if (!auth.user?.youtubeHandle) {
+      alert(t('detail.snsLinkRequired', { type: 'YouTube' }))
+      return
+    }
+    if (url) window.open(url, '_blank')
+    await verifySNS(m, '/verify/youtube/like', { videoId: cfg.youtubeVideoId })
+  } else if (m.type === 'TELEGRAM_JOIN' || m.type === 'TELEGRAM_CHANNEL' || m.type === 'TELEGRAM_GROUP') {
+    if (!auth.user?.telegramHandle) {
+      alert(t('detail.snsLinkRequired', { type: 'Telegram' }))
+      return
+    }
+    if (url) window.open(url, '_blank')
+    await verifySNS(m, '/verify/telegram', { missionId: m.id })
+  } else if (m.type === 'DISCORD_JOIN') {
+    if (!auth.user?.discordHandle) {
+      alert(t('detail.snsLinkRequired', { type: 'Discord' }))
+      return
+    }
+    if (url) window.open(url, '_blank')
+    await verifySNS(m, '/verify/discord', { missionId: m.id })
+  } else if (m.type === 'INSTAGRAM_FOLLOW' || m.type === 'INSTAGRAM_LIKE') {
+    // Instagram is mostly manual or link-visit based for now
+    if (url) window.open(url, '_blank')
+    verifyStatus.value[m.id] = { ok: true, msg: t('common.visitCompleted') }
+  } else {
+    if (url) window.open(url, '_blank')
+  }
+}
+
+async function verifySNS(m: Mission, endpoint: string, body: any) {
+  isVerifying.value[m.id] = true
+  verifyStatus.value[m.id] = { ok: false, msg: '' }
+  try {
+    const { data } = await api.post(endpoint, body)
+    verifyStatus.value[m.id] = { ok: true, msg: data.message || t('detail.verifySuccess') }
+  } catch (e: any) {
+    const reason = e.response?.data?.error || t('common.errorLoad')
+    verifyStatus.value[m.id] = { ok: false, msg: reason }
+  } finally {
+    isVerifying.value[m.id] = false
+  }
 }
 
 async function logVisit(m: Mission) {
@@ -209,6 +265,15 @@ async function submitMission(m: Mission) {
     err.value = t('common.loginRequired')
     return
   }
+
+  // SNS Verification check
+  if (['YOUTUBE_SUBSCRIBE', 'YOUTUBE_LIKE', 'TELEGRAM_JOIN', 'TELEGRAM_CHANNEL', 'TELEGRAM_GROUP', 'DISCORD_JOIN'].includes(m.type)) {
+    if (!verifyStatus.value[m.id]?.ok) {
+      err.value = verifyStatus.value[m.id]?.msg || t('common.checkRequired')
+      return
+    }
+  }
+
   let payload: Record<string, unknown> = {}
   if (m.type === 'LINK_VISIT') {
     payload = { dwellSeconds: Number(dwellInput.value[m.id] ?? 0) }
@@ -232,25 +297,22 @@ async function submitMission(m: Mission) {
     payload = {}
   } else if (m.type === 'FILE_UPLOAD') {
     payload = { fileUrl: codeInput.value[m.id] ?? '' }
-  } else if (m.type === 'TELEGRAM_JOIN') {
-    if (!auth.user?.telegramHandle) {
-      err.value = t('detail.snsNotLinked', { type: 'Telegram' })
-      return
-    }
-    payload = { handle: auth.user.telegramHandle }
+  } else if (m.type.startsWith('TELEGRAM_')) {
+    payload = { handle: auth.user?.telegramHandle }
   } else if (m.type === 'DISCORD_JOIN') {
-    if (!auth.user?.discordHandle) {
-      err.value = t('detail.snsNotLinked', { type: 'Discord' })
-      return
-    }
-    payload = { handle: auth.user.discordHandle }
+    payload = { handle: auth.user?.discordHandle }
   } else if (m.type === 'YOUTUBE_WATCH') {
     if (ytRemaining.value[m.id] > 0) {
       err.value = t('detail.ytWatchRequired')
       return
     }
     payload = { watched: true }
+  } else if (m.type.startsWith('YOUTUBE_')) {
+    payload = { verified: true }
+  } else if (m.type.startsWith('INSTAGRAM_')) {
+    payload = { visited: true }
   }
+
   try {
     await api.post(`/missions/${m.id}/submit`, { payload })
     msg.value = t('common.submitSuccess')
@@ -375,10 +437,6 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
         <div class="mission-body">
           <template v-if="m.type === 'LINK_VISIT'">
             <button type="button" class="btn full-width" @click="logVisit(m)">{{ $t('detail.linkOpen') }}</button>
-            <div class="field mt-3">
-              <label>{{ $t('detail.dwellTime') }}</label>
-              <input v-model.number="dwellInput[m.id]" type="number" min="0" placeholder="0" />
-            </div>
           </template>
 
           <template v-else-if="m.type === 'SURVEY'">
@@ -443,11 +501,14 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
             </div>
           </template>
 
-          <template v-else-if="m.type === 'TELEGRAM_JOIN'">
+          <template v-else-if="m.type === 'TELEGRAM_JOIN' || m.type === 'TELEGRAM_CHANNEL' || m.type === 'TELEGRAM_GROUP'">
             <div class="sns-mission-box">
-              <button type="button" class="btn outline full-width mb-2" @click="handleSNSLinkVisit(m, 'telegram')">
-                {{ $t('detail.tgJoinBtn') }}
+              <button type="button" class="btn outline full-width mb-2" :disabled="isVerifying[m.id]" @click="handleSNSMission(m)">
+                {{ isVerifying[m.id] ? $t('detail.verifying') : $t('detail.tgJoinBtn') }}
               </button>
+              <div v-if="verifyStatus[m.id]" class="verify-alert" :class="{ success: verifyStatus[m.id].ok, error: !verifyStatus[m.id].ok }">
+                {{ verifyStatus[m.id].ok ? verifyStatus[m.id].msg : $t('detail.verifyFail', { reason: verifyStatus[m.id].msg }) }}
+              </div>
               <div v-if="auth.user?.telegramHandle" class="linked-info">
                 {{ $t('detail.linkedAccount', { handle: auth.user.telegramHandle }) }}
               </div>
@@ -459,9 +520,12 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
 
           <template v-else-if="m.type === 'DISCORD_JOIN'">
             <div class="sns-mission-box">
-              <button type="button" class="btn outline full-width mb-2" @click="handleSNSLinkVisit(m, 'discord')">
-                {{ $t('detail.discordJoinBtn') }}
+              <button type="button" class="btn outline full-width mb-2" :disabled="isVerifying[m.id]" @click="handleSNSMission(m)">
+                {{ isVerifying[m.id] ? $t('detail.verifying') : $t('detail.discordJoinBtn') }}
               </button>
+              <div v-if="verifyStatus[m.id]" class="verify-alert" :class="{ success: verifyStatus[m.id].ok, error: !verifyStatus[m.id].ok }">
+                {{ verifyStatus[m.id].ok ? verifyStatus[m.id].msg : $t('detail.verifyFail', { reason: verifyStatus[m.id].msg }) }}
+              </div>
               <div v-if="auth.user?.discordHandle" class="linked-info">
                 {{ $t('detail.linkedAccount', { handle: auth.user.discordHandle }) }}
               </div>
@@ -478,6 +542,62 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
             </div>
             <div v-else class="timer-box success">
               {{ $t('detail.ytWatchComplete') }}
+            </div>
+          </template>
+
+          <template v-else-if="m.type === 'YOUTUBE_SUBSCRIBE'">
+            <div class="sns-mission-box">
+              <button type="button" class="btn outline full-width mb-2" :disabled="isVerifying[m.id]" @click="handleSNSMission(m)">
+                {{ isVerifying[m.id] ? $t('detail.verifying') : $t('detail.ytSubscribeBtn') }}
+              </button>
+              <div v-if="verifyStatus[m.id]" class="verify-alert" :class="{ success: verifyStatus[m.id].ok, error: !verifyStatus[m.id].ok }">
+                {{ verifyStatus[m.id].ok ? verifyStatus[m.id].msg : $t('detail.verifyFail', { reason: verifyStatus[m.id].msg }) }}
+              </div>
+              <div v-if="auth.user?.youtubeHandle" class="linked-info">
+                {{ $t('detail.linkedAccount', { handle: auth.user.youtubeHandle }) }}
+              </div>
+              <div v-else class="link-notice">
+                {{ $t('detail.snsNotLinked', { type: 'YouTube' }) }} <RouterLink to="/my-page">{{ $t('nav.myPage') }}</RouterLink>
+              </div>
+            </div>
+          </template>
+
+          <template v-else-if="m.type === 'YOUTUBE_LIKE'">
+            <div class="sns-mission-box">
+              <button type="button" class="btn outline full-width mb-2" :disabled="isVerifying[m.id]" @click="handleSNSMission(m)">
+                {{ isVerifying[m.id] ? $t('detail.verifying') : $t('detail.ytLikeBtn') }}
+              </button>
+              <div v-if="verifyStatus[m.id]" class="verify-alert" :class="{ success: verifyStatus[m.id].ok, error: !verifyStatus[m.id].ok }">
+                {{ verifyStatus[m.id].ok ? verifyStatus[m.id].msg : $t('detail.verifyFail', { reason: verifyStatus[m.id].msg }) }}
+              </div>
+              <div v-if="auth.user?.youtubeHandle" class="linked-info">
+                {{ $t('detail.linkedAccount', { handle: auth.user.youtubeHandle }) }}
+              </div>
+              <div v-else class="link-notice">
+                {{ $t('detail.snsNotLinked', { type: 'YouTube' }) }} <RouterLink to="/my-page">{{ $t('nav.myPage') }}</RouterLink>
+              </div>
+            </div>
+          </template>
+
+          <template v-else-if="m.type === 'INSTAGRAM_FOLLOW'">
+            <div class="sns-mission-box">
+              <button type="button" class="btn outline full-width mb-2" @click="handleSNSMission(m)">
+                {{ $t('detail.igFollowBtn') }}
+              </button>
+              <div v-if="verifyStatus[m.id]" class="verify-alert success">
+                {{ verifyStatus[m.id].msg }}
+              </div>
+            </div>
+          </template>
+
+          <template v-else-if="m.type === 'INSTAGRAM_LIKE'">
+            <div class="sns-mission-box">
+              <button type="button" class="btn outline full-width mb-2" @click="handleSNSMission(m)">
+                {{ $t('detail.igLikeBtn') }}
+              </button>
+              <div v-if="verifyStatus[m.id]" class="verify-alert success">
+                {{ verifyStatus[m.id].msg }}
+              </div>
             </div>
           </template>
 
@@ -930,5 +1050,52 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
 @media (max-width: 480px) {
   .description-text { font-size: 0.95rem; }
   .reward-notice { font-size: 0.85rem; }
+}
+.sns-mission-box {
+  background: var(--bg-deep);
+  padding: 1.25rem;
+  border-radius: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+}
+
+.verify-alert {
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.verify-alert.success {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.verify-alert.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.linked-info {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+  font-weight: 600;
+}
+
+.link-notice {
+  font-size: 0.85rem;
+  color: #991b1b;
+  text-align: center;
+  font-weight: 600;
+}
+
+.link-notice a {
+  color: var(--accent);
+  text-decoration: underline;
 }
 </style>

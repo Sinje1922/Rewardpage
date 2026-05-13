@@ -13,6 +13,9 @@ type MissionConfig = {
   quizOptions?: string[];
   correctIndex?: number;
   minDwellSeconds?: number;
+  youtubeChannelId?: string;
+  youtubeVideoId?: string;
+  discordInvite?: string; // Guild ID
 };
 
 export function parseConfig(raw: string): MissionConfig {
@@ -23,11 +26,13 @@ export function parseConfig(raw: string): MissionConfig {
   }
 }
 
-export function evaluateMission(
+export async function evaluateMission(
+  userId: string,
+  missionId: string,
   type: string,
   config: MissionConfig,
   payload: Record<string, unknown>
-): { ok: boolean; reason?: string } {
+): Promise<{ ok: boolean; reason?: string }> {
   switch (type) {
     case "LINK_VISIT": {
       const dwell = Number(payload.dwellSeconds ?? 0);
@@ -40,7 +45,6 @@ export function evaluateMission(
     case "SURVEY": {
       const qs = config.surveyQuestions || [];
       if (qs.length === 0) {
-        // Fallback to legacy single question or code check
         const code = String(payload.code ?? "").trim();
         const expected = String(config.correctCode ?? "").trim();
         const question = String(config.surveyQuestion ?? "").trim();
@@ -56,18 +60,11 @@ export function evaluateMission(
         return { ok: true };
       }
 
-      // New multi-question validation
       const answers = (payload.answers as Record<string, any>) || {};
       for (const q of qs) {
         const ans = answers[q.id];
         if (ans === undefined || ans === null || String(ans).trim() === "") {
           return { ok: false, reason: `[${q.question}] 질문에 답해 주세요.` };
-        }
-        if (q.type === "OBJECTIVE") {
-          const optIdx = Number(ans);
-          if (isNaN(optIdx) || !q.options || optIdx < 0 || optIdx >= q.options.length) {
-            return { ok: false, reason: `[${q.question}] 올바른 보기를 선택해 주세요.` };
-          }
         }
       }
       return { ok: true };
@@ -94,12 +91,46 @@ export function evaluateMission(
       if (!url) return { ok: false, reason: "파일 URL이 필요합니다." };
       return { ok: true };
     }
-    case "TELEGRAM_JOIN":
-    case "DISCORD_JOIN":
-    case "YOUTUBE_WATCH":
-      // These are validated via profile link presence on frontend 
-      // and optional backend membership checks
+    case "YOUTUBE_WATCH": {
+      if (!payload.watched) return { ok: false, reason: "시청 완료 정보가 없습니다." };
       return { ok: true };
+    }
+    case "YOUTUBE_SUBSCRIBE": {
+      const channelId = config.youtubeChannelId;
+      if (!channelId) return { ok: true }; // Skip if not configured
+      const { checkYouTubeSubscription } = await import("./youtube.js");
+      const ok = await checkYouTubeSubscription(userId, channelId);
+      return ok ? { ok: true } : { ok: false, reason: "유튜브 구독이 확인되지 않습니다." };
+    }
+    case "YOUTUBE_LIKE": {
+      const videoId = config.youtubeVideoId;
+      if (!videoId) return { ok: true };
+      const { checkYouTubeLike } = await import("./youtube.js");
+      const ok = await checkYouTubeLike(userId, videoId);
+      return ok ? { ok: true } : { ok: false, reason: "유튜브 좋아요가 확인되지 않습니다." };
+    }
+    case "TELEGRAM_JOIN":
+    case "TELEGRAM_CHANNEL":
+    case "TELEGRAM_GROUP": {
+      const chatId = config.linkUrl ? config.linkUrl.split('/').pop() : null;
+      if (!chatId) return { ok: true };
+      const { checkTelegramMembership } = await import("./telegram.js");
+      const ok = await checkTelegramMembership(chatId, userId);
+      return ok ? { ok: true } : { ok: false, reason: "텔레그램 참여가 확인되지 않습니다." };
+    }
+    case "DISCORD_JOIN": {
+      const guildId = config.discordInvite;
+      if (!guildId) return { ok: true };
+      const { prisma } = await import("./prisma.js");
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user?.discordId) return { ok: false, reason: "디스코드 연동이 필요합니다." };
+      const { checkGuildMembership } = await import("./discord.js");
+      const ok = await checkGuildMembership(guildId, user.discordId);
+      return ok ? { ok: true } : { ok: false, reason: "디스코드 참여가 확인되지 않습니다." };
+    }
+    case "INSTAGRAM_FOLLOW":
+    case "INSTAGRAM_LIKE":
+      return { ok: true }; // Instagram is manual link-visit
     default:
       return { ok: false, reason: "알 수 없는 미션 유형입니다." };
   }

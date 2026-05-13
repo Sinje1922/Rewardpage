@@ -88,9 +88,13 @@ model user {
   gender        String?
   region        String?
   telegramHandle String?
+  telegramId     String?
   discordId      String?
   discordHandle  String?
   youtubeHandle  String?
+  youtubeAccessToken String? @db.Text
+  youtubeRefreshToken String? @db.Text
+  youtubeTokenExpiry BigInt?
   instagramHandle String?
   updatedAt     DateTime     @default(now()) @updatedAt
   submissions   submission[]

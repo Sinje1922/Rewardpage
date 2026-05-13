@@ -46,7 +46,7 @@ router.post("/:id/submit", authRequired, async (req: AuthedRequest, res) => {
   }
 
   const cfg = parseConfig(mission.config);
-  const evalResult = evaluateMission(mission.type, cfg, parsed.data.payload);
+  const evalResult = await evaluateMission(req.user!.id, mission.id, mission.type, cfg, parsed.data.payload);
   if (!evalResult.ok) {
     res.status(400).json({ error: evalResult.reason ?? "검증 실패" });
     return;

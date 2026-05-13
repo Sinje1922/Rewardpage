@@ -111,10 +111,17 @@
     "extraLinkOpen": "🔗 추가 링크 열기",
     "tgJoinBtn": "✈️ 텔레그램 채널 입장하기",
     "discordJoinBtn": "👾 디스코드 서버 입장하기",
+    "ytSubscribeBtn": "🔴 유튜브 채널 구독하기",
+    "ytLikeBtn": "👍 유튜브 영상 좋아요",
+    "igFollowBtn": "📸 인스타그램 팔로우하기",
+    "igLikeBtn": "❤️ 인스타그램 좋아요",
     "linkedAccount": "연동된 계정: {handle}",
     "snsNotLinked": "⚠️ {type} 계정이 연동되지 않았습니다. 마이페이지에서 연동해 주세요.",
     "ytWatching": "시청 중... ({n}초 남음)",
-    "ytWatchComplete": "✅ 시청 완료! 미션을 제출해 주세요."
+    "ytWatchComplete": "✅ 시청 완료! 미션을 제출해 주세요.",
+    "verifying": "검증 중...",
+    "verifySuccess": "✅ 검증 성공!",
+    "verifyFail": "❌ 검증 실패: {reason}"
   },
   "auth": {
     "login": "로그인",

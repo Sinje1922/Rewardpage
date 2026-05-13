@@ -111,10 +111,17 @@
     "extraLinkOpen": "🔗 Open Additional Link",
     "tgJoinBtn": "✈️ Join Telegram Channel",
     "discordJoinBtn": "👾 Join Discord Server",
+    "ytSubscribeBtn": "🔴 Subscribe to YouTube Channel",
+    "ytLikeBtn": "👍 Like YouTube Video",
+    "igFollowBtn": "📸 Follow on Instagram",
+    "igLikeBtn": "❤️ Like Instagram Post",
     "linkedAccount": "Linked Account: {handle}",
     "snsNotLinked": "⚠️ {type} account is not linked. Please link it in My Page.",
     "ytWatching": "Watching... ({n}s left)",
-    "ytWatchComplete": "✅ Watch complete! Please submit the mission."
+    "ytWatchComplete": "✅ Watch complete! Please submit the mission.",
+    "verifying": "Verifying...",
+    "verifySuccess": "✅ Verification Successful!",
+    "verifyFail": "❌ Verification Failed: {reason}"
   },
   "auth": {
     "login": "Login",

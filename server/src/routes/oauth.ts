@@ -163,11 +163,12 @@ router.get("/youtube/callback", async (req, res) => {
       grant_type: "authorization_code",
     });
 
-    const accessToken = tokenResponse.data.access_token;
+    const { access_token, refresh_token, expires_in } = tokenResponse.data;
+    const expiry = expires_in ? BigInt(Math.floor(Date.now() / 1000) + expires_in) : null;
 
     // 유튜브 채널 정보 가져오기
     const youtubeResponse = await axios.get("https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true", {
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: { Authorization: `Bearer ${access_token}` },
     });
 
     const channels = youtubeResponse.data.items;
@@ -175,7 +176,12 @@ router.get("/youtube/callback", async (req, res) => {
 
     await prisma.user.update({
       where: { id: state as string },
-      data: { youtubeHandle: channelName },
+      data: { 
+        youtubeHandle: channelName,
+        youtubeAccessToken: access_token,
+        youtubeRefreshToken: refresh_token || undefined, // Refresh token is only sent on first consent
+        youtubeTokenExpiry: expiry
+      },
     });
 
     res.send(`
