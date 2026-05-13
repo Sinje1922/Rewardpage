@@ -67,6 +67,12 @@ const steps = computed(() => [
   { n: 3, title: t('home.step3Title'), desc: t('home.step3Desc'), icon: '💰' },
 ])
 
+const platformValues = computed(() => [
+  { id: 1, title: t('home.value1Title'), desc: t('home.value1Desc'), icon: '🛡️' },
+  { id: 2, title: t('home.value2Title'), desc: t('home.value2Desc'), icon: '✨' },
+  { id: 3, title: t('home.value3Title'), desc: t('home.value3Desc'), icon: '⚡' },
+])
+
 function getRemainingTime(endsAt: string | null) {
   if (!endsAt) return ''
   const end = new Date(endsAt)
@@ -167,19 +173,23 @@ function getRemainingTime(endsAt: string | null) {
       </div>
     </section>
 
-    <!-- Proof Section -->
-    <section class="landing-section centered">
-      <span class="section-tag">{{ $t('home.proofTag') }}</span>
-      <h2 class="section-title">{{ $t('home.proofTitle') }}</h2>
-      <p class="section-desc">{{ $t('home.proofDesc') }}</p>
+    <!-- Why pickku (Values) Section -->
+    <section class="landing-section centered values-section">
+      <span class="section-tag">{{ $t('home.valuesTag') }}</span>
+      <h2 class="section-title">{{ $t('home.valuesTitle') }}</h2>
+      <p class="section-desc">{{ $t('home.valuesDesc') }}</p>
       
-      <div class="proof-grid">
-        <div v-for="i in 4" :key="i" class="card proof-card">
-          <img :src="`/proof_mockup_${i}.png`" class="proof-img" @error="($event.target as HTMLImageElement).src = 'https://placehold.co/300x533?text=Earnings+Proof'" />
+      <div class="values-grid">
+        <div v-for="v in platformValues" :key="v.id" class="value-card">
+          <div class="value-icon">{{ v.icon }}</div>
+          <h3 class="value-title">{{ v.title }}</h3>
+          <p class="value-desc">{{ v.desc }}</p>
         </div>
       </div>
       
-      <button class="btn primary" style="margin-top: 2rem">{{ $t('home.exploreMore') }}</button>
+      <RouterLink to="/campaigns" class="btn primary glass-btn" style="margin-top: 3rem">
+        {{ $t('home.exploreMore') }}
+      </RouterLink>
     </section>
 
     <!-- FAQ Section -->
@@ -494,29 +504,131 @@ function getRemainingTime(endsAt: string | null) {
 
 
 
-/* Skeleton */
-.skeleton {
-  height: 240px;
-  border-radius: 1.5rem;
-  background: var(--bg-deep);
+/* Values Section */
+.values-section {
+  background: linear-gradient(180deg, transparent 0%, var(--bg-deep) 50%, transparent 100%);
+  padding: 8rem 2rem;
+  border-radius: 4rem;
+}
+
+.values-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2.5rem;
+  margin-top: 4rem;
+  max-width: 1200px;
+  width: 100%;
+}
+
+.value-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 3rem 2rem;
+  border-radius: 2.5rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
   position: relative;
   overflow: hidden;
 }
 
-.skeleton::after {
-  content: "";
-  position: absolute; inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-  animation: skeletonScan 2s infinite;
+.value-card:hover {
+  transform: translateY(-12px);
+  border-color: var(--accent);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
 }
 
-@keyframes skeletonScan {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(100%); }
+.value-icon {
+  font-size: 3.5rem;
+  margin-bottom: 2rem;
+  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
 }
 
-@keyframes revealUp {
-  from { opacity: 0; transform: translateY(30px); }
+.value-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-h);
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.value-desc {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.glass-btn {
+  background: var(--accent);
+  border: none;
+  padding: 1.2rem 3.5rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  box-shadow: 0 15px 35px var(--accent-soft);
+  transition: all 0.3s ease;
+}
+
+.glass-btn:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 20px 45px var(--accent-soft);
+}
+
+@media (max-width: 900px) {
+  .values-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  .values-section {
+    padding: 4rem 1rem;
+  }
+}
+
+/* FAQ Section */
+.faq-list {
+  max-width: 800px;
+  width: 100%;
+  margin: 3rem auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.faq-item {
+  border-radius: 1.5rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.faq-q {
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text-h);
+  font-size: 1.1rem;
+}
+
+.faq-q:hover {
+  background: var(--bg-deep);
+}
+
+.faq-a {
+  padding: 0 2rem 1.5rem;
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -543,21 +655,30 @@ function getRemainingTime(endsAt: string | null) {
     font-size: 1.1rem;
     margin-bottom: 2rem;
   }
-  
-  .mini-card {
-    flex: 0 0 260px;
-  }
-
-  .section-head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
+}
+/* Utilities & Animations */
+.skeleton {
+  height: 240px;
+  border-radius: 1.5rem;
+  background: var(--bg-deep);
+  position: relative;
+  overflow: hidden;
 }
 
-@media (max-width: 480px) {
-  .banner-title {
-    font-size: 2rem;
-  }
+.skeleton::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+  animation: skeletonScan 2s infinite;
+}
+
+@keyframes skeletonScan {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes revealUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
