@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { api, getFileUrl } from '../../api/client'
@@ -61,8 +61,6 @@ function removeReward(index: number) {
 const isStep1Valid = computed(() => !!title.value.trim())
 const isStep2Valid = computed(() => winnerCount.value > 0 && rewards.value.some(r => r.amount > 0))
 const isStep3Valid = computed(() => missionRows.value.length > 0)
-
-const isAllValid = computed(() => isStep1Valid.value && isStep2Valid.value && isStep3Valid.value)
 
 function goToStep(step: number) {
   err.value = ''
