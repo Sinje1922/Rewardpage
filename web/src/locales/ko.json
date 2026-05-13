@@ -161,6 +161,7 @@
     "createLead": "클라이언트(회사) 정보와 캠페인 설정, 미션을 한 번에 구성합니다.",
     "clientSection": "클라이언트 (수주사)",
     "companyName": "회사 이름",
+    "companyNameHint": "○○ 주식회사",
     "companyLogo": "회사 로고",
     "uploading": "업로드 중…",
     "selectFile": "파일 선택",
@@ -291,7 +292,11 @@
     "pendingSubs": "승인 대기",
     "winnersCount": "당첨자",
     "missionStats": "미션별 참여 현황",
-    "statusLabel": "상태"
+    "statusLabel": "상태",
+    "step1": "기본 설정",
+    "step2": "운영/보상",
+    "step3": "미션 구성",
+    "logisticsSection": "운영 및 보상 설정"
   },
   "admin": {
     "title": "관리자",
@@ -382,7 +387,9 @@
     "person": "명",
     "point": "포인트",
     "brl": "브라질 헤알",
-    "metaq": "메타큐"
+    "metaq": "메타큐",
+    "prev": "이전",
+    "next": "다음"
   },
   "mypage": {
     "title": "계정 설정",

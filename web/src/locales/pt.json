@@ -154,6 +154,7 @@
     "createLead": "Configure as informações do cliente, as configurações da campanha e as missões de uma só vez.",
     "clientSection": "Informações do Cliente",
     "companyName": "Nome da Empresa",
+    "companyNameHint": "○○ Cia. Ltda.",
     "companyLogo": "Logo da Empresa",
     "uploading": "Enviando...",
     "selectFile": "Selecionar Arquivo",
@@ -284,7 +285,11 @@
     "pendingSubs": "Pendente",
     "winnersCount": "Ganhadores",
     "missionStats": "Desempenho da Missão",
-    "statusLabel": "Status"
+    "statusLabel": "Status",
+    "step1": "Básico",
+    "step2": "Logística",
+    "step3": "Missões",
+    "logisticsSection": "Logística e Recompensas"
   },
   "admin": {
     "title": "Administrador",
@@ -375,7 +380,9 @@
     "person": "pessoa",
     "point": "Ponto",
     "brl": "Real Brasileiro",
-    "metaq": "METAQ"
+    "metaq": "METAQ",
+    "prev": "Anterior",
+    "next": "Próximo"
   },
   "mypage": {
     "title": "Configurações da Conta",

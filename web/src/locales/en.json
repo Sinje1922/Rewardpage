@@ -161,6 +161,7 @@
     "createLead": "Configure client info, campaign settings, and missions at once.",
     "clientSection": "Client Info",
     "companyName": "Company Name",
+    "companyNameHint": "○○ Co., Ltd.",
     "companyLogo": "Company Logo",
     "uploading": "Uploading...",
     "selectFile": "Select File",
@@ -291,7 +292,11 @@
     "pendingSubs": "Pending",
     "winnersCount": "Winners",
     "missionStats": "Mission Performance",
-    "statusLabel": "Status"
+    "statusLabel": "Status",
+    "step1": "Basic",
+    "step2": "Logistics",
+    "step3": "Missions",
+    "logisticsSection": "Logistics & Rewards"
   },
   "admin": {
     "title": "Admin",
@@ -382,7 +387,9 @@
     "person": "person",
     "point": "POINT",
     "brl": "Brazil Real",
-    "metaq": "METAQ"
+    "metaq": "METAQ",
+    "prev": "Previous",
+    "next": "Next"
   },
   "mypage": {
     "title": "Account Settings",
