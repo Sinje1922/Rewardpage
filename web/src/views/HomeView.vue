@@ -119,10 +119,6 @@ function getRemainingTime(endsAt: string | null) {
           <p class="step-desc">{{ s.desc }}</p>
         </div>
       </div>
-      
-      <RouterLink to="/campaigns" class="btn primary" style="margin-top: 2rem">
-        {{ $t('home.startNow') }}
-      </RouterLink>
     </section>
 
     <!-- Campaigns Section (Closing Soon) -->
@@ -186,10 +182,6 @@ function getRemainingTime(endsAt: string | null) {
           <p class="value-desc">{{ v.desc }}</p>
         </div>
       </div>
-      
-      <RouterLink to="/campaigns" class="btn primary glass-btn" style="margin-top: 3rem">
-        {{ $t('home.exploreMore') }}
-      </RouterLink>
     </section>
 
     <!-- FAQ Section -->
