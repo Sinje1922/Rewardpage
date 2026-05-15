@@ -93,111 +93,191 @@ function getRemainingTime(endsAt: string | null) {
 
 <template>
   <div class="home-container">
-    <!-- Hero Section -->
-    <section class="banner-area">
-      <div v-for="b in banners" :key="b.id" class="banner-card">
-        <img :src="b.image" alt="" class="banner-bg" />
-        <div class="banner-content">
-          <p class="badge white">{{ $t('home.badge') }}</p>
-          <h1 class="banner-title" v-html="b.title.replace('\n', '<br>')"></h1>
-          <p class="banner-sub">{{ b.sub }}</p>
-          <RouterLink :to="b.link" class="btn primary glass">{{ $t('home.exploreCampaigns') }}</RouterLink>
+    <!-- Hero Area (Wide) -->
+    <section class="hero-area">
+      <div class="hero-inner">
+        <div class="hero-content">
+          <span class="hero-tag">{{ $t('heroTag') }}</span>
+          <h1 class="hero-title" v-html="$t('heroTitleModern')"></h1>
+          <p class="hero-lead">{{ $t('heroLeadModern') }}</p>
+          
+          <div class="hero-btns">
+            <button class="btn purple-btn wide" @click="router.push('/campaigns')">{{ $t('startNow') }}</button>
+          </div>
+
+          <div class="active-members">
+            <div class="avatar-stack">
+              <div v-for="i in 3" :key="i" class="avatar-circle"></div>
+              <div class="avatar-more">+2k</div>
+            </div>
+            <span class="members-text">{{ $t('activeMembers') }}</span>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <div class="visual-placeholder">
+            <div class="coin-placeholder">🪙</div>
+            <!-- Floating Cards -->
+            <div class="floating-card c1">
+              <span>Earned Points</span>
+              <p>+250 P</p>
+            </div>
+            <div class="floating-card c2">
+              <span>New Mission</span>
+              <p>Verified</p>
+            </div>
+            <div class="floating-card c3">
+              <span>Community</span>
+              <p>Active</p>
+            </div>
+            <div class="floating-card c4">
+              <span>Rewards</span>
+              <p>Claimed</p>
+            </div>
+            <div class="floating-card c5">
+              <span>Users</span>
+              <p>320K+</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar-wrap">
+      <div class="stats-bar">
+        <div class="stat-item">
+          <div class="stat-icon"></div>
+          <div class="stat-info">
+            <span class="stat-val">320K+</span>
+            <span class="stat-lab">{{ $t('statsActiveUsers') }}</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon"></div>
+          <div class="stat-info">
+            <span class="stat-val">1.5M+</span>
+            <span class="stat-lab">{{ $t('statsMissions') }}</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon"></div>
+          <div class="stat-info">
+            <span class="stat-val">500M+</span>
+            <span class="stat-lab">{{ $t('statsPoints') }}</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-icon"></div>
+          <div class="stat-info">
+            <span class="stat-val">1.2K+</span>
+            <span class="stat-lab">{{ $t('statsCommunities') }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Steps Section -->
     <section class="landing-section centered">
-      <span class="section-tag">{{ $t('home.stepsTag') }}</span>
-      <h2 class="section-title">{{ $t('home.stepsTitle') }}</h2>
-      <p class="section-desc">{{ $t('home.stepsDesc') }}</p>
-      
-      <div class="step-grid">
-        <div v-for="s in steps" :key="s.n" class="card step-card">
-          <div class="step-number">{{ s.n }}</div>
-          <h3 class="step-title">{{ s.title }}</h3>
-          <p class="step-desc">{{ s.desc }}</p>
+      <h2 class="section-title">{{ $t('stepsTitleModern') }}</h2>
+      <div class="step-grid-modern">
+        <div v-for="i in 3" :key="i" class="step-card-modern card">
+          <span class="step-badge">{{ i }}</span>
+          <div class="icon-placeholder-step"></div>
+          <h3 class="step-title-modern">{{ $t(`step${i}Title`) }}</h3>
+          <p class="step-desc-modern">{{ $t(`step${i}Desc`) }}</p>
         </div>
       </div>
     </section>
 
-    <!-- Campaigns Section (Closing Soon) -->
+    <!-- Hot Campaigns Section -->
     <section class="landing-section">
       <div class="section-head">
-        <div>
-          <span class="section-tag">{{ $t('home.campaignsTag') }}</span>
-          <h2 class="section-title">{{ $t('home.sectionClosingSoon') }}</h2>
-        </div>
-        <RouterLink to="/campaigns" class="view-all">{{ $t('home.viewAll') }} →</RouterLink>
+        <h2 class="section-title left">{{ $t('hotCampaignsTitle') }}</h2>
+        <RouterLink to="/campaigns" class="view-all">{{ $t('viewAll') }}</RouterLink>
       </div>
       
       <div v-if="loading" class="skeleton-grid">
         <div v-for="i in 4" :key="i" class="card skeleton"></div>
       </div>
-      <div v-else-if="closingSoonList.length" class="trending-grid">
-        <div v-for="c in closingSoonList" :key="c.id" class="trend-card card">
-          <div class="trend-content">
-            <div class="company-row" v-if="c.companyName || c.companyLogoUrl">
-              <img v-if="c.companyLogoUrl" :src="getFileUrl(c.companyLogoUrl)" class="mini-logo" />
-              <span class="company-name">{{ c.companyName }}</span>
+      <div v-else-if="closingSoonList.length" class="campaign-grid-modern">
+        <div v-for="c in closingSoonList" :key="c.id" class="campaign-card-modern card">
+          <div class="card-visual-area">
+             <span class="status-tag">HOT</span>
+             <div class="icon-placeholder-campaign"></div>
+          </div>
+          <div class="card-body-modern">
+            <div class="company-row-modern" v-if="c.companyName">
+              <div class="mini-logo-placeholder"></div>
+              <span class="company-name-modern">{{ c.companyName }}</span>
             </div>
-            <h3 class="card-title">{{ c.title }}</h3>
-            <div class="reward-badges-mini">
-              <template v-if="c.rewardsConfig && c.rewardsConfig !== '[]'">
-                <div v-for="(r, idx) in JSON.parse(c.rewardsConfig)" :key="idx" class="reward-chip-mini" :class="r.currency.toLowerCase()">
-                  <span class="reward-icon">{{ r.currency === 'POINT' ? '🪙' : r.currency === 'USDT' ? '💵' : r.currency === 'METAQ' ? '💎' : '🎁' }}</span>
-                  <span class="reward-amount">{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}</span>
-                </div>
-              </template>
-              <template v-else>
-                <div class="reward-chip-mini point">
-                  <span class="reward-icon">🪙</span>
-                  <span class="reward-amount">{{ (c.totalRewardPoints || 0).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency }}</span>
-                </div>
-              </template>
+            <h3 class="card-title-modern">{{ c.title }}</h3>
+            
+            <div class="reward-row-modern">
+              <div class="reward-pill">
+                <span class="reward-amount">{{ (c.totalRewardPoints || 0).toLocaleString() }} P</span>
+              </div>
             </div>
             
-            <div class="time-remaining">
-              <span class="clock-icon">⏰</span>
-              <span class="time-text">{{ getRemainingTime(c.endsAt) }}</span>
+            <div class="card-footer-modern">
+              <span class="participants-count">{{ $t('participantsCount', { n: '12,345' }) }}</span>
+              <RouterLink :to="`/campaigns/${c.id}`" class="btn purple-btn sm">Join Now</RouterLink>
             </div>
-          </div>
-          <div class="trend-actions">
-            <RouterLink :to="`/campaigns/${c.id}`" class="btn primary trend-btn">{{ $t('campaign.join') }}</RouterLink>
           </div>
         </div>
       </div>
     </section>
 
     <!-- Why pickku (Values) Section -->
-    <section class="landing-section centered values-section">
-      <span class="section-tag">{{ $t('home.valuesTag') }}</span>
-      <h2 class="section-title">{{ $t('home.valuesTitle') }}</h2>
-      <p class="section-desc">{{ $t('home.valuesDesc') }}</p>
+    <section class="landing-section centered">
+      <span class="section-tag purple">WHY PICKKU</span>
+      <h2 class="section-title">{{ $t('valuesTitleModern') }}</h2>
       
-      <div class="values-grid">
-        <div v-for="v in platformValues" :key="v.id" class="value-card">
-          <div class="value-icon">{{ v.icon }}</div>
-          <h3 class="value-title">{{ v.title }}</h3>
-          <p class="value-desc">{{ v.desc }}</p>
+      <div class="values-grid-modern">
+        <div class="value-card-modern card">
+          <div class="icon-placeholder-value"></div>
+          <div class="value-text">
+            <h3 class="value-title-modern">{{ $t('whyPickkuSafe') }}</h3>
+            <p class="value-desc-modern">{{ $t('whyPickkuSafeDesc') }}</p>
+          </div>
+        </div>
+        <div class="value-card-modern card">
+          <div class="icon-placeholder-value"></div>
+          <div class="value-text">
+            <h3 class="value-title-modern">{{ $t('whyPickkuEasy') }}</h3>
+            <p class="value-desc-modern">{{ $t('whyPickkuEasyDesc') }}</p>
+          </div>
+        </div>
+        <div class="value-card-modern card">
+          <div class="icon-placeholder-value"></div>
+          <div class="value-text">
+            <h3 class="value-title-modern">{{ $t('whyPickkuInstant') }}</h3>
+            <p class="value-desc-modern">{{ $t('whyPickkuInstantDesc') }}</p>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- FAQ Section -->
     <section class="landing-section centered">
-      <span class="section-tag">{{ $t('home.faqTag') }}</span>
-      <h2 class="section-title">{{ $t('home.faqTitle') }}</h2>
-      
-      <div class="faq-list">
-        <div v-for="(f, i) in faqs" :key="i" class="faq-item">
-          <div class="faq-q" @click="f.open = !f.open">
-            <span>{{ f.q }}</span>
-            <span>{{ f.open ? '−' : '+' }}</span>
+      <div class="faq-layout-modern">
+        <div class="faq-left">
+          <span class="section-tag purple">QUESTIONS</span>
+          <h2 class="section-title left">{{ $t('faqTitleModern') }}</h2>
+          <div class="faq-list-modern">
+            <div v-for="i in 4" :key="i" class="faq-item-modern">
+              <div class="faq-q-modern" @click="faqs[i-1].open = !faqs[i-1].open">
+                <span>{{ $t(`faq${i}Q`) }}</span>
+                <span class="faq-plus">{{ faqs[i-1].open ? '−' : '+' }}</span>
+              </div>
+              <div v-if="faqs[i-1].open" class="faq-a-modern">
+                {{ $t(`faq${i}A`) }}
+              </div>
+            </div>
           </div>
-          <div v-if="f.open" class="faq-a">
-            {{ f.a }}
-          </div>
+        </div>
+        <div class="faq-right">
+          <div class="character-placeholder"></div>
         </div>
       </div>
     </section>
@@ -208,446 +288,439 @@ function getRemainingTime(endsAt: string | null) {
 .home-container {
   display: flex;
   flex-direction: column;
-  gap: 4rem;
-  padding-bottom: 5rem;
+  gap: 8rem;
+  padding-bottom: 10rem;
+  overflow-x: hidden;
 }
 
-/* Banner / Hero Section */
-.banner-area {
-  width: 100%;
-  animation: revealUp 0.8s cubic-bezier(0.2, 1, 0.2, 1);
-}
-
-.banner-card {
+/* Hero Area (Expansive) */
+.hero-area {
+  padding: 6rem 0 4rem;
   position: relative;
-  width: 100%;
-  aspect-ratio: 21 / 9;
-  min-height: 420px;
-  border-radius: 2rem;
-  overflow: hidden;
-  background: #0f172a;
-  display: flex;
+  background: radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
+}
+.hero-inner {
+  max-width: 1500px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
   align-items: center;
-  padding: 4rem;
-  box-sizing: border-box;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  gap: 4rem;
+  padding: 0 2rem;
 }
-
-/* Dynamic Gradient Background */
-.banner-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 20% 30%, rgba(108, 92, 231, 0.4) 0%, transparent 50%),
-              radial-gradient(circle at 80% 70%, rgba(0, 206, 201, 0.3) 0%, transparent 50%);
-  z-index: 1;
-  animation: pulseGradient 10s ease-in-out infinite alternate;
+.hero-tag {
+  color: #a3e635;
+  font-weight: 800;
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+  display: block;
+  letter-spacing: 0.05em;
 }
-
-@keyframes pulseGradient {
-  0% { opacity: 0.5; transform: scale(1); }
-  100% { opacity: 0.8; transform: scale(1.1); }
-}
-
-.banner-bg {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  z-index: 0;
-  opacity: 0.6;
-  filter: saturate(1.2);
-}
-
-.banner-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.4) 50%, transparent 100%);
-  z-index: 2;
-}
-
-.banner-content {
-  position: relative;
-  z-index: 3;
-  max-width: 650px;
-  animation: revealUp 1s cubic-bezier(0.2, 1, 0.2, 1) 0.2s backwards;
-}
-
-.banner-title {
-  font-size: clamp(2.5rem, 6vw, 3.8rem);
+.hero-title {
+  font-size: clamp(3rem, 6vw, 4.8rem);
   font-weight: 900;
   line-height: 1.05;
-  color: #fff;
-  margin: 1.5rem 0 1.2rem;
-  letter-spacing: -0.06em;
-  text-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  letter-spacing: -0.04em;
+  color: #1e293b;
+  margin-bottom: 2rem;
 }
-
-.banner-sub {
-  font-size: 1.25rem;
-  color: rgba(255,255,255,0.85);
-  margin-bottom: 3rem;
+.hero-lead {
+  font-size: 1.35rem;
   line-height: 1.6;
+  color: #64748b;
+  margin-bottom: 3rem;
   font-weight: 500;
+  max-width: 550px;
 }
-
-.badge.white {
-  background: rgba(255,255,255,0.15);
-  color: #fff;
-  backdrop-filter: blur(12px);
-  padding: 0.5rem 1rem;
-  border-radius: 99px;
+.hero-btns {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 4rem;
+}
+.purple-btn {
+  background: #6366f1;
+  color: white;
+  border: none;
+  padding: 1.2rem 3rem;
   font-weight: 800;
-  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 16px;
+  font-size: 1.1rem;
+  box-shadow: 0 15px 30px rgba(99, 102, 241, 0.3);
+  transition: all 0.3s ease;
+}
+.purple-btn:hover {
+  background: #4f46e5;
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(99, 102, 241, 0.4);
 }
 
-/* Section Common */
-.home-section {
+.active-members {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+.avatar-stack {
+  display: flex;
+  align-items: center;
+}
+.avatar-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  border: 3px solid white;
+  margin-right: -12px;
+}
+.avatar-more {
+  width: 54px;
+  height: 42px;
+  border-radius: 21px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #64748b;
+  margin-left: 8px;
+  border: 1px solid #e2e8f0;
+}
+.members-text {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+/* Visual Area */
+.hero-visual {
+  position: relative;
+  height: 650px;
+}
+.visual-placeholder {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, #f5f3ff 0%, transparent 75%);
+  position: relative;
+}
+.coin-placeholder {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 220px;
+  height: 220px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6rem;
+  font-weight: 900;
+  color: white;
+  box-shadow: 0 30px 60px rgba(245, 158, 11, 0.35);
+  z-index: 1;
+}
+
+.floating-card {
+  position: absolute;
+  padding: 1.25rem 1.75rem;
+  background: white;
+  border-radius: 1.25rem;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.06);
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
-  animation: revealUp 0.8s cubic-bezier(0.2, 1, 0.2, 1) calc(var(--delay, 0) * 0.1s + 0.4s) backwards;
+  gap: 0.4rem;
+  z-index: 2;
+  animation: float 5s ease-in-out infinite;
+  border: 1px solid rgba(0,0,0,0.02);
+}
+.floating-card span { font-weight: 800; font-size: 0.95rem; color: #64748b; }
+.floating-card p { color: #1e293b; font-weight: 900; font-size: 1.25rem; margin: 0; }
+
+.c1 { top: 5%; left: 15%; animation-delay: 0s; }
+.c2 { top: 12%; right: 5%; animation-delay: 1.2s; }
+.c3 { bottom: 15%; left: 5%; animation-delay: 0.6s; }
+.c4 { top: 45%; right: -5%; animation-delay: 1.8s; }
+.c5 { bottom: 8%; right: 15%; animation-delay: 2.4s; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(2deg); }
 }
 
-.section-head {
+/* Stats Bar */
+.stats-bar-wrap {
+  max-width: 1400px;
+  margin: -5rem auto 0;
+  position: relative;
+  z-index: 10;
+  padding: 0 2rem;
+}
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 2.5rem;
+  background: white;
+  border-radius: 2rem;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.02);
+}
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 2rem;
+  border-right: 1px solid #f1f5f9;
+}
+.stat-item:last-child { border: none; }
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+.stat-val {
+  display: block;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #1e293b;
+  margin-bottom: 0.2rem;
+}
+.stat-lab {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+/* Sections */
+.landing-section {
+  max-width: 1300px;
+  margin: 0 auto;
+  width: 100%;
+}
+.landing-section.centered { text-align: center; }
+.section-tag {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+.section-tag.purple { color: #6366f1; }
+.section-title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  margin-bottom: 3.5rem;
+  color: var(--text-h);
+}
+.section-title.left { text-align: left; margin-bottom: 2.5rem; }
+
+/* Steps */
+.step-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+.step-card-modern {
+  padding: 3rem 2rem;
+  border-radius: 2rem;
+  background: #f8fafc;
+  border: none;
+  position: relative;
+}
+.step-badge {
+  position: absolute;
+  top: 1.5rem; left: 1.5rem;
+  width: 28px;
+  height: 28px;
+  background: #6366f1;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+.icon-placeholder-step {
+  width: 80px;
+  height: 80px;
+  background: white;
+  border-radius: 1.5rem;
+  margin: 0 auto 2rem;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.04);
+}
+.step-title-modern {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+.step-desc-modern {
+  font-size: 0.95rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+/* Campaign Cards */
+.campaign-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+.campaign-card-modern {
+  display: flex;
+  padding: 0;
+  border-radius: 2rem;
+  overflow: hidden;
+  border: none;
+  background: white;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.06);
+}
+.card-visual-area {
+  width: 200px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.status-tag {
+  position: absolute;
+  top: 1rem; right: 1rem;
+  background: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #ef4444;
+}
+.icon-placeholder-campaign {
+  width: 100px;
+  height: 100px;
+  background: white;
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+}
+.card-body-modern {
+  flex: 1;
+  padding: 2rem;
+}
+.company-row-modern {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.mini-logo-placeholder {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: #f1f5f9;
+}
+.company-name-modern {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #64748b;
+}
+.card-title-modern {
+  font-size: 1.3rem;
+  font-weight: 900;
+  margin-bottom: 1.5rem;
+}
+.reward-pill {
+  display: inline-block;
+  padding: 0.4rem 1rem;
+  background: #f0f9ff;
+  color: #0ea5e9;
+  border-radius: 1rem;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+.card-footer-modern {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #f1f5f9;
 }
-
-.section-head h2 {
-  font-size: 1.75rem;
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  background: linear-gradient(135deg, var(--text-h), var(--muted));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  margin: 0;
-}
-
-.view-all {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--accent);
-  text-decoration: none;
-}
-
-/* Horizontal Scroll - Mini Cards */
-.horizontal-scroll {
-  display: flex;
-  gap: 1.5rem;
-  overflow-x: auto;
-  padding: 0.5rem 0.5rem 1.5rem;
-  scrollbar-width: none;
-}
-.horizontal-scroll::-webkit-scrollbar { display: none; }
-
-.mini-card {
-  flex: 0 0 300px;
-  transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
-}
-
-.deadline-tag {
-  margin-top: 0.5rem;
+.participants-count {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #ff4757;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  color: #94a3b8;
 }
 
-.mini-card:hover {
-  transform: translateY(-8px) scale(1.02);
-}
-
-/* Trending Grid */
-.trending-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.25rem;
-}
-
-@media (max-width: 1000px) {
-  .trending-grid {
-    display: flex;
-    overflow-x: auto;
-    padding-bottom: 1rem;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  .trending-grid::-webkit-scrollbar {
-    display: none;
-  }
-  .trend-card {
-    flex: 0 0 280px;
-  }
-}
-
-.trend-card {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1.25rem;
-  border: 1px solid var(--border);
-  background: var(--panel);
-}
-
-.trend-card:hover {
-  border-color: var(--accent);
-  background: var(--bg-card);
-}
-
-.trend-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.company-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.25rem;
-}
-
-.mini-logo {
-  width: 54px;
-  height: 54px;
-  border-radius: 14px;
-  object-fit: cover;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-}
-
-.company-name {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--muted);
-}
-
-.title-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.card-title {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.3;
-  overflow-wrap: break-word;
-}
-
-.reward-badges-mini {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0.5rem 0 1rem;
-}
-
-.reward-chip-mini {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: 0.5rem;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-weight: 800;
-  font-size: 0.85rem;
-  border: 1px solid var(--accent-border);
-  white-space: normal;
-  word-break: keep-all;
-}
-
-.reward-chip-mini.usdt { background: #e6fffa; color: #008a76; border-color: #b2f5ea; }
-.reward-chip-mini.metaq { background: #fff5f7; color: #d53f8c; border-color: #fed7e2; }
-.reward-chip-mini.point { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-border); }
-
-.card-desc {
-  margin: 0.25rem 0 0;
-  font-size: 1rem;
-  line-height: 1.6;
-  color: var(--text);
-  opacity: 0.85;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.trend-actions {
-  width: 100%;
-}
-
-.trend-btn {
-  width: 100%;
-  padding: 0.75rem;
-  font-size: 0.95rem;
-  box-shadow: 0 4px 12px var(--accent-soft);
-}
-
-
-
-/* Values Section */
-.values-section {
-  background: linear-gradient(180deg, transparent 0%, var(--bg-deep) 50%, transparent 100%);
-  padding: 8rem 2rem;
-  border-radius: 4rem;
-}
-
-.values-grid {
+/* Values Modern */
+.values-grid-modern {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 2.5rem;
-  margin-top: 4rem;
-  max-width: 1200px;
-  width: 100%;
+  gap: 1.5rem;
 }
-
-.value-card {
+.value-card-modern {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  text-align: center;
-  padding: 3rem 2rem;
-  border-radius: 2.5rem;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
-  position: relative;
-  overflow: hidden;
+  gap: 1.5rem;
+  padding: 2rem;
+  border-radius: 1.5rem;
+  text-align: left;
 }
-
-.value-card:hover {
-  transform: translateY(-12px);
-  border-color: var(--accent);
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
+.icon-placeholder-value {
+  width: 56px;
+  height: 56px;
+  border-radius: 1rem;
+  background: #f8fafc;
 }
-
-.value-icon {
-  font-size: 3.5rem;
-  margin-bottom: 2rem;
-  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
-}
-
-.value-title {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--text-h);
-  margin-bottom: 1rem;
-  letter-spacing: -0.02em;
-}
-
-.value-desc {
-  font-size: 1.05rem;
-  line-height: 1.6;
-  color: var(--muted);
-  font-weight: 500;
-}
-
-.glass-btn {
-  background: var(--accent);
-  border: none;
-  padding: 1.2rem 3.5rem;
+.value-title-modern {
   font-size: 1.1rem;
   font-weight: 800;
-  box-shadow: 0 15px 35px var(--accent-soft);
-  transition: all 0.3s ease;
+  margin-bottom: 0.5rem;
+}
+.value-desc-modern {
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.4;
 }
 
-.glass-btn:hover {
-  transform: translateY(-4px) scale(1.05);
-  box-shadow: 0 20px 45px var(--accent-soft);
+/* FAQ Modern */
+.faq-layout-modern {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 4rem;
+  text-align: left;
 }
-
-@media (max-width: 900px) {
-  .values-grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-  .values-section {
-    padding: 4rem 1rem;
-  }
-}
-
-/* FAQ Section */
-.faq-list {
-  max-width: 800px;
-  width: 100%;
-  margin: 3rem auto 0;
+.faq-list-modern {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
 }
-
-.faq-item {
-  border-radius: 1.5rem;
-  background: var(--panel);
-  border: 1px solid var(--border);
+.faq-item-modern {
+  background: #f8fafc;
+  border-radius: 1rem;
   overflow: hidden;
-  transition: all 0.3s ease;
 }
-
-.faq-q {
-  padding: 1.5rem 2rem;
+.faq-q-modern {
+  padding: 1.25rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  font-weight: 700;
-  color: var(--text-h);
-  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1e293b;
 }
-
-.faq-q:hover {
-  background: var(--bg-deep);
-}
-
-.faq-a {
+.faq-plus { font-size: 1.2rem; color: #94a3b8; }
+.faq-a-modern {
   padding: 0 2rem 1.5rem;
-  color: var(--muted);
+  font-size: 0.95rem;
+  color: #64748b;
   line-height: 1.6;
-  font-size: 1rem;
-  animation: fadeIn 0.3s ease;
+}
+.character-placeholder {
+  width: 100%;
+  height: 400px;
+  background: #f1f5f9;
+  border-radius: 2rem;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@media (max-width: 768px) {
-  .banner-card { 
-    padding: 2.5rem 1.5rem; 
-    aspect-ratio: auto; 
-    min-height: 450px; 
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
-  }
-  .banner-card::after {
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
-  }
-  .banner-content {
-    max-width: 100%;
-  }
-  .banner-title { 
-    font-size: 2.4rem; 
-    margin-top: 1rem;
-  }
-  .banner-sub {
-    font-size: 1.1rem;
-    margin-bottom: 2rem;
-  }
-}
 /* Utilities & Animations */
 .skeleton {
   height: 240px;
@@ -656,21 +729,30 @@ function getRemainingTime(endsAt: string | null) {
   position: relative;
   overflow: hidden;
 }
-
 .skeleton::after {
   content: "";
   position: absolute; inset: 0;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
   animation: skeletonScan 2s infinite;
 }
-
 @keyframes skeletonScan {
   from { transform: translateX(-100%); }
   to { transform: translateX(100%); }
 }
 
-@keyframes revealUp {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
+@media (max-width: 1100px) {
+  .hero-inner { grid-template-columns: 1fr; text-align: center; }
+  .hero-btns, .active-members { justify-content: center; }
+  .hero-visual { height: 400px; }
+  .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 2rem; }
+  .stat-item { border: none; }
+  .faq-layout-modern { grid-template-columns: 1fr; }
+  .faq-right { display: none; }
+}
+
+@media (max-width: 800px) {
+  .step-grid-modern, .campaign-grid-modern, .values-grid-modern { grid-template-columns: 1fr; }
+  .campaign-card-modern { flex-direction: column; }
+  .card-visual-area { width: 100%; height: 200px; }
 }
 </style>
