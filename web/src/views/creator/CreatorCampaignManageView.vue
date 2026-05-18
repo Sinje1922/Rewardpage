@@ -459,38 +459,38 @@ async function downloadCsv() {
         </template>
       </span>
     </p>
-    <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem">
+    <div class="operator-pill-tabs">
       <button
         type="button"
-        class="btn"
-        :class="{ primary: tab === 'compose' }"
+        class="opt-tab-btn"
+        :class="{ active: tab === 'compose' }"
         @click="openTab('compose')"
       >
-        {{ $t('ops.tabSettings') || 'Settings' }}
+        ⚙️ {{ $t('ops.tabSettings') || 'Settings' }}
       </button>
       <button
         type="button"
-        class="btn"
-        :class="{ primary: tab === 'stats' }"
+        class="opt-tab-btn"
+        :class="{ active: tab === 'stats' }"
         @click="openTab('stats')"
       >
         📊 {{ $t('ops.tabStats') || 'Statistics' }}
       </button>
       <button
         type="button"
-        class="btn"
-        :class="{ primary: tab === 'participants' }"
+        class="opt-tab-btn"
+        :class="{ active: tab === 'participants' }"
         @click="openTab('participants')"
       >
         👥 {{ $t('ops.participants') || 'Participants' }}
       </button>
       <button
         type="button"
-        class="btn"
-        :class="{ primary: tab === 'winners' }"
+        class="opt-tab-btn"
+        :class="{ active: tab === 'winners' }"
         @click="openTab('winners')"
       >
-        {{ $t('ops.winners') || 'Winners' }}
+        🏆 {{ $t('ops.winners') || 'Winners' }}
       </button>
     </div>
     <p v-if="err" class="err">{{ err }}</p>
@@ -654,6 +654,43 @@ async function downloadCsv() {
 </template>
 
 <style scoped>
+.operator-pill-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 2rem;
+  background: var(--bg-deep);
+  padding: 0.4rem;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+}
+.opt-tab-btn {
+  padding: 0.65rem 1.25rem;
+  border: none;
+  background: transparent;
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.opt-tab-btn:hover {
+  color: var(--text-h);
+}
+.opt-tab-btn:active {
+  transform: scale(0.96);
+}
+.opt-tab-btn.active {
+  background: var(--panel);
+  color: var(--accent);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border);
+}
+
 .logo-row {
   display: flex;
   align-items: center;

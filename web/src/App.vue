@@ -259,8 +259,28 @@ watch(() => route.path, () => {
   color: #b45309;
   box-shadow: 0 4px 15px rgba(251, 191, 36, 0.1);
   border: 1px solid rgba(251, 191, 36, 0.1);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+.points-pill:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(251, 191, 36, 0.18);
+}
+.points-pill .coin {
+  display: inline-block;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.points-pill:hover .coin {
+  transform: rotate(360deg);
+}
+:root.dark .points-pill {
+  background: rgba(251, 191, 36, 0.12);
+  color: #f59e0b;
+  border-color: rgba(251, 191, 36, 0.25);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 .points-pill .balance { color: #1e293b; }
+:root.dark .points-pill .balance { color: #f8fafc; }
 .points-pill .unit { color: #94a3b8; font-size: 0.8rem; margin-left: 2px; }
 
 .icon-btn {

@@ -669,7 +669,7 @@ const filteredList = computed(() => {
   max-width: 100%;
   object-fit: contain;
   filter: drop-shadow(0 10px 20px rgba(0,0,0,0.04));
-  transition: transform 0.3s;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .company-logo-custom {
@@ -683,7 +683,7 @@ const filteredList = computed(() => {
 }
 
 .campaign-card-premium:hover .visual-3d-img {
-  transform: scale(1.1);
+  transform: scale(1.08) translateY(-4px);
 }
 
 /* Card Body Details */
@@ -923,10 +923,30 @@ const filteredList = computed(() => {
 @media (max-width: 600px) {
   .grid {
     grid-template-columns: 1fr;
+    gap: 1.25rem;
   }
   .select-modern, .btn-filter-modern {
     flex: 1;
     text-align: center;
+  }
+  .campaign-card-premium {
+    min-height: auto;
+  }
+  .card-visual-center {
+    height: 140px;
+    padding: 0.75rem;
+  }
+  .campaign-card-title {
+    font-size: 1.15rem;
+    line-height: 1.4;
+  }
+  .campaign-card-desc {
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  .btn-action-primary, .btn-action-secondary {
+    padding: 0.65rem;
+    font-size: 0.85rem;
   }
 }
 </style>

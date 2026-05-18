@@ -78,25 +78,31 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.6rem 1rem;
-  background: white;
-  border: 1px solid #f1f5f9;
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: 99px;
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 800;
-  color: #1e293b;
-  transition: all 0.2s ease;
+  color: var(--text-h);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  backdrop-filter: blur(10px);
 }
 
 .lang-active:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+  background: var(--bg-deep);
+  border-color: var(--accent-border);
+  transform: translateY(-1px);
+}
+
+.lang-active:active {
+  transform: scale(0.96);
 }
 
 .lang-active.open {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .arrow {

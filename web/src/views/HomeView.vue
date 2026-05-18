@@ -362,8 +362,10 @@ const faqs = ref([
                   faqs[i - 1].open ? "−" : "+"
                 }}</span>
               </div>
-              <div v-if="faqs[i - 1].open" class="faq-a-modern">
-                {{ $t(`home.faq${i}A`) }}
+              <div class="faq-a-modern" :class="{ 'is-open': faqs[i - 1].open }">
+                <div class="faq-a-inner">
+                  {{ $t(`home.faq${i}A`) }}
+                </div>
               </div>
             </div>
           </div>
@@ -942,10 +944,19 @@ const faqs = ref([
   font-size: 1.15rem;
 }
 .faq-a-modern {
-  padding: 0 2.5rem 2rem;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
   color: #64748b;
   line-height: 1.7;
   font-size: 1.1rem;
+  padding: 0 2.5rem;
+  transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, padding 0.35s ease;
+}
+.faq-a-modern.is-open {
+  max-height: 250px;
+  opacity: 1;
+  padding: 0 2.5rem 2rem;
 }
 .faq-character-img {
   width: 100%;
@@ -995,6 +1006,28 @@ const faqs = ref([
   }
   .home-section {
     padding: 0 2rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .hero-inner-wide {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 0 2rem;
+    text-align: center;
+  }
+  .hero-visual-main {
+    display: none;
+  }
+  .hero-lead-main {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero-btn-group {
+    justify-content: center;
+  }
+  .active-community {
+    justify-content: center;
   }
 }
 

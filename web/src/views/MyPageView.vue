@@ -268,9 +268,12 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
               <!-- Profile Image Upload Area -->
               <div class="avatar-upload-container">
                 <div class="avatar-wrapper">
-                  <div class="avatar-main">
+                  <div class="avatar-main" @click="triggerFileUpload" style="cursor: pointer;">
                     <img v-if="avatarUrl && avatarUrl.startsWith('/')" :src="avatarUrl" class="avatar-img" alt="Avatar" />
                     <span v-else class="avatar-placeholder">{{ avatarUrl || '👤' }}</span>
+                    <div class="avatar-hover-overlay">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="camera-icon"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    </div>
                     <div v-if="uploading" class="upload-loader">
                       <div class="spinner"></div>
                     </div>
@@ -715,6 +718,39 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
   align-items: center;
   justify-content: center;
   position: relative;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.avatar-hover-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(108, 92, 231, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  color: white;
+  z-index: 5;
+}
+
+.camera-icon {
+  transform: translateY(12px);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.avatar-wrapper:hover .avatar-hover-overlay {
+  opacity: 1;
+}
+
+.avatar-wrapper:hover .camera-icon {
+  transform: translateY(0);
+}
+
+.avatar-wrapper:hover .avatar-main {
+  border-color: var(--accent-bright);
+  transform: scale(1.03);
+  box-shadow: 0 12px 35px rgba(108, 92, 231, 0.35);
 }
 
 .avatar-img {
@@ -1004,7 +1040,7 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
   font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   width: 100%;
   text-align: left;
 }
@@ -1012,12 +1048,21 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
 .nav-item:hover {
   background: var(--bg-deep);
   color: var(--text-h);
+  transform: translateX(4px);
+}
+
+.nav-item:active {
+  transform: scale(0.96);
 }
 
 .nav-item.active {
   background: var(--accent);
   color: white;
   box-shadow: 0 8px 20px var(--accent-soft);
+}
+
+.nav-item.active:hover {
+  transform: none;
 }
 
 .nav-item .ico { font-size: 1.2rem; }
@@ -1051,8 +1096,16 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
   font-size: 0.9rem;
   color: var(--muted);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   white-space: nowrap;
+}
+
+.sub-tab-btn:hover {
+  color: var(--text-h);
+}
+
+.sub-tab-btn:active {
+  transform: scale(0.95);
 }
 
 .sub-tab-btn.active {
