@@ -286,14 +286,6 @@ const filteredList = computed(() => {
           <h2 class="campaign-card-title">{{ c.title }}</h2>
           <p class="campaign-card-desc">{{ stripHtml(c.description) }}</p>
 
-          <!-- Reward Detail Row exactly like Mockup -->
-          <div class="reward-row-info">
-            <span class="lbl">보상</span>
-            <div class="val-wrap">
-              <span class="coin-icon">🪙</span>
-              <span class="val">{{ getRewardPerPerson(c).val }}</span>
-            </div>
-          </div>
 
           <div class="card-footer-info">
             <!-- Normal / Closed Footer -->
