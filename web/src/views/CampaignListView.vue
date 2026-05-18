@@ -664,19 +664,21 @@ const filteredList = computed(() => {
 }
 
 .visual-3d-img {
-  width: 100%;
   height: 100%;
+  width: auto;
+  max-width: 100%;
   object-fit: contain;
   filter: drop-shadow(0 10px 20px rgba(0,0,0,0.04));
   transition: transform 0.3s;
 }
 
 .company-logo-custom {
-  width: 100%;
   height: 100%;
+  width: auto;
+  max-width: 100%;
   border-radius: 1.25rem;
   border: 1px solid #e2e8f0;
-  object-fit: cover;
+  object-fit: contain;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
 }
 
