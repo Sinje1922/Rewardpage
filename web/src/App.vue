@@ -81,7 +81,7 @@ watch(() => route.path, () => {
     </main>
 
     <!-- Mobile: 하단 네비게이션 바 -->
-    <nav v-if="auth.token && route.path !== '/setup'" class="bottom-nav mobile-only">
+    <nav v-if="route.path !== '/setup'" class="bottom-nav mobile-only">
       <RouterLink to="/" class="b-nav-item">
         <span class="icon">🏠</span>
         <span class="label">{{ $t('nav.home') }}</span>
@@ -90,15 +90,15 @@ watch(() => route.path, () => {
         <span class="icon">🏛️</span>
         <span class="label">{{ $t('nav.campaigns') }}</span>
       </RouterLink>
-      <RouterLink v-if="auth.token" to="/my-page" class="b-nav-item">
+      <RouterLink to="/my-page" class="b-nav-item">
         <span class="icon">👤</span>
         <span class="label">{{ $t('nav.myPage') }}</span>
       </RouterLink>
-      <RouterLink v-if="auth.isOperator" to="/ops" class="b-nav-item">
+      <RouterLink v-if="auth.token && auth.isOperator" to="/ops" class="b-nav-item">
         <span class="icon">🛠️</span>
         <span class="label">{{ $t('nav.ops') }}</span>
       </RouterLink>
-      <RouterLink v-if="auth.isAdmin" to="/admin" class="b-nav-item">
+      <RouterLink v-if="auth.token && auth.isAdmin" to="/admin" class="b-nav-item">
         <span class="icon">⚙️</span>
         <span class="label">{{ $t('nav.admin') }}</span>
       </RouterLink>
@@ -449,6 +449,80 @@ watch(() => route.path, () => {
   .footer-links-grid { display: grid; grid-template-columns: 1fr 1fr; }
   .main-content-wide.is-full-width {
     padding: 1.5rem 1rem;
+  }
+}
+
+/* Beautiful Premium Mobile Bottom Navigation Bar */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 68px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  display: none; /* Controlled by media query below */
+  justify-content: space-around;
+  align-items: center;
+  z-index: 999;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.03);
+}
+
+:root.dark .bottom-nav {
+  background: rgba(15, 23, 42, 0.85);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.2);
+}
+
+.b-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 0.72rem;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex: 1;
+  height: 100%;
+}
+
+.b-nav-item .icon {
+  font-size: 1.35rem;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.b-nav-item:hover {
+  color: var(--accent);
+}
+
+.b-nav-item:active {
+  transform: scale(0.9);
+}
+
+/* RouterLink Active Highlight Style */
+.b-nav-item.router-link-active {
+  color: var(--accent);
+}
+
+.b-nav-item.router-link-active .icon {
+  transform: translateY(-4px) scale(1.18);
+}
+
+@media (max-width: 1024px) {
+  .bottom-nav {
+    display: flex;
+  }
+  .main-content-wide {
+    padding-bottom: 90px !important; /* Avoid cut-off content */
+  }
+  .main-footer {
+    padding-bottom: 110px !important; /* Space footer above bottom-nav */
   }
 }
 </style>
