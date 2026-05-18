@@ -77,26 +77,26 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 0.85rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid var(--border);
+  padding: 0.6rem 1rem;
+  background: white;
+  border: 1px solid #f1f5f9;
   border-radius: 99px;
   cursor: pointer;
   font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-h);
+  font-weight: 800;
+  color: #1e293b;
   transition: all 0.2s ease;
-  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
 }
 
 .lang-active:hover {
-  background: var(--accent-soft);
-  border-color: var(--accent-border);
+  background: #f8fafc;
+  border-color: #cbd5e1;
 }
 
 .lang-active.open {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 .arrow {
