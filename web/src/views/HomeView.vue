@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from "vue";
-import { RouterLink } from "vue-router";
-import { api, getFileUrl } from "../api/client";
+import { RouterLink, useRouter } from "vue-router";
+import { api } from "../api/client";
 import { useI18n } from "vue-i18n";
 import homeBanner from "../assets/hero_bg_new.png";
 import stepIcon1 from "../assets/new_icon_4.png";
@@ -44,6 +44,7 @@ type Campaign = {
 };
 
 const { t } = useI18n();
+const router = useRouter();
 const list = ref<Campaign[]>([]);
 const loading = ref(true);
 
@@ -103,65 +104,12 @@ const closingSoonList = computed(() => {
   ] as Campaign[];
 });
 
-const banners = computed(() => [
-  {
-    id: 1,
-    title: t("home.heroTitle"),
-    sub: t("home.heroLead"),
-    image: "/hero_banner_reward_clean.png",
-    link: "/campaigns",
-  },
-]);
-
 const faqs = ref([
   { q: t("home.faq1Q"), a: t("home.faq1A"), open: false },
   { q: t("home.faq2Q"), a: t("home.faq2A"), open: false },
   { q: t("home.faq3Q"), a: t("home.faq3A"), open: false },
   { q: t("home.faq4Q"), a: t("home.faq4A"), open: false },
 ]);
-
-const steps = computed(() => [
-  { n: 1, title: t("home.step1Title"), desc: t("home.step1Desc"), icon: "👤" },
-  { n: 2, title: t("home.step2Title"), desc: t("home.step2Desc"), icon: "🎯" },
-  { n: 3, title: t("home.step3Title"), desc: t("home.step3Desc"), icon: "💰" },
-]);
-
-const platformValues = computed(() => [
-  {
-    id: 1,
-    title: t("home.value1Title"),
-    desc: t("home.value1Desc"),
-    icon: "🛡️",
-  },
-  {
-    id: 2,
-    title: t("home.value2Title"),
-    desc: t("home.value2Desc"),
-    icon: "✨",
-  },
-  {
-    id: 3,
-    title: t("home.value3Title"),
-    desc: t("home.value3Desc"),
-    icon: "⚡",
-  },
-]);
-
-function getRemainingTime(endsAt: string | null) {
-  if (!endsAt) return "";
-  const end = new Date(endsAt);
-  const now = new Date();
-  const diff = end.getTime() - now.getTime();
-  if (diff <= 0) return t("home.closed");
-
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-  if (days > 0) return t("home.remainingDays", { n: days });
-  if (hours > 0) return t("home.remainingHours", { n: hours });
-  return t("home.remainingMinutes", { n: minutes });
-}
 </script>
 
 <template>

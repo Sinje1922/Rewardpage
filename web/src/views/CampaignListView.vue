@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { RouterLink, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { api, getFileUrl } from "../api/client";
 
@@ -224,7 +224,7 @@ const filteredList = computed(() => {
     <!-- Grid of Redesigned Premium Cards -->
     <div class="grid">
       <div
-        v-for="(c, index) in filteredList"
+        v-for="c in filteredList"
         :key="c.id"
         class="campaign-card-premium card"
         :class="{ 'card-inactive': getStatusType(c) === 'CLOSED' }"
