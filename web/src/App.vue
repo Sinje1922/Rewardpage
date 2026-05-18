@@ -137,6 +137,9 @@ watch(() => route.path, () => {
       </div>
     </footer>
 
+    <div class="mobile-lang-floating mobile-only">
+      <LanguageSwitcher />
+    </div>
     <DarkModeToggle />
   </div>
 </template>
@@ -523,6 +526,15 @@ watch(() => route.path, () => {
   }
   .main-footer {
     padding-bottom: 110px !important; /* Space footer above bottom-nav */
+  }
+  
+  /* Floating Language Switcher above theme toggle */
+  .mobile-lang-floating {
+    position: fixed;
+    bottom: 11.25rem;
+    right: 1.25rem;
+    z-index: 1000;
+    display: flex;
   }
 }
 </style>
