@@ -4,6 +4,12 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { api, getFileUrl } from "../api/client";
 
+import cpAsset1 from "../assets/new_icon_2.png";
+import cpAsset2 from "../assets/new_icon_3.png";
+import cpAsset3 from "../assets/new_icon_7.png";
+import cpAsset4 from "../assets/new_icon_6.png";
+import cpAsset5 from "../assets/new_icon_12.png";
+
 
 type Campaign = {
   id: string;
@@ -76,6 +82,15 @@ const getRewardPerPerson = (c: Campaign) => {
     val: `+${perPerson.toLocaleString()}${c.rewardCurrency === "POINT" ? "P" : " " + c.rewardCurrency}`,
     curr: c.rewardCurrency === "POINT" ? "P" : c.rewardCurrency
   };
+};
+
+const getCampaignDefaultImage = (c: Campaign, idx: number) => {
+  const type = getStatusType(c);
+  if (type === "UPCOMING") return cpAsset5;
+  if (type === "CLOSED") return cpAsset4;
+  
+  const assets = [cpAsset1, cpAsset2, cpAsset3];
+  return assets[idx % assets.length];
 };
 
 const isFilterPanelOpen = ref(false);
@@ -224,7 +239,7 @@ const filteredList = computed(() => {
     <!-- Grid of Redesigned Premium Cards -->
     <div class="grid">
       <div
-        v-for="c in filteredList"
+        v-for="(c, idx) in filteredList"
         :key="c.id"
         class="campaign-card-premium card"
         :class="{ 'card-inactive': getStatusType(c) === 'CLOSED' }"
@@ -250,30 +265,35 @@ const filteredList = computed(() => {
               미션 {{ c.missions?.length ?? 1 }}
             </span>
           </div>
-          <div class="right-reward">
-            <span class="currency-tag" :class="getRewardPerPerson(c).curr.toLowerCase()">
-              {{ getRewardPerPerson(c).curr }}
-            </span>
+          <div class="right-reward-capsule">
+            <span class="coin-icon">🪙</span>
             <span class="reward-val">{{ getRewardPerPerson(c).val }}</span>
           </div>
         </div>
 
+        <!-- Centered 3D / Brand Visual -->
+        <div class="card-visual-center">
+          <img
+            :src="c.companyLogoUrl ? getFileUrl(c.companyLogoUrl) : getCampaignDefaultImage(c, idx)"
+            class="visual-3d-img"
+            :class="{ 'company-logo-custom': c.companyLogoUrl }"
+            alt="Campaign Illustration"
+          />
+        </div>
+
         <!-- Body & Details -->
         <div class="card-body-details">
-          <!-- Company Info top-left -->
-          <div v-if="c.companyLogoUrl || c.companyName" class="company-info">
-            <img
-              v-if="c.companyLogoUrl"
-              :src="getFileUrl(c.companyLogoUrl)"
-              class="company-mini-logo"
-              alt="Company Logo"
-            />
-            <span v-if="c.companyName" class="company-name">{{ c.companyName }}</span>
-          </div>
-
           <h2 class="campaign-card-title">{{ c.title }}</h2>
           <p class="campaign-card-desc">{{ stripHtml(c.description) }}</p>
 
+          <!-- Reward Detail Row exactly like Mockup -->
+          <div class="reward-row-info">
+            <span class="lbl">보상</span>
+            <div class="val-wrap">
+              <span class="coin-icon">🪙</span>
+              <span class="val">{{ getRewardPerPerson(c).val }}</span>
+            </div>
+          </div>
 
           <div class="card-footer-info">
             <!-- Normal / Closed Footer -->
@@ -301,7 +321,7 @@ const filteredList = computed(() => {
         <!-- Stretched Full Width Action Button -->
         <div class="card-action-bar">
           <button
-            v-if="getStatusType(c) !== 'CLOSED'"
+            v-if="getStatusType(c) !== 'CLOSED' && getStatusType(c) !== 'UPCOMING'"
             class="btn-action-primary"
             @click="router.push(`/campaigns/${c.id}`)"
           >
@@ -621,34 +641,25 @@ const filteredList = computed(() => {
   border-radius: 6px;
 }
 
-/* Right Currency Reward */
-.right-reward {
-  display: flex;
+/* Right Currency Reward Capsule */
+.right-reward-capsule {
+  display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  background: #f1f5f9;
+  padding: 0.25rem 0.75rem;
+  border-radius: 99px;
+  font-weight: 800;
+  font-size: 0.85rem;
 }
 
-.currency-tag {
-  font-size: 0.75rem;
-  font-weight: 900;
-  width: 18px;
-  height: 18px;
-  background: #f59e0b;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.currency-tag.brl {
-  background: #3b82f6;
-}
-
-.reward-val {
+.coin-icon {
   font-size: 0.95rem;
-  font-weight: 900;
+}
+
+.right-reward-capsule .reward-val {
   color: #6366f1;
+  font-weight: 800;
 }
 
 /* Centered Visual Image */
@@ -663,17 +674,17 @@ const filteredList = computed(() => {
 .visual-3d-img {
   max-height: 120px;
   object-fit: contain;
-  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.06));
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.04));
   transition: transform 0.3s;
 }
 
-.company-logo-large {
-  max-height: 100px !important;
-  max-width: 100px;
-  border-radius: 20px;
+.company-logo-custom {
+  max-height: 120px;
+  max-width: 120px;
+  border-radius: 1.25rem;
+  border: 1px solid #e2e8f0;
   object-fit: cover;
-  border: 1px solid #f1f5f9;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
 }
 
 .campaign-card-premium:hover .visual-3d-img {
@@ -842,7 +853,7 @@ const filteredList = computed(() => {
   color: white;
   border: none;
   padding: 0.75rem;
-  border-radius: 10px;
+  border-radius: 99px;
   font-weight: 800;
   font-size: 0.95rem;
   cursor: pointer;
@@ -862,7 +873,7 @@ const filteredList = computed(() => {
   color: #64748b;
   border: 1.5px solid #e2e8f0;
   padding: 0.75rem;
-  border-radius: 10px;
+  border-radius: 99px;
   font-weight: 800;
   font-size: 0.95rem;
   cursor: pointer;
