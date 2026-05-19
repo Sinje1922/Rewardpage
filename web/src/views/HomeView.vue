@@ -97,7 +97,7 @@ const closingSoonList = computed(() => {
     },
     {
       id: "dummy-2",
-      title: "광고",
+      title: t("campaign.adFallback"),
       companyName: "HETAQ",
       companyLogoUrl: "",
       status: "ACTIVE",
@@ -243,7 +243,7 @@ const faqs = ref([
           class="campaign-card-premium card"
         >
           <div class="cp-visual">
-            <div class="cp-status">진행 중</div>
+            <div class="cp-status">{{ $t("campaign.statusActive") }}</div>
             <img
               :src="getCampaignIcon(index)"
               class="cp-asset-img"
@@ -265,14 +265,14 @@ const faqs = ref([
             </div>
             <div class="cp-footer">
               <span class="cp-users"
-                >참여자 {{ (c.winnerCount || 0).toLocaleString() }}명</span
+                >{{ $t("home.participantsCount", { n: (c.winnerCount || 0).toLocaleString() }) }}</span
               >
               <div class="cp-avatars"></div>
               <button
                 class="btn-join-sm"
                 @click="router.push(`/campaigns/${c.id}`)"
               >
-                참여하기
+                {{ $t("campaign.join") }}
               </button>
             </div>
           </div>
@@ -395,22 +395,24 @@ const faqs = ref([
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.05em;
-  color: #1e293b !important;
+  color: #1E1E2F !important;
   margin-bottom: 2.5rem;
+  text-shadow: 0 2px 12px rgba(255, 255, 255, 0.75), 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 .hero-title-main :deep(.text-indigo) {
-  color: #6c5ce7 !important;
+  color: #6C63FF !important;
 }
 .hero-title-main :deep(.text-green) {
-  color: #84cc16 !important;
+  color: #1E1E2F !important;
 }
 .hero-lead-main {
   font-size: 1.4rem;
   line-height: 1.6;
-  color: #475569 !important;
+  color: rgba(30, 30, 47, 0.85) !important;
   margin-bottom: 4rem;
-  font-weight: 500;
+  font-weight: 600; /* Increased font weight to 600 for better visibility */
   max-width: 580px;
+  text-shadow: 0 2px 15px rgba(255, 255, 255, 0.95), 0 1px 5px rgba(255, 255, 255, 0.95), 0 0 30px rgba(255, 255, 255, 0.6);
 }
 
 .hero-btn-group {
@@ -976,6 +978,7 @@ const faqs = ref([
   .hero-lead-main {
     font-size: 1.2rem;
     margin-bottom: 2.5rem;
+    text-shadow: 0 2px 15px rgba(255, 255, 255, 0.95), 0 1px 5px rgba(255, 255, 255, 0.95), 0 0 30px rgba(255, 255, 255, 0.6) !important;
   }
   .campaign-grid-premium,
   .steps-grid-modern,
@@ -1028,6 +1031,9 @@ const faqs = ref([
   }
   .faq-character-img {
     display: none;
+  }
+  .active-community {
+    display: none !important;
   }
   .faq-q-modern {
     padding: 1.25rem 1.5rem;

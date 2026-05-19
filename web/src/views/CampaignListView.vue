@@ -110,6 +110,15 @@ const resetFilters = () => {
 
 const filteredList = computed(() => {
   const filtered = list.value.filter((c) => {
+    // 종료된 지 일주일(7일)이 지났는지 여부 확인하여 목록에서 완전 제외 (캠페인 자체가 지워지는 것은 아님)
+    const isEnded = c.status === "CLOSED" || c.status === "DRAWN" || (c.endsAt && new Date(c.endsAt) < new Date());
+    if (isEnded && c.endsAt) {
+      const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      if (new Date(c.endsAt).getTime() < oneWeekAgo) {
+        return false;
+      }
+    }
+
     const matchesSearch =
       c.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       c.description.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
@@ -123,8 +132,6 @@ const filteredList = computed(() => {
         matchesStatus = type === "ACTIVE" || type === "ENDING_SOON";
       } else if (filterStatus.value === "CLOSED") {
         matchesStatus = type === "CLOSED";
-      } else if (filterStatus.value === "UPCOMING") {
-        matchesStatus = type === "UPCOMING";
       }
     }
     return matchesSearch && matchesStatus;
@@ -162,8 +169,8 @@ const filteredList = computed(() => {
     <!-- Header: Match Reference Image -->
     <div class="list-head">
       <div class="head-text">
-        <h1 class="page-title">모든 캠페인</h1>
-        <p class="lead-text">진행 중인 다양한 캠페인에 참여하고 포인트를 받아보세요.</p>
+        <h1 class="page-title">{{ $t("campaign.listTitle") }}</h1>
+        <p class="lead-text">{{ $t("campaign.listLead") }}</p>
       </div>
 
       <div class="filters-bar-modern">
@@ -172,7 +179,7 @@ const filteredList = computed(() => {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="캠페인 제목이나 설명 검색..."
+            :placeholder="$t('campaign.searchPlaceholder')"
           />
         </div>
         <button 
@@ -181,7 +188,7 @@ const filteredList = computed(() => {
           @click="isFilterPanelOpen = !isFilterPanelOpen"
         >
           <span class="btn-filter-icon">⚙️</span> 
-          필터
+          {{ $t("campaign.filter") }}
           <span v-if="activeFiltersCount > 0" class="filter-count-badge">{{ activeFiltersCount }}</span>
         </button>
       </div>
@@ -192,26 +199,25 @@ const filteredList = computed(() => {
       <div v-if="isFilterPanelOpen" class="filters-drawer-modern">
         <div class="drawer-inner">
           <div class="filter-group">
-            <span class="filter-label">상태 구분</span>
+            <span class="filter-label">{{ $t("campaign.filterLabelStatus") }}</span>
             <div class="filter-options-row">
               <button 
-                v-for="status in ['ALL', 'ACTIVE', 'UPCOMING', 'CLOSED']" 
+                v-for="status in ['ALL', 'ACTIVE', 'CLOSED']" 
                 :key="status"
                 class="btn-filter-option"
                 :class="{ 'is-selected': filterStatus === status }"
                 @click="filterStatus = status"
               >
                 {{ 
-                  status === 'ALL' ? '모든 상태' : 
-                  status === 'ACTIVE' ? '진행 중' : 
-                  status === 'UPCOMING' ? '오픈 예정' : '종료됨' 
+                  status === 'ALL' ? $t('campaign.filterAll') : 
+                  status === 'ACTIVE' ? $t('campaign.statusActive') : $t('campaign.statusClosed') 
                 }}
               </button>
             </div>
           </div>
 
           <div class="filter-group">
-            <span class="filter-label">정렬 조건</span>
+            <span class="filter-label">{{ $t("campaign.filterLabelSort") }}</span>
             <div class="filter-options-row">
               <button 
                 v-for="sort in ['LATEST', 'ENDING_SOON']" 
@@ -220,14 +226,14 @@ const filteredList = computed(() => {
                 :class="{ 'is-selected': sortBy === sort }"
                 @click="sortBy = sort"
               >
-                {{ sort === 'LATEST' ? '최신 등록순' : '마감 임박순' }}
+                {{ sort === 'LATEST' ? $t('campaign.sortByLatest') : $t('campaign.sortByEndingSoon') }}
               </button>
             </div>
           </div>
 
           <div class="drawer-actions">
             <button class="btn-reset-drawer" @click="resetFilters">
-              🔄 필터 초기화
+              🔄 {{ $t("campaign.filterReset") }}
             </button>
           </div>
         </div>
@@ -296,13 +302,13 @@ const filteredList = computed(() => {
                 <div class="av"></div>
               </div>
               <span class="count-text">
-                {{ (c.winnerCount || 12345).toLocaleString() }}명 참여{{ getStatusType(c) === 'CLOSED' ? '' : '중' }}
+                {{ getStatusType(c) === 'CLOSED' ? $t('campaign.participantsJoined', { n: (c.winnerCount || 0).toLocaleString() }) : $t('campaign.participantsActive', { n: (c.winnerCount || 0).toLocaleString() }) }}
               </span>
             </div>
             
             <!-- Upcoming Footer -->
             <div v-else class="upcoming-date-wrap">
-              <span class="lbl">오픈 예정일</span>
+              <span class="lbl">{{ $t("campaign.openDate") }}</span>
               <span class="date-val">
                 {{ c.startsAt ? new Date(c.startsAt).toLocaleDateString() : '2024. 06. 01' }}
               </span>
@@ -317,14 +323,14 @@ const filteredList = computed(() => {
             class="btn-action-primary"
             @click="router.push(`/campaigns/${c.id}`)"
           >
-            참여하기
+            {{ $t("campaign.join") }}
           </button>
           <button
             v-else
             class="btn-action-secondary"
             @click="router.push(`/campaigns/${c.id}`)"
           >
-            상세보기
+            {{ $t("campaign.viewDetail") }}
           </button>
         </div>
       </div>
