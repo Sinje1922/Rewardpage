@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { onMounted, onUnmounted, watch, ref, computed } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
+import { api } from './api/client'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import DarkModeToggle from './components/DarkModeToggle.vue'
 
@@ -9,18 +10,97 @@ const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 
+// Notification Center State
+const showNotifications = ref(false)
+const winsList = ref<any[]>([])
+const readNotificationIds = ref<string[]>([])
+
 const handleLogout = () => {
   auth.logout()
   router.push('/')
 }
 
-onMounted(() => {
-  if (auth.token) auth.loadMe()
+// Load read notifications from localStorage
+const loadReadNotifications = () => {
+  try {
+    const saved = localStorage.getItem('read_wins')
+    if (saved) {
+      readNotificationIds.value = JSON.parse(saved)
+    }
+  } catch (e) {
+    console.error(e)
+  }
+}
+
+// Save read notification to localStorage
+const markAsRead = (winId: string) => {
+  if (!readNotificationIds.value.includes(winId)) {
+    readNotificationIds.value.push(winId)
+    localStorage.setItem('read_wins', JSON.stringify(readNotificationIds.value))
+  }
+}
+
+const markAllAsRead = () => {
+  winsList.value.forEach(w => {
+    if (!readNotificationIds.value.includes(w.id)) {
+      readNotificationIds.value.push(w.id)
+    }
+  })
+  localStorage.setItem('read_wins', JSON.stringify(readNotificationIds.value))
+}
+
+// Unread wins count
+const unreadCount = computed(() => {
+  return winsList.value.filter(w => !readNotificationIds.value.includes(w.id)).length
 })
 
-// 페이지를 이동할 때마다 유저 정보를 갱신하여 최신 포인트를 보여줍니다.
+// Fetch user wins
+const fetchUserWins = async () => {
+  if (!auth.token) return
+  try {
+    const { data } = await api.get('/me/wins')
+    winsList.value = data
+  } catch (e) {
+    console.error('Failed to fetch user wins for notifications:', e)
+  }
+}
+
+const closeDropdown = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  if (!target.closest('.bell-container')) {
+    showNotifications.value = false
+  }
+}
+
+onMounted(() => {
+  if (auth.token) {
+    auth.loadMe()
+    loadReadNotifications()
+    fetchUserWins()
+  }
+  document.addEventListener('click', closeDropdown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeDropdown)
+})
+
+// Refresh wins on route changes
 watch(() => route.path, () => {
-  if (auth.token) auth.loadMe()
+  if (auth.token) {
+    auth.loadMe()
+    fetchUserWins()
+  }
+})
+
+watch(() => auth.token, (newVal) => {
+  if (newVal) {
+    loadReadNotifications()
+    fetchUserWins()
+  } else {
+    winsList.value = []
+    readNotificationIds.value = []
+  }
 })
 </script>
 
@@ -55,9 +135,50 @@ watch(() => route.path, () => {
             <span class="balance">{{ auth.user.pointBalance.toLocaleString() }}</span>
             <span class="unit">P</span>
           </div>
-          <button class="icon-btn bell-btn pc-only">
-            <span class="bell-icon">🔔</span>
-          </button>
+          <!-- Right: Utils -->
+          <div v-if="auth.token" class="bell-container">
+            <button class="icon-btn bell-btn pc-only" @click="showNotifications = !showNotifications">
+              <span class="bell-icon">🔔</span>
+              <span v-if="unreadCount > 0" class="bell-badge">{{ unreadCount }}</span>
+            </button>
+            
+            <!-- Glassmorphic Dropdown Notification Center -->
+            <transition name="fade-slide">
+              <div v-if="showNotifications" class="bell-dropdown">
+                <div class="dropdown-header">
+                  <h3>🔔 알림 센터</h3>
+                  <button v-if="unreadCount > 0" class="btn-clear-all" @click="markAllAsRead">모두 읽음</button>
+                </div>
+                <div class="dropdown-body">
+                  <div v-if="winsList.length === 0" class="empty-notifications">
+                    <span class="empty-icon">📭</span>
+                    <p class="empty-txt">아직 도착한 알림이 없습니다.</p>
+                  </div>
+                  <div v-else class="notifications-list">
+                    <div 
+                      v-for="win in winsList" 
+                      :key="win.id" 
+                      class="notification-item"
+                      :class="{ 'is-unread': !readNotificationIds.includes(win.id) }"
+                      @click="markAsRead(win.id); showNotifications = false; router.push(`/campaigns`)"
+                    >
+                      <div class="noti-bullet">🎉</div>
+                      <div class="noti-content">
+                        <span class="noti-tag">캠페인 당첨</span>
+                        <p class="noti-text">
+                          축하합니다! <strong>[{{ win.campaign?.title || '캠페인' }}]</strong>에 당첨되셨습니다.
+                        </p>
+                        <div class="noti-reward-row">
+                          <span class="noti-reward-val">+{{ win.points.toLocaleString() }}P 적립 완료</span>
+                          <span class="noti-time">{{ new Date(win.createdAt).toLocaleDateString() }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </transition>
+          </div>
           <LanguageSwitcher class="pc-only" />
           <div class="auth-wrapper">
              <button v-if="!auth.token" @click="router.push('/login')" class="btn-login">{{ $t('nav.login') }}</button>
@@ -537,5 +658,220 @@ watch(() => route.path, () => {
     z-index: 1000;
     display: flex;
   }
+}
+
+/* Premium Notification Center CSS */
+.bell-container {
+  position: relative;
+  display: inline-block;
+}
+
+.bell-btn {
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.bell-btn:hover {
+  transform: scale(1.05) rotate(15deg);
+}
+
+.bell-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 800;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+}
+
+:root.dark .bell-badge {
+  border-color: var(--panel);
+}
+
+.bell-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 360px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 1.25rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+  z-index: 1001;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+:root.dark .bell-dropdown {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.dropdown-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+:root.dark .dropdown-header {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.dropdown-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-h);
+}
+
+.btn-clear-all {
+  background: transparent;
+  border: none;
+  color: #6366f1;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.btn-clear-all:hover {
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.dropdown-body {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.empty-notifications {
+  padding: 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.empty-icon {
+  font-size: 2.2rem;
+  animation: floating 4s ease-in-out infinite;
+}
+
+.empty-txt {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.notification-item {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  gap: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.02);
+}
+
+:root.dark .notification-item {
+  border-bottom-color: rgba(255, 255, 255, 0.02);
+}
+
+.notification-item:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+:root.dark .notification-item:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.notification-item.is-unread {
+  background: rgba(99, 102, 241, 0.03);
+}
+
+:root.dark .notification-item.is-unread {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.noti-bullet {
+  font-size: 1.2rem;
+}
+
+.noti-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.noti-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #6366f1;
+  text-transform: uppercase;
+}
+
+.noti-text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-h);
+}
+
+.noti-text strong {
+  font-weight: 800;
+}
+
+.noti-reward-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.noti-reward-val {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #22c55e;
+}
+
+.noti-time {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* Dropdown Slide Transition */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 </style>
