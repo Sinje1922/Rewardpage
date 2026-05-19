@@ -372,7 +372,7 @@ const faqs = ref([
   gap: 10rem;
   padding-bottom: 12rem;
   overflow-x: hidden;
-  background: white;
+  background: var(--bg);
 }
 
 /* Hero: Expansive Vision */
