@@ -403,7 +403,7 @@ const faqs = ref([
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.05em;
-  color: #1e293b;
+  color: var(--text-h);
   margin-bottom: 2.5rem;
 }
 .hero-title-main span {
@@ -412,7 +412,7 @@ const faqs = ref([
 .hero-lead-main {
   font-size: 1.4rem;
   line-height: 1.6;
-  color: #64748b;
+  color: var(--muted);
   margin-bottom: 4rem;
   font-weight: 500;
   max-width: 580px;
