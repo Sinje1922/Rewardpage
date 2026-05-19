@@ -35,6 +35,28 @@ export async function evaluateMission(
 ): Promise<{ ok: boolean; reason?: string }> {
   switch (type) {
     case "LINK_VISIT": {
+      const { prisma } = await import("./prisma.js");
+      const events = await prisma.analyticsevent.findMany({
+        where: {
+          userId,
+          name: "link_click",
+        },
+        select: {
+          meta: true,
+        },
+      });
+      const hasClicked = events.some((evt) => {
+        try {
+          const parsed = JSON.parse(evt.meta);
+          return String(parsed.missionId) === missionId;
+        } catch {
+          return false;
+        }
+      });
+      if (!hasClicked) {
+        return { ok: false, reason: "링크를 먼저 방문해 주셔야 완료할 수 있습니다." };
+      }
+
       const dwell = Number(payload.dwellSeconds ?? 0);
       const min = config.minDwellSeconds ?? 0;
       if (min > 0 && dwell < min) {
