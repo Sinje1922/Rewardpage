@@ -408,11 +408,11 @@ const faqs = ref([
 .hero-lead-main {
   font-size: 1.4rem;
   line-height: 1.6;
-  color: rgba(30, 30, 47, 0.8) !important;
+  color: rgba(30, 30, 47, 0.85) !important;
   margin-bottom: 4rem;
-  font-weight: 500;
+  font-weight: 600; /* Increased font weight to 600 for better visibility */
   max-width: 580px;
-  text-shadow: 0 2px 10px rgba(255, 255, 255, 0.75);
+  text-shadow: 0 2px 15px rgba(255, 255, 255, 0.95), 0 1px 5px rgba(255, 255, 255, 0.95), 0 0 30px rgba(255, 255, 255, 0.6);
 }
 
 .hero-btn-group {
