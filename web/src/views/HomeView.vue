@@ -391,7 +391,7 @@ const faqs = ref([
 }
 
 .hero-tag-modern {
-  color: #a3e635;
+  color: #22c55e;
   font-weight: 800;
   font-size: 1.25rem;
   margin-bottom: 1.5rem;
@@ -405,6 +405,9 @@ const faqs = ref([
   letter-spacing: -0.05em;
   color: #1e293b;
   margin-bottom: 2.5rem;
+}
+.hero-title-main span {
+  color: var(--accent);
 }
 .hero-lead-main {
   font-size: 1.4rem;
