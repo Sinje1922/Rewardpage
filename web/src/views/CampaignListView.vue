@@ -110,6 +110,15 @@ const resetFilters = () => {
 
 const filteredList = computed(() => {
   const filtered = list.value.filter((c) => {
+    // 종료된 지 일주일(7일)이 지났는지 여부 확인하여 목록에서 완전 제외 (캠페인 자체가 지워지는 것은 아님)
+    const isEnded = c.status === "CLOSED" || c.status === "DRAWN" || (c.endsAt && new Date(c.endsAt) < new Date());
+    if (isEnded && c.endsAt) {
+      const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      if (new Date(c.endsAt).getTime() < oneWeekAgo) {
+        return false;
+      }
+    }
+
     const matchesSearch =
       c.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       c.description.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
@@ -123,8 +132,6 @@ const filteredList = computed(() => {
         matchesStatus = type === "ACTIVE" || type === "ENDING_SOON";
       } else if (filterStatus.value === "CLOSED") {
         matchesStatus = type === "CLOSED";
-      } else if (filterStatus.value === "UPCOMING") {
-        matchesStatus = type === "UPCOMING";
       }
     }
     return matchesSearch && matchesStatus;
@@ -195,7 +202,7 @@ const filteredList = computed(() => {
             <span class="filter-label">상태 구분</span>
             <div class="filter-options-row">
               <button 
-                v-for="status in ['ALL', 'ACTIVE', 'UPCOMING', 'CLOSED']" 
+                v-for="status in ['ALL', 'ACTIVE', 'CLOSED']" 
                 :key="status"
                 class="btn-filter-option"
                 :class="{ 'is-selected': filterStatus === status }"
@@ -203,8 +210,7 @@ const filteredList = computed(() => {
               >
                 {{ 
                   status === 'ALL' ? '모든 상태' : 
-                  status === 'ACTIVE' ? '진행 중' : 
-                  status === 'UPCOMING' ? '오픈 예정' : '종료됨' 
+                  status === 'ACTIVE' ? '진행 중' : '종료됨' 
                 }}
               </button>
             </div>
