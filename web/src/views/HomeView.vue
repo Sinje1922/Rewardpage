@@ -296,7 +296,7 @@ const faqs = ref([
       <section class="home-section centered gray-bg-inner">
         <span class="section-tag-modern">WHY PICKKU</span>
         <h2 class="section-title-modern">{{ $t("home.valuesTitleModern") }}</h2>
-  
+
         <div class="values-flex-modern">
           <div class="value-item-premium card">
             <img :src="valueIcon1" class="value-icon-img" alt="Safe" />
@@ -342,7 +342,10 @@ const faqs = ref([
                   faqs[i - 1].open ? "−" : "+"
                 }}</span>
               </div>
-              <div class="faq-a-modern" :class="{ 'is-open': faqs[i - 1].open }">
+              <div
+                class="faq-a-modern"
+                :class="{ 'is-open': faqs[i - 1].open }"
+              >
                 <div class="faq-a-inner">
                   {{ $t(`home.faq${i}A`) }}
                 </div>
@@ -406,10 +409,10 @@ const faqs = ref([
   color: #1e293b !important;
   margin-bottom: 2.5rem;
 }
-.hero-title-main .text-indigo {
+.hero-title-main :deep(.text-indigo) {
   color: #6c5ce7 !important;
 }
-.hero-title-main .text-green {
+.hero-title-main :deep(.text-green) {
   color: #84cc16 !important;
 }
 .hero-lead-main {
@@ -894,7 +897,10 @@ const faqs = ref([
   line-height: 1.7;
   font-size: 1.1rem;
   padding: 0 2.5rem;
-  transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, padding 0.35s ease;
+  transition:
+    max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.25s ease,
+    padding 0.35s ease;
 }
 .faq-a-modern.is-open {
   max-height: 250px;
@@ -1053,7 +1059,8 @@ const faqs = ref([
     gap: 1rem;
     margin-bottom: 3rem;
   }
-  .btn-start, .btn-explore {
+  .btn-start,
+  .btn-explore {
     width: 100%;
     text-align: center;
     padding: 1rem 2rem;
