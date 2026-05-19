@@ -199,7 +199,7 @@ const filteredList = computed(() => {
       <div v-if="isFilterPanelOpen" class="filters-drawer-modern">
         <div class="drawer-inner">
           <div class="filter-group">
-            <span class="filter-label">상태 구분</span>
+            <span class="filter-label">{{ $t("campaign.filterLabelStatus") }}</span>
             <div class="filter-options-row">
               <button 
                 v-for="status in ['ALL', 'ACTIVE', 'CLOSED']" 
@@ -209,15 +209,15 @@ const filteredList = computed(() => {
                 @click="filterStatus = status"
               >
                 {{ 
-                  status === 'ALL' ? '모든 상태' : 
-                  status === 'ACTIVE' ? '진행 중' : '종료됨' 
+                  status === 'ALL' ? $t('campaign.filterAll') : 
+                  status === 'ACTIVE' ? $t('campaign.statusActive') : $t('campaign.statusClosed') 
                 }}
               </button>
             </div>
           </div>
 
           <div class="filter-group">
-            <span class="filter-label">정렬 조건</span>
+            <span class="filter-label">{{ $t("campaign.filterLabelSort") }}</span>
             <div class="filter-options-row">
               <button 
                 v-for="sort in ['LATEST', 'ENDING_SOON']" 
@@ -226,14 +226,14 @@ const filteredList = computed(() => {
                 :class="{ 'is-selected': sortBy === sort }"
                 @click="sortBy = sort"
               >
-                {{ sort === 'LATEST' ? '최신 등록순' : '마감 임박순' }}
+                {{ sort === 'LATEST' ? $t('campaign.sortByLatest') : $t('campaign.sortByEndingSoon') }}
               </button>
             </div>
           </div>
 
           <div class="drawer-actions">
             <button class="btn-reset-drawer" @click="resetFilters">
-              🔄 필터 초기화
+              🔄 {{ $t("campaign.filterReset") }}
             </button>
           </div>
         </div>
