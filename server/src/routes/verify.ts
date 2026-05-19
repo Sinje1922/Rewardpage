@@ -48,7 +48,8 @@ router.post("/telegram", authRequired, async (req: AuthedRequest, res) => {
   if (!mission) return res.status(404).json({ error: "미션을 찾을 수 없습니다." });
 
   const config = JSON.parse(mission.config || '{}');
-  const chatId = config.linkUrl ? config.linkUrl.split('/').pop() : null;
+  const urlClean = config.linkUrl ? config.linkUrl.replace(/\/+$/, '') : '';
+  const chatId = urlClean ? urlClean.split('/').pop() : null;
 
   if (!chatId) return res.status(400).json({ error: "미션 설정에 텔레그램 채널 정보가 없습니다." });
 
