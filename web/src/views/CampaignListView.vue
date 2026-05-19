@@ -302,13 +302,13 @@ const filteredList = computed(() => {
                 <div class="av"></div>
               </div>
               <span class="count-text">
-                {{ (c.winnerCount || 12345).toLocaleString() }}명 참여{{ getStatusType(c) === 'CLOSED' ? '' : '중' }}
+                {{ getStatusType(c) === 'CLOSED' ? $t('campaign.participantsJoined', { n: (c.winnerCount || 0).toLocaleString() }) : $t('campaign.participantsActive', { n: (c.winnerCount || 0).toLocaleString() }) }}
               </span>
             </div>
             
             <!-- Upcoming Footer -->
             <div v-else class="upcoming-date-wrap">
-              <span class="lbl">오픈 예정일</span>
+              <span class="lbl">{{ $t("campaign.openDate") }}</span>
               <span class="date-val">
                 {{ c.startsAt ? new Date(c.startsAt).toLocaleDateString() : '2024. 06. 01' }}
               </span>
@@ -323,14 +323,14 @@ const filteredList = computed(() => {
             class="btn-action-primary"
             @click="router.push(`/campaigns/${c.id}`)"
           >
-            참여하기
+            {{ $t("campaign.join") }}
           </button>
           <button
             v-else
             class="btn-action-secondary"
             @click="router.push(`/campaigns/${c.id}`)"
           >
-            상세보기
+            {{ $t("campaign.viewDetail") }}
           </button>
         </div>
       </div>
