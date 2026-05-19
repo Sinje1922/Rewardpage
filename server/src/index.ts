@@ -21,6 +21,7 @@ import { startTelegramBot } from "./lib/telegram.js";
 };
 
 const app = express();
+app.disable("x-powered-by");
 
 // 배경 서비스 시작
 startTelegramBot();
