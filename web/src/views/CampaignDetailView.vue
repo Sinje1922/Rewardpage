@@ -167,9 +167,17 @@ function initYoutubePlayers() {
 
 function startTimer(mid: string) {
   if (ytTimer.value[mid]) return
-  ytTimer.value[mid] = setInterval(() => {
+  ytTimer.value[mid] = setInterval(async () => {
     if (ytRemaining.value[mid] > 0) {
       ytRemaining.value[mid]--
+      if (ytRemaining.value[mid] === 0) {
+        stopTimer(mid)
+        try {
+          await api.post(`/missions/${mid}/event`, { name: 'youtube_watch_complete', meta: { watched: true } })
+        } catch {
+          /* ignore */
+        }
+      }
     } else {
       stopTimer(mid)
     }
@@ -223,6 +231,11 @@ async function handleSNSMission(m: Mission) {
   } else if (m.type === 'INSTAGRAM_FOLLOW' || m.type === 'INSTAGRAM_LIKE') {
     // Instagram is mostly manual or link-visit based for now
     if (url) window.open(url, '_blank')
+    try {
+      await api.post(`/missions/${m.id}/event`, { name: 'link_click', meta: { url } })
+    } catch {
+      /* ignore */
+    }
     verifyStatus.value[m.id] = { ok: true, msg: t('common.visitCompleted') }
   } else {
     if (url) window.open(url, '_blank')

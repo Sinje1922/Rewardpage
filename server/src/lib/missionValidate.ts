@@ -114,7 +114,27 @@ export async function evaluateMission(
       return { ok: true };
     }
     case "YOUTUBE_WATCH": {
-      if (!payload.watched) return { ok: false, reason: "시청 완료 정보가 없습니다." };
+      const { prisma } = await import("./prisma.js");
+      const events = await prisma.analyticsevent.findMany({
+        where: {
+          userId,
+          name: "youtube_watch_complete",
+        },
+        select: {
+          meta: true,
+        },
+      });
+      const hasWatched = events.some((evt) => {
+        try {
+          const parsed = JSON.parse(evt.meta);
+          return String(parsed.missionId) === missionId;
+        } catch {
+          return false;
+        }
+      });
+      if (!hasWatched) {
+        return { ok: false, reason: "유튜브 동영상을 끝까지 시청해 주셔야 완료할 수 있습니다." };
+      }
       return { ok: true };
     }
     case "YOUTUBE_SUBSCRIBE": {
@@ -134,7 +154,8 @@ export async function evaluateMission(
     case "TELEGRAM_JOIN":
     case "TELEGRAM_CHANNEL":
     case "TELEGRAM_GROUP": {
-      const chatId = config.linkUrl ? config.linkUrl.split('/').pop() : null;
+      const urlClean = config.linkUrl ? config.linkUrl.replace(/\/+$/, '') : '';
+      const chatId = urlClean ? urlClean.split('/').pop() : null;
       if (!chatId) return { ok: true };
       const { checkTelegramMembership } = await import("./telegram.js");
       const ok = await checkTelegramMembership(chatId, userId);
@@ -151,8 +172,30 @@ export async function evaluateMission(
       return ok ? { ok: true } : { ok: false, reason: "디스코드 참여가 확인되지 않습니다." };
     }
     case "INSTAGRAM_FOLLOW":
-    case "INSTAGRAM_LIKE":
-      return { ok: true }; // Instagram is manual link-visit
+    case "INSTAGRAM_LIKE": {
+      const { prisma } = await import("./prisma.js");
+      const events = await prisma.analyticsevent.findMany({
+        where: {
+          userId,
+          name: "link_click",
+        },
+        select: {
+          meta: true,
+        },
+      });
+      const hasClicked = events.some((evt) => {
+        try {
+          const parsed = JSON.parse(evt.meta);
+          return String(parsed.missionId) === missionId;
+        } catch {
+          return false;
+        }
+      });
+      if (!hasClicked) {
+        return { ok: false, reason: "인스타그램 링크를 먼저 방문해 주셔야 완료할 수 있습니다." };
+      }
+      return { ok: true };
+    }
     default:
       return { ok: false, reason: "알 수 없는 미션 유형입니다." };
   }
