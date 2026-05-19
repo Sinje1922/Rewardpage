@@ -198,7 +198,7 @@ watch(() => route.path, () => {
 }
 
 .header-modern.is-full-width .header-inner {
-  max-width: none;
+  max-width: 1400px;
 }
 
 .logo-area {
@@ -344,7 +344,8 @@ watch(() => route.path, () => {
 }
 
 .main-content-wide.is-full-width {
-  max-width: none;
+  max-width: 1400px;
+  margin: 0 auto;
   padding: 3rem 5rem;
 }
 
