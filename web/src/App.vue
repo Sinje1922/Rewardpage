@@ -215,7 +215,7 @@ watch(() => route.path, () => {
 .logo-text {
   font-size: 1.8rem;
   font-weight: 900;
-  color: #1e293b;
+  color: var(--text-h);
   letter-spacing: -0.05em;
 }
 

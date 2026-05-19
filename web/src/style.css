@@ -58,17 +58,17 @@ strong, b {
   --text: #f1f5f9;
   --text-h: #ffffff;
   --text-p: #f1f5f9;
-  --muted: #cbd5e1;
-  --bg: #0f172a;
-  --bg-deep: #020617;
-  --panel: rgba(30, 41, 59, 0.85);
-  --border: rgba(71, 85, 105, 0.5);
-  --code-bg: #1e293b;
+  --muted: #9ca3af;
+  --bg: #0b0f19;
+  --bg-deep: #030712;
+  --panel: rgba(17, 24, 39, 0.85);
+  --border: rgba(55, 65, 81, 0.4);
+  --code-bg: #1f2937;
   --accent: #818cf8;
   --accent-bright: #a5b4fc;
   --accent-soft: rgba(129, 140, 248, 0.15);
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --shadow-hover: 0 12px 48px rgba(0, 0, 0, 0.5);
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-hover: 0 12px 48px rgba(0, 0, 0, 0.6);
 }
 
 body {

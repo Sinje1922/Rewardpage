@@ -1084,4 +1084,95 @@ const faqs = ref([
     margin-bottom: 6rem;
   }
 }
+
+/* ==========================================
+   ✨ PREMIUM DARK MODE STYLES FOR HOMEPAGE
+   ========================================== */
+
+/* 1. Stats Card */
+:root.dark .stats-card-modern {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.3) !important;
+}
+:root.dark .stat-box-modern {
+  border-right: 1px solid var(--border) !important;
+}
+:root.dark .stat-icon-wrap {
+  background: var(--code-bg) !important;
+}
+:root.dark .stat-number {
+  color: var(--text-h) !important;
+}
+:root.dark .stat-label {
+  color: var(--muted) !important;
+}
+
+/* 2. Steps Section */
+:root.dark .section-title-modern {
+  color: var(--text-h) !important;
+}
+:root.dark .step-card-premium {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+}
+:root.dark .step-name {
+  color: var(--text-h) !important;
+}
+:root.dark .step-summary {
+  color: var(--muted) !important;
+}
+
+/* 3. Campaign Cards */
+:root.dark .campaign-card-premium {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow) !important;
+}
+:root.dark .campaign-card-premium:hover {
+  box-shadow: var(--shadow-hover) !important;
+}
+:root.dark .cp-visual {
+  background: var(--code-bg) !important;
+}
+:root.dark .cp-client-name {
+  color: var(--muted) !important;
+}
+:root.dark .cp-title {
+  color: var(--text-h) !important;
+}
+:root.dark .cp-footer {
+  border-top: 1px solid var(--border) !important;
+}
+:root.dark .cp-users {
+  color: var(--muted) !important;
+}
+
+/* 4. Values Section */
+:root.dark .gray-bg-wrapper {
+  background: var(--bg-deep) !important; /* Deep dark coal space bg instead of bright white */
+}
+:root.dark .value-item-premium {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+}
+:root.dark .value-content h3 {
+  color: var(--text-h) !important;
+}
+:root.dark .value-content p {
+  color: var(--muted) !important;
+}
+
+/* 5. FAQ Section */
+:root.dark .faq-row-modern {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+}
+:root.dark .faq-q-modern {
+  color: var(--text-h) !important;
+}
+:root.dark .faq-a-modern {
+  color: var(--muted) !important;
+}
 </style>
+
