@@ -1029,6 +1029,9 @@ const faqs = ref([
   .faq-character-img {
     display: none;
   }
+  .active-community {
+    display: none !important;
+  }
   .faq-q-modern {
     padding: 1.25rem 1.5rem;
     font-size: 1rem;
