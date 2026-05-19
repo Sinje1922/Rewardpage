@@ -555,10 +555,10 @@ const filteredList = computed(() => {
   box-shadow: none !important;
 }
 
-/* Redesigned Premium Cards Grid (4 columns) */
+/* Redesigned Premium Cards Grid (4 columns default due to 1400px max-width) */
 .grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   width: 100%;
 }
@@ -598,9 +598,9 @@ const filteredList = computed(() => {
 }
 
 .status-badge {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 800;
-  padding: 0.25rem 0.5rem;
+  padding: 0.2rem 0.45rem;
   border-radius: 6px;
 }
 
@@ -625,11 +625,11 @@ const filteredList = computed(() => {
 }
 
 .mission-count-badge {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 800;
   background: #f1f5f9;
   color: #64748b;
-  padding: 0.25rem 0.5rem;
+  padding: 0.2rem 0.45rem;
   border-radius: 6px;
 }
 
@@ -637,12 +637,12 @@ const filteredList = computed(() => {
 .right-reward-capsule {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.2rem;
   background: #f1f5f9;
-  padding: 0.25rem 0.75rem;
+  padding: 0.2rem 0.65rem;
   border-radius: 99px;
   font-weight: 800;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .coin-icon {
@@ -656,11 +656,11 @@ const filteredList = computed(() => {
 
 /* Centered Visual Image */
 .card-visual-center {
-  height: 160px;
+  height: 135px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 0.75rem;
 }
 
 .visual-3d-img {
@@ -717,23 +717,23 @@ const filteredList = computed(() => {
 }
 
 .campaign-card-title {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 900;
   color: #1e293b;
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.3rem;
   line-height: 1.3;
 }
 
 .campaign-card-desc {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #64748b;
-  margin: 0 0 1rem;
+  margin: 0 0 0.85rem;
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 34px;
+  min-height: 32px;
 }
 
 /* Reward row info */
@@ -847,10 +847,10 @@ const filteredList = computed(() => {
   background: #6366f1;
   color: white;
   border: none;
-  padding: 0.75rem;
+  padding: 0.6rem;
   border-radius: 99px;
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: 0 8px 16px rgba(99, 102, 241, 0.12);
@@ -867,10 +867,10 @@ const filteredList = computed(() => {
   background: white;
   color: #64748b;
   border: 1.5px solid #e2e8f0;
-  padding: 0.75rem;
+  padding: 0.6rem;
   border-radius: 99px;
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -891,12 +891,6 @@ const filteredList = computed(() => {
 }
 
 /* Media Queries for Responsiveness */
-@media (max-width: 1700px) {
-  .grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
 @media (max-width: 1300px) {
   .grid {
     grid-template-columns: repeat(3, 1fr);
