@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { api, getFileUrl } from '../../api/client'
@@ -10,6 +10,8 @@ import { emptyMissionRow, rowToPayload, validateRows, type MissionRowState } fro
 
 const { t } = useI18n()
 const router = useRouter()
+const currentStep = ref(1)
+
 const companyName = ref('')
 const companyLogoUrl = ref('')
 const title = ref('')
@@ -56,15 +58,59 @@ function removeReward(index: number) {
   }
 }
 
+const isStep1Valid = computed(() => !!title.value.trim())
+const isStep2Valid = computed(() => winnerCount.value > 0 && rewards.value.some(r => r.amount > 0))
+const isStep3Valid = computed(() => missionRows.value.length > 0)
+
+function goToStep(step: number) {
+  err.value = ''
+  currentStep.value = step
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function nextStep() {
+  err.value = ''
+  if (currentStep.value === 1) {
+    if (!title.value.trim()) {
+      err.value = t('ops.titleRequired')
+      return
+    }
+  }
+  if (currentStep.value < 3) {
+    currentStep.value++
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
+function prevStep() {
+  if (currentStep.value > 1) {
+    currentStep.value--
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
 async function save() {
   err.value = ''
+  
+  if (!isStep1Valid.value) {
+    err.value = t('ops.titleRequired')
+    currentStep.value = 1
+    return
+  }
+  if (!isStep2Valid.value) {
+    err.value = t('error.logisticsRequired') || 'Please complete Step 2 (Winner count and rewards)'
+    currentStep.value = 2
+    return
+  }
+  if (!isStep3Valid.value) {
+    err.value = t('error.missionsRequired') || 'Please add at least one mission'
+    currentStep.value = 3
+    return
+  }
+
   const v = validateRows(missionRows.value)
   if (v) {
     err.value = v
-    return
-  }
-  if (!title.value.trim()) {
-    err.value = t('ops.titleRequired')
     return
   }
   const missions = missionRows.value.map((r, i) => rowToPayload(r, i))
@@ -92,155 +138,302 @@ async function save() {
 </script>
 
 <template>
-  <div>
+  <div class="creator-form-page">
     <h1 class="page-title">{{ $t('ops.createTitle') }}</h1>
-    <p style="color: var(--muted); margin: 0 auto 1.5rem; max-width: 1000px">
-      {{ $t('ops.createLead') }}
-    </p>
+    
+    <!-- Step Indicator -->
+    <div class="step-indicator">
+      <div 
+        v-for="step in 3" 
+        :key="step" 
+        class="step-item" 
+        :class="{ 
+          active: currentStep === step, 
+          completed: (step === 1 && isStep1Valid) || (step === 2 && isStep2Valid) || (step === 3 && isStep3Valid)
+        }"
+        @click="goToStep(step)"
+      >
+        <div class="step-num">
+          <template v-if="step === 1 && isStep1Valid">✓</template>
+          <template v-else-if="step === 2 && isStep2Valid">✓</template>
+          <template v-else-if="step === 3 && isStep3Valid">✓</template>
+          <template v-else>{{ step }}</template>
+        </div>
+        <span class="step-label">
+          {{ step === 1 ? $t('ops.step1') || 'Basic' : step === 2 ? $t('ops.step2') || 'Logistics' : $t('ops.step3') || 'Missions' }}
+        </span>
+      </div>
+    </div>
 
     <form class="stack" @submit.prevent="save">
-      <section class="card">
-        <h2 class="section-title">{{ $t('ops.clientSection') }}</h2>
-        <div class="field">
-          <label>{{ $t('ops.companyName') }}</label>
-          <input v-model="companyName" :placeholder="t('ops.companyNameHint') || '○○ Co., Ltd.'" />
-        </div>
-        <div class="field">
-          <label>{{ $t('ops.companyLogo') }}</label>
-          <div class="logo-row">
-            <img v-if="companyLogoUrl" :src="getFileUrl(companyLogoUrl)" alt="" class="logo-preview" />
-            <div class="logo-actions">
-              <input
-                ref="logoFileInput"
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
-                class="sr-only"
-                @change="onLogoFile"
-              />
-              <button type="button" class="btn" :disabled="logoUploading" @click="logoFileInput?.click()">
-                {{ logoUploading ? $t('ops.uploading') : $t('ops.selectFile') }}
-              </button>
-              <button v-if="companyLogoUrl" type="button" class="btn" @click="clearLogo">{{ $t('ops.remove') }}</button>
+      <!-- Step 1: Client & Campaign Info -->
+      <div v-if="currentStep === 1" class="step-content">
+        <section class="card">
+          <h2 class="section-title">{{ $t('ops.clientSection') }}</h2>
+          <div class="field">
+            <label>{{ $t('ops.companyName') }}</label>
+            <input v-model="companyName" :placeholder="t('ops.companyNameHint') || '○○ Co., Ltd.'" />
+          </div>
+          <div class="field">
+            <label>{{ $t('ops.companyLogo') }}</label>
+            <div class="logo-row">
+              <img v-if="companyLogoUrl" :src="getFileUrl(companyLogoUrl)" alt="" class="logo-preview" />
+              <div class="logo-actions">
+                <input
+                  ref="logoFileInput"
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+                  class="sr-only"
+                  @change="onLogoFile"
+                />
+                <button type="button" class="btn" :disabled="logoUploading" @click="logoFileInput?.click()">
+                  {{ logoUploading ? $t('ops.uploading') : $t('ops.selectFile') }}
+                </button>
+                <button v-if="companyLogoUrl" type="button" class="btn" @click="clearLogo">{{ $t('ops.remove') }}</button>
+              </div>
+            </div>
+            <p class="hint">{{ $t('ops.logoHint') }}</p>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 class="section-title">{{ $t('ops.campaignSection') }}</h2>
+          <div class="field">
+            <label>{{ $t('ops.campaignTitle') }}</label>
+            <input v-model="title" required />
+          </div>
+          <div class="field">
+            <label>{{ $t('ops.description') }}</label>
+            <RichEditor v-model="description" :placeholder="t('ops.descPlaceholder')" />
+          </div>
+        </section>
+      </div>
+
+      <!-- Step 2: Logistics & Rewards -->
+      <div v-if="currentStep === 2" class="step-content">
+        <section class="card">
+          <h2 class="section-title">{{ $t('ops.logisticsSection') || 'Logistics' }}</h2>
+          <div class="field">
+            <label>{{ $t('ops.winnerCount') }}</label>
+            <input v-model.number="winnerCount" type="number" min="1" required />
+          </div>
+          <div class="field">
+            <label>{{ $t('ops.lotteryMode') }}</label>
+            <select v-model="lotteryMode">
+              <option value="SIMPLE">{{ $t('ops.lotterySimple') }}</option>
+              <option value="WEIGHTED">{{ $t('ops.lotteryWeighted') }}</option>
+            </select>
+          </div>
+          <label style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.5rem">
+            <input v-model="autoApprove" type="checkbox" />
+            {{ $t('ops.autoApprove') }}
+          </label>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem">
+            <div class="field">
+              <label>{{ $t('ops.startsAt') }}</label>
+              <input v-model="startsAt" type="datetime-local" />
+            </div>
+            <div class="field">
+              <label>{{ $t('ops.endsAt') }}</label>
+              <input v-model="endsAt" type="datetime-local" />
             </div>
           </div>
-          <p class="hint">{{ $t('ops.logoHint') }}</p>
-        </div>
-        <div class="field">
-          <label>{{ $t('ops.logoUrl') }}</label>
-          <input v-model="companyLogoUrl" type="text" placeholder="https://… or /uploads/…" />
-        </div>
-      </section>
 
-      <section class="card">
-        <h2 class="section-title">{{ $t('ops.campaignSection') }}</h2>
-        <div class="field">
-          <label>{{ $t('ops.campaignTitle') }}</label>
-          <input v-model="title" required />
-        </div>
-        <div class="field">
-          <label>{{ $t('ops.description') }}</label>
-          <RichEditor v-model="description" :placeholder="t('ops.descPlaceholder')" />
-        </div>
-        <div class="field">
-          <label>{{ $t('ops.winnerCount') }}</label>
-          <input v-model.number="winnerCount" type="number" min="1" required />
-        </div>
-        <div class="field">
-          <label>{{ $t('ops.lotteryMode') }}</label>
-          <select v-model="lotteryMode">
-            <option value="SIMPLE">{{ $t('ops.lotterySimple') }}</option>
-            <option value="WEIGHTED">{{ $t('ops.lotteryWeighted') }}</option>
-          </select>
-        </div>
-        <label style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem">
-          <input v-model="autoApprove" type="checkbox" />
-          {{ $t('ops.autoApprove') }}
-        </label>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem">
-          <div class="field">
-            <label>{{ $t('ops.startsAt') }}</label>
-            <input v-model="startsAt" type="datetime-local" />
+          <div class="field reward-box">
+            <label>{{ $t('ops.totalReward') }}</label>
+            <div v-for="(r, idx) in rewards" :key="idx" style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem">
+              <input v-model.number="r.amount" type="number" min="0" step="1" placeholder="1000" style="flex: 1" />
+              <select v-model="r.currency" style="width: 120px">
+                <option value="POINT">{{ $t('common.point') || 'POINT' }}</option>
+                <option value="USDT">USDT</option>
+                <option value="BRL">BRL ({{ $t('common.brl') || 'Real' }})</option>
+                <option value="METAQ">METAQ ({{ $t('common.metaq') || 'Coin' }})</option>
+              </select>
+              <button v-if="rewards.length > 1" type="button" class="btn outline" @click="removeReward(idx)">✕</button>
+            </div>
+            <button type="button" class="btn btn-sm" style="margin-bottom: 1rem" @click="addReward">+ {{ $t('ops.addReward') || 'Add Reward' }}</button>
+            
+            <div v-if="winnerCount > 0" class="reward-hint">
+              <p v-for="(r, idx) in rewards" :key="idx">
+                • {{ r.currency }}: {{ Math.floor(r.amount / winnerCount).toLocaleString() }} / {{ $t('common.person') || 'person' }}
+              </p>
+            </div>
           </div>
-          <div class="field">
-            <label>{{ $t('ops.endsAt') }}</label>
-            <input v-model="endsAt" type="datetime-local" />
-          </div>
-        </div>
+        </section>
+      </div>
 
-        <div class="field reward-box">
-          <label>{{ $t('ops.totalReward') }}</label>
-          <div v-for="(r, idx) in rewards" :key="idx" style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem">
-            <input v-model.number="r.amount" type="number" min="0" step="1" placeholder="1000" style="flex: 1" />
-            <select v-model="r.currency" style="width: 120px">
-              <option value="POINT">{{ $t('common.point') || 'POINT' }}</option>
-              <option value="USDT">USDT</option>
-              <option value="BRL">BRL ({{ $t('common.brl') || 'Real' }})</option>
-              <option value="METAQ">METAQ ({{ $t('common.metaq') || 'Coin' }})</option>
-            </select>
-            <button v-if="rewards.length > 1" type="button" class="btn outline" @click="removeReward(idx)">✕</button>
-          </div>
-          <button type="button" class="btn btn-sm" style="margin-bottom: 1rem" @click="addReward">+ {{ $t('ops.addReward') || 'Add Reward' }}</button>
-          
-          <div v-if="winnerCount > 0" class="reward-hint">
-            <p v-for="(r, idx) in rewards" :key="idx">
-              • {{ r.currency }}: {{ Math.floor(r.amount / winnerCount).toLocaleString() }} / {{ $t('common.person') || 'person' }}
-            </p>
-          </div>
-        </div>
-      </section>
+      <!-- Step 3: Missions -->
+      <div v-if="currentStep === 3" class="step-content">
+        <section class="card">
+          <h2 class="section-title">{{ $t('ops.missionSection') }}</h2>
+          <MissionListEditor v-model="missionRows" />
+        </section>
+      </div>
 
-      <section class="card">
-        <h2 class="section-title">{{ $t('ops.missionSection') }}</h2>
-        <MissionListEditor v-model="missionRows" />
-      </section>
-
+      <!-- Form Footer -->
       <p v-if="err" class="err">{{ err }}</p>
-      <button class="btn primary" type="submit">{{ $t('ops.saveBtn') }}</button>
+      <div class="form-footer">
+        <button v-if="currentStep > 1" type="button" class="btn outline" @click="prevStep">
+          {{ $t('common.prev') || 'Previous' }}
+        </button>
+        <div style="flex: 1"></div>
+        <button v-if="currentStep < 3" type="button" class="btn primary" @click="nextStep">
+          {{ $t('common.next') || 'Next' }}
+        </button>
+        <button v-if="currentStep === 3" class="btn primary" type="submit">
+          {{ $t('ops.saveBtn') }}
+        </button>
+      </div>
     </form>
   </div>
 </template>
 
 <style scoped>
+.creator-form-page {
+  padding-bottom: 5rem;
+}
 .stack {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
   max-width: 1000px;
   margin: 0 auto;
 }
-.section-title {
-  font-size: 1.05rem;
-  margin: 0 0 0.75rem;
+
+/* Step Indicator */
+.step-indicator {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  margin-bottom: 3rem;
+  position: relative;
+}
+.step-indicator::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 2px;
+  background: var(--border);
+  z-index: 0;
+}
+.step-item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.step-item:hover {
+  transform: translateY(-2px);
+}
+.step-item:hover .step-num {
+  border-color: var(--accent);
+  box-shadow: 0 5px 15px var(--accent-soft);
+}
+.step-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+.step-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.step-item.active {
+  color: var(--accent);
+}
+.step-item.active .step-num {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 0 15px var(--accent-soft);
+}
+.step-item.completed {
   color: var(--text-h);
 }
+.step-item.completed .step-num {
+  border-color: var(--accent);
+  background: var(--panel);
+  color: var(--accent);
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.section-title {
+  font-size: 1.15rem;
+  margin: 0 0 1.25rem;
+  color: var(--text-h);
+  font-weight: 800;
+}
+
+.form-footer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
 .reward-box {
-  padding: 1rem;
-  border-radius: var(--radius-sm);
+  padding: 1.25rem;
+  border-radius: 1rem;
   background: var(--accent-soft);
   border: 1px dashed var(--accent-border);
 }
 .reward-hint {
-  margin: 0.35rem 0 0;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--accent-border);
   font-size: 0.9rem;
+  color: var(--accent);
+  font-weight: 600;
 }
 .logo-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
   flex-wrap: wrap;
+  margin-bottom: 0.5rem;
 }
 .logo-preview {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
   object-fit: cover;
   border: 1px solid var(--border);
+  background: var(--bg-deep);
 }
 .logo-actions {
   display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 .sr-only {
   position: absolute;
@@ -253,9 +446,9 @@ async function save() {
   border: 0;
 }
 .hint {
-  margin: 0.35rem 0 0;
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   color: var(--muted);
+  line-height: 1.4;
 }
 </style>
 

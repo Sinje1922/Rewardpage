@@ -1,11 +1,23 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MissionRowState } from '../../utils/missionRow'
 import { emptyMissionRow } from '../../utils/missionRow'
 
 const { t } = useI18n()
 const rows = defineModel<MissionRowState[]>({ required: true })
-// ... (rest of the script logic remains the same)
+
+// 접기/펼치기 상태 관리 (로컬)
+const collapsedRows = ref<Set<string>>(new Set())
+
+function toggleCollapse(key: string) {
+  if (collapsedRows.value.has(key)) {
+    collapsedRows.value.delete(key)
+  } else {
+    collapsedRows.value.add(key)
+  }
+}
+
 function updateRow(i: number, patch: Partial<MissionRowState>) {
   const next = rows.value.map((r, j) => (j === i ? { ...r, ...patch } : r))
   rows.value = next
@@ -132,6 +144,7 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
   <div class="mission-list">
     <!-- Global Type Picker -->
     <div class="mission-type-picker-global">
+      <div style="font-weight: 800; color: var(--text-h); font-size: 1.1rem; margin-bottom: 1rem;">{{ t('ops.missionSection') }}</div>
       <div v-for="cat in missionCategories" :key="cat.id" class="mission-cat-group">
         <div class="cat-name">{{ t(cat.labelKey) }}</div>
         <div class="type-grid">
@@ -151,219 +164,217 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
     </div>
 
     <!-- Active Missions Configuration -->
-    <div v-for="(row, i) in rows" :key="row.key" class="mission-card card">
-      <div class="mission-head">
+    <div v-for="(row, i) in rows" :key="row.key" class="mission-card card" :class="{ collapsed: collapsedRows.has(row.key) }">
+      <div class="mission-head" @click="toggleCollapse(row.key)">
         <div style="display: flex; align-items: center; gap: 0.5rem">
           <span class="type-badge">{{ t(missionCategories.flatMap(c => c.types).find(t => t.id === row.type)?.labelKey || 'ops.type') }}</span>
           <span class="idx">{{ t('ops.missionNum', { n: i + 1 }) }}</span>
+          <span v-if="collapsedRows.has(row.key)" class="collapsed-title">{{ row.title }}</span>
         </div>
-        <button type="button" class="btn btn-sm" @click="removeRow(i)">{{ t('ops.remove') }}</button>
+        <div class="head-actions" @click.stop>
+          <button type="button" class="btn btn-sm" @click="removeRow(i)">{{ t('ops.remove') }}</button>
+          <button type="button" class="fold-btn" @click.stop="toggleCollapse(row.key)">
+            {{ collapsedRows.has(row.key) ? '▼' : '▲' }}
+          </button>
+        </div>
       </div>
 
-      <div class="field">
-        <label>{{ $t('ops.missionTitle') }}</label>
-        <input :value="row.title" :placeholder="t('ops.titlePlaceholder')" @input="updateRow(i, { title: ($event.target as HTMLInputElement).value })" />
-      </div>
-      <div class="field">
-        <label>{{ $t('ops.description') }} ({{ $t('common.optional') || 'Optional' }})</label>
-        <textarea :value="row.description" rows="2" @input="updateRow(i, { description: ($event.target as HTMLTextAreaElement).value })" />
-      </div>
+      <div v-if="!collapsedRows.has(row.key)" class="mission-body-wrap">
+        <div class="field">
+          <label>{{ $t('ops.missionTitle') }}</label>
+          <input :value="row.title" :placeholder="t('ops.titlePlaceholder')" @input="updateRow(i, { title: ($event.target as HTMLInputElement).value })" />
+        </div>
+        <div class="field">
+          <label>{{ $t('ops.description') }} ({{ $t('common.optional') || 'Optional' }})</label>
+          <textarea :value="row.description" rows="2" @input="updateRow(i, { description: ($event.target as HTMLTextAreaElement).value })" />
+        </div>
 
-      <div class="type-box">
-        <template v-if="row.type === 'LINK_VISIT'">
-          <div class="field">
-            <label>{{ $t('ops.linkUrl') || 'Link URL' }}</label>
-            <input :value="row.linkUrl" type="url" placeholder="https://..." @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
-          </div>
-          <div class="field">
-            <label>{{ $t('ops.minDwellLabel') }}</label>
-            <input
-              type="number"
-              min="0"
-              :value="row.minDwellSeconds"
-              @input="updateRow(i, { minDwellSeconds: Number(($event.target as HTMLInputElement).value) })"
-            />
-          </div>
-        </template>
+        <div class="type-box">
+          <template v-if="row.type === 'LINK_VISIT'">
+            <div class="field">
+              <label>{{ $t('ops.linkUrl') || 'Link URL' }}</label>
+              <input :value="row.linkUrl" type="url" placeholder="https://..." @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
+            </div>
+          </template>
 
-        <template v-else-if="row.type === 'CODE'">
-          <div class="field">
-            <label>{{ $t('ops.correctCodeLabel') }}</label>
-            <input :value="row.correctCode" @input="updateRow(i, { correctCode: ($event.target as HTMLInputElement).value })" />
-          </div>
-        </template>
+          <template v-else-if="row.type === 'CODE'">
+            <div class="field">
+              <label>{{ $t('ops.correctCodeLabel') }}</label>
+              <input :value="row.correctCode" @input="updateRow(i, { correctCode: ($event.target as HTMLInputElement).value })" />
+            </div>
+          </template>
 
-        <template v-else-if="row.type === 'SURVEY'">
-          <div class="field">
-            <label>{{ $t('ops.surveyQuestions') }}</label>
-            <div v-for="(qs, qi) in row.surveyQuestions" :key="qs.id" class="survey-q-box">
-              <div class="survey-q-head">
-                <span class="q-idx">{{ $t('ops.questionNum', { n: qi + 1 }) }}</span>
-                <div class="q-ctrls">
-                  <select :value="qs.type" @change="(e) => {
-                    const nextQs = [...row.surveyQuestions];
-                    nextQs[qi] = { ...nextQs[qi], type: (e.target as HTMLSelectElement).value as any };
-                    if (nextQs[qi].type === 'OBJECTIVE' && nextQs[qi].options.length === 0) {
-                      nextQs[qi].options = [t('ops.optionPlaceholder', { n: 1 }), t('ops.optionPlaceholder', { n: 2 })];
-                    }
-                    updateRow(i, { surveyQuestions: nextQs });
-                  }">
-                    <option value="SUBJECTIVE">{{ $t('ops.typeSubjective') }}</option>
-                    <option value="OBJECTIVE">{{ $t('ops.typeObjective') }}</option>
-                  </select>
-                  <button type="button" class="btn btn-sm" @click="removeSurveyQuestion(i, qi)">{{ $t('ops.remove') }}</button>
-                </div>
-              </div>
-              
-              <input 
-                :value="qs.question" 
-                :placeholder="t('ops.questionPlaceholder')" 
-                @input="(e) => {
-                  const nextQs = [...row.surveyQuestions];
-                  nextQs[qi] = { ...nextQs[qi], question: (e.target as HTMLInputElement).value };
-                  updateRow(i, { surveyQuestions: nextQs });
-                }"
-              />
-
-              <div v-if="qs.type === 'OBJECTIVE'" class="survey-opt-list">
-                <div v-for="(_, oi) in qs.options" :key="oi" class="survey-opt-row">
-                  <input 
-                    :value="qs.options[oi]" 
-                    :placeholder="t('ops.optionPlaceholder', { n: oi + 1 })"
-                    @input="(e) => {
+          <template v-else-if="row.type === 'SURVEY'">
+            <div class="field">
+              <label>{{ $t('ops.surveyQuestions') }}</label>
+              <div v-for="(qs, qi) in row.surveyQuestions" :key="qs.id" class="survey-q-box">
+                <div class="survey-q-head">
+                  <span class="q-idx">{{ $t('ops.questionNum', { n: qi + 1 }) }}</span>
+                  <div class="q-ctrls">
+                    <select :value="qs.type" @change="(e) => {
                       const nextQs = [...row.surveyQuestions];
-                      const nextOpts = [...nextQs[qi].options];
-                      nextOpts[oi] = (e.target as HTMLInputElement).value;
-                      nextQs[qi] = { ...nextQs[qi], options: nextOpts };
+                      nextQs[qi] = { ...nextQs[qi], type: (e.target as HTMLSelectElement).value as any };
+                      if (nextQs[qi].type === 'OBJECTIVE' && nextQs[qi].options.length === 0) {
+                        nextQs[qi].options = [t('ops.optionPlaceholder', { n: 1 }), t('ops.optionPlaceholder', { n: 2 })];
+                      }
                       updateRow(i, { surveyQuestions: nextQs });
-                    }"
-                  />
-                  <button type="button" class="btn btn-sm" @click="removeSurveyOption(i, qi, oi)">x</button>
+                    }">
+                      <option value="SUBJECTIVE">{{ $t('ops.typeSubjective') }}</option>
+                      <option value="OBJECTIVE">{{ $t('ops.typeObjective') }}</option>
+                    </select>
+                    <button type="button" class="btn btn-sm" @click="removeSurveyQuestion(i, qi)">{{ $t('ops.remove') }}</button>
+                  </div>
                 </div>
-                <button type="button" class="btn btn-sm" @click="addSurveyOption(i, qi)">{{ $t('ops.addOption') }}</button>
+                
+                <input 
+                  :value="qs.question" 
+                  :placeholder="t('ops.questionPlaceholder')" 
+                  @input="(e) => {
+                    const nextQs = [...row.surveyQuestions];
+                    nextQs[qi] = { ...nextQs[qi], question: (e.target as HTMLInputElement).value };
+                    updateRow(i, { surveyQuestions: nextQs });
+                  }"
+                />
+
+                <div v-if="qs.type === 'OBJECTIVE'" class="survey-opt-list">
+                  <div v-for="(_, oi) in qs.options" :key="oi" class="survey-opt-row">
+                    <input 
+                      :value="qs.options[oi]" 
+                      :placeholder="t('ops.optionPlaceholder', { n: oi + 1 })"
+                      @input="(e) => {
+                        const nextQs = [...row.surveyQuestions];
+                        const nextOpts = [...nextQs[qi].options];
+                        nextOpts[oi] = (e.target as HTMLInputElement).value;
+                        nextQs[qi] = { ...nextQs[qi], options: nextOpts };
+                        updateRow(i, { surveyQuestions: nextQs });
+                      }"
+                    />
+                    <button type="button" class="btn btn-sm" @click="removeSurveyOption(i, qi, oi)">x</button>
+                  </div>
+                  <button type="button" class="btn btn-sm" @click="addSurveyOption(i, qi)">{{ $t('ops.addOption') }}</button>
+                </div>
               </div>
+              <button type="button" class="btn btn-sm" style="width: 100%; margin-top: 0.5rem" @click="addSurveyQuestion(i)">{{ $t('ops.addQuestion') }}</button>
             </div>
-            <button type="button" class="btn btn-sm" style="width: 100%; margin-top: 0.5rem" @click="addSurveyQuestion(i)">{{ $t('ops.addQuestion') }}</button>
-          </div>
 
-          <div class="field" style="margin-top: 1rem">
-            <label>{{ $t('ops.surveyCommonNote') }}</label>
-            <textarea :value="row.surveyNote" rows="2" :placeholder="t('ops.surveyNotePlaceholder')" @input="updateRow(i, { surveyNote: ($event.target as HTMLTextAreaElement).value })" />
-          </div>
-          <div class="field">
-            <label>{{ $t('ops.extraLink') }}</label>
-            <input :value="row.linkUrl" type="url" placeholder="https://..." @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
-          </div>
-        </template>
-
-        <template v-else-if="row.type === 'QUIZ'">
-          <div class="field">
-            <label>{{ $t('ops.quizQuestion') || 'Question' }}</label>
-            <input :value="row.quizQuestion" @input="updateRow(i, { quizQuestion: ($event.target as HTMLInputElement).value })" />
-          </div>
-          <div class="field">
-            <label>{{ $t('ops.quizRadioHint') }}</label>
-            <div v-for="(_, oi) in row.quizOptions" :key="oi" class="quiz-row">
-              <input
-                type="radio"
-                :checked="row.quizCorrectIndex === oi"
-                @change="updateRow(i, { quizCorrectIndex: oi })"
-              />
-              <input
-                :value="row.quizOptions[oi]"
-                :placeholder="t('ops.optionPlaceholder', { n: oi + 1 })"
-                @input="
-                  (e) => {
-                    const v = (e.target as HTMLInputElement).value
-                    const opts = [...row.quizOptions]
-                    opts[oi] = v
-                    updateRow(i, { quizOptions: opts })
-                  }
-                "
-              />
-              <button type="button" class="btn btn-sm" @click="removeQuizOption(i, oi)">{{ $t('ops.remove') }}</button>
+            <div class="field" style="margin-top: 1rem">
+              <label>{{ $t('ops.surveyCommonNote') }}</label>
+              <textarea :value="row.surveyNote" rows="2" :placeholder="t('ops.surveyNotePlaceholder')" @input="updateRow(i, { surveyNote: ($event.target as HTMLTextAreaElement).value })" />
             </div>
-            <button type="button" class="btn" style="width: 100%; margin-top: 0.25rem" @click="addQuizOption(i)">{{ $t('ops.addOption') }}</button>
-          </div>
-        </template>
+            <div class="field">
+              <label>{{ $t('ops.extraLink') }}</label>
+              <input :value="row.linkUrl" type="url" placeholder="https://..." @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
+            </div>
+          </template>
 
-        <template v-else-if="row.type === 'FILE_UPLOAD'">
-          <div class="field">
-            <label>{{ $t('ops.fileNoteLabel') }}</label>
-            <input :value="row.fileNote" @input="updateRow(i, { fileNote: ($event.target as HTMLInputElement).value })" />
-          </div>
-        </template>
+          <template v-else-if="row.type === 'QUIZ'">
+            <div class="field">
+              <label>{{ $t('ops.quizQuestion') || 'Question' }}</label>
+              <input :value="row.quizQuestion" @input="updateRow(i, { quizQuestion: ($event.target as HTMLInputElement).value })" />
+            </div>
+            <div class="field">
+              <label>{{ $t('ops.quizRadioHint') }}</label>
+              <div v-for="(_, oi) in row.quizOptions" :key="oi" class="quiz-row">
+                <input
+                  type="radio"
+                  :checked="row.quizCorrectIndex === oi"
+                  @change="updateRow(i, { quizCorrectIndex: oi })"
+                />
+                <input
+                  :value="row.quizOptions[oi]"
+                  :placeholder="t('ops.optionPlaceholder', { n: oi + 1 })"
+                  @input="
+                    (e) => {
+                      const v = (e.target as HTMLInputElement).value
+                      const opts = [...row.quizOptions]
+                      opts[oi] = v
+                      updateRow(i, { quizOptions: opts })
+                    }
+                  "
+                />
+                <button type="button" class="btn btn-sm" @click="removeQuizOption(i, oi)">{{ $t('ops.remove') }}</button>
+              </div>
+              <button type="button" class="btn" style="width: 100%; margin-top: 0.25rem" @click="addQuizOption(i)">{{ $t('ops.addOption') }}</button>
+            </div>
+          </template>
 
-        <template v-else-if="row.type === 'CHECKIN'">
-          <p class="hint">{{ $t('ops.checkinHint') }}</p>
-        </template>
+          <template v-else-if="row.type === 'FILE_UPLOAD'">
+            <div class="field">
+              <label>{{ $t('ops.fileNoteLabel') }}</label>
+              <input :value="row.fileNote" @input="updateRow(i, { fileNote: ($event.target as HTMLInputElement).value })" />
+            </div>
+          </template>
 
-        <template v-else-if="row.type === 'TELEGRAM_JOIN' || row.type === 'TELEGRAM_CHANNEL' || row.type === 'TELEGRAM_GROUP'">
-          <div class="field">
-            <label>{{ $t('ops.telegramUrl') }}</label>
-            <input :value="row.linkUrl" type="url" placeholder="https://t.me/your_channel" @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
-          </div>
-        </template>
+          <template v-else-if="row.type === 'CHECKIN'">
+            <p class="hint">{{ $t('ops.checkinHint') }}</p>
+          </template>
 
-        <template v-else-if="row.type === 'DISCORD_JOIN'">
-          <div class="field">
-            <label>{{ $t('ops.discordUrl') }}</label>
-            <input :value="row.linkUrl" type="url" placeholder="https://discord.gg/invite_code" @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
-          </div>
-        </template>
+          <template v-else-if="row.type === 'TELEGRAM_JOIN' || row.type === 'TELEGRAM_CHANNEL' || row.type === 'TELEGRAM_GROUP'">
+            <div class="field">
+              <label>{{ $t('ops.telegramUrl') }}</label>
+              <input :value="row.linkUrl" type="url" placeholder="https://t.me/your_channel" @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
+            </div>
+          </template>
 
-        <template v-else-if="row.type === 'YOUTUBE_WATCH'">
-          <div class="field">
-            <label>{{ t('ops.youtubeVideoHint') }}</label>
-            <input :value="row.youtubeVideoId" placeholder="dQw4w9WgXcQ" @input="updateRow(i, { youtubeVideoId: ($event.target as HTMLInputElement).value })" />
-          </div>
-          <div class="field">
-            <label>{{ t('ops.youtubeTargetSeconds') }}</label>
-            <input
-              type="number"
-              min="1"
-              :value="row.youtubeTargetSeconds"
-              @input="updateRow(i, { youtubeTargetSeconds: Number(($event.target as HTMLInputElement).value) })"
-            />
-          </div>
-        </template>
+          <template v-else-if="row.type === 'DISCORD_JOIN'">
+            <div class="field">
+              <label>{{ $t('ops.discordUrl') }}</label>
+              <input :value="row.linkUrl" type="url" placeholder="https://discord.gg/invite_code" @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
+            </div>
+          </template>
 
-        <template v-else-if="row.type === 'YOUTUBE_SUBSCRIBE'">
-          <div class="field">
-            <label>{{ t('ops.linkUrl') }}</label>
-            <input :value="row.linkUrl" type="url" placeholder="https://youtube.com/@channel" @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
-          </div>
-          <div class="field">
-            <label>{{ t('ops.youtubeChannelHint') }}</label>
-            <input :value="row.youtubeChannelId" placeholder="UC..." @input="updateRow(i, { youtubeChannelId: ($event.target as HTMLInputElement).value })" />
-          </div>
-        </template>
+          <template v-else-if="row.type === 'YOUTUBE_WATCH'">
+            <div class="field">
+              <label>{{ t('ops.youtubeVideoHint') }}</label>
+              <input :value="row.youtubeVideoId" placeholder="dQw4w9WgXcQ" @input="updateRow(i, { youtubeVideoId: ($event.target as HTMLInputElement).value })" />
+            </div>
+            <div class="field">
+              <label>{{ t('ops.youtubeTargetSeconds') }}</label>
+              <input
+                type="number"
+                min="1"
+                :value="row.youtubeTargetSeconds"
+                @input="updateRow(i, { youtubeTargetSeconds: Number(($event.target as HTMLInputElement).value) })"
+              />
+            </div>
+          </template>
 
-        <template v-else-if="row.type === 'YOUTUBE_LIKE'">
-          <div class="field">
-            <label>{{ t('ops.linkUrl') }}</label>
-            <input :value="row.linkUrl" type="url" placeholder="https://youtube.com/watch?v=..." @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
-          </div>
-          <div class="field">
-            <label>{{ t('ops.youtubeVideoHint') }}</label>
-            <input :value="row.youtubeVideoId" placeholder="dQw4w9WgXcQ" @input="updateRow(i, { youtubeVideoId: ($event.target as HTMLInputElement).value })" />
-          </div>
-        </template>
+          <template v-else-if="row.type === 'YOUTUBE_SUBSCRIBE'">
+            <div class="field">
+              <label>{{ t('ops.linkUrl') }}</label>
+              <input :value="row.linkUrl" type="url" placeholder="https://youtube.com/@channel" @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
+            </div>
+            <div class="field">
+              <label>{{ t('ops.youtubeChannelHint') }}</label>
+              <input :value="row.youtubeChannelId" placeholder="UC..." @input="updateRow(i, { youtubeChannelId: ($event.target as HTMLInputElement).value })" />
+            </div>
+          </template>
 
-        <template v-else-if="row.type === 'INSTAGRAM_FOLLOW'">
-          <div class="field">
-            <label>{{ t('ops.instagramHandleHint') }}</label>
-            <input :value="row.instagramHandle" placeholder="@username" @input="updateRow(i, { instagramHandle: ($event.target as HTMLInputElement).value })" />
-          </div>
-        </template>
+          <template v-else-if="row.type === 'YOUTUBE_LIKE'">
+            <div class="field">
+              <label>{{ t('ops.linkUrl') }}</label>
+              <input :value="row.linkUrl" type="url" placeholder="https://youtube.com/watch?v=..." @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
+            </div>
+            <div class="field">
+              <label>{{ t('ops.youtubeVideoHint') }}</label>
+              <input :value="row.youtubeVideoId" placeholder="dQw4w9WgXcQ" @input="updateRow(i, { youtubeVideoId: ($event.target as HTMLInputElement).value })" />
+            </div>
+          </template>
 
-        <template v-else-if="row.type === 'INSTAGRAM_LIKE'">
-          <div class="field">
-            <label>{{ $t('ops.instagramPostHint') }}</label>
-            <input :value="row.instagramPostId" placeholder="C123..." @input="updateRow(i, { instagramPostId: ($event.target as HTMLInputElement).value })" />
-          </div>
-        </template>
+          <template v-else-if="row.type === 'INSTAGRAM_FOLLOW'">
+            <div class="field">
+              <label>{{ t('ops.instagramHandleHint') }}</label>
+              <input :value="row.instagramHandle" placeholder="@username" @input="updateRow(i, { instagramHandle: ($event.target as HTMLInputElement).value })" />
+            </div>
+          </template>
 
+          <template v-else-if="row.type === 'INSTAGRAM_LIKE'">
+            <div class="field">
+              <label>{{ $t('ops.instagramPostHint') }}</label>
+              <input :value="row.instagramPostId" placeholder="C123..." @input="updateRow(i, { instagramPostId: ($event.target as HTMLInputElement).value })" />
+            </div>
+          </template>
+        </div>
       </div>
     </div>
   </div>
@@ -375,15 +386,60 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
   flex-direction: column;
   gap: 1rem;
 }
+.mission-card {
+  transition: all 0.3s ease;
+}
+.mission-card.collapsed {
+  padding-bottom: 0.5rem;
+}
 .mission-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  transition: background 0.2s;
+}
+.mission-head:hover {
+  background: var(--accent-soft);
+}
+.collapsed .mission-head {
+  margin-bottom: 0;
 }
 .idx {
   font-weight: 800;
   color: var(--text-h);
+}
+.collapsed-title {
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.fold-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+.fold-btn:hover {
+  transform: scale(1.2);
 }
 .btn-sm {
   padding: 0.25rem 0.6rem;

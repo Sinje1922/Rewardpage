@@ -67,10 +67,13 @@ async function handleLinkRequest(userId: string, tgUser: any) {
     // Update user in DB
     const user = await prisma.user.update({
       where: { id: userId },
-      data: { telegramHandle: handle },
+      data: { 
+        telegramHandle: handle,
+        telegramId: String(tgUser.id)
+      },
     });
 
-    console.log(`Linked Telegram for user ${user.email}: ${handle}`);
+    console.log(`Linked Telegram for user ${user.email}: ${handle} (ID:${tgUser.id})`);
 
     // Send confirmation to user
     await axios.post(`${API_URL}/sendMessage`, {
@@ -79,5 +82,26 @@ async function handleLinkRequest(userId: string, tgUser: any) {
     });
   } catch (err: any) {
     console.error('Failed to link telegram handle:', err.message);
+  }
+}
+
+export async function checkTelegramMembership(chatId: string, userId: string) {
+  if (!TOKEN) return false;
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.telegramId) return false;
+
+    const response = await axios.get(`${API_URL}/getChatMember`, {
+      params: {
+        chat_id: chatId.startsWith('@') ? chatId : `@${chatId}`,
+        user_id: user.telegramId,
+      },
+    });
+
+    const status = response.data.result?.status;
+    return ['member', 'administrator', 'creator'].includes(status);
+  } catch (err: any) {
+    console.error('Telegram Membership Check Error:', err.response?.data || err.message);
+    return false;
   }
 }

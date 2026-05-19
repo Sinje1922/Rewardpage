@@ -73,32 +73,38 @@ export async function runCampaignDraw(campaignId: string) {
 
   const rewardsJsonPerWinner = JSON.stringify(rewardsPerWinner);
 
-  await prisma.$transaction([
-    ...picked.map((userId, i) =>
-      prisma.winner.create({
+  await prisma.$transaction(async (tx) => {
+    // 1. Atomic check & row lock using updateMany to verify campaign isn't already drawn
+    const updateResult = await tx.campaign.updateMany({
+      where: { id: c.id, status: { not: "DRAWN" } },
+      data: { status: "DRAWN", drawnAt: new Date() },
+    });
+    if (updateResult.count === 0) {
+      throw new Error("ALREADY_DRAWN");
+    }
+
+    // 2. Safely create winners and award points
+    for (let i = 0; i < picked.length; i++) {
+      const userId = picked[i];
+      await tx.winner.create({
         data: {
           campaignId: c.id,
           userId,
           rank: i + 1,
           points: totalPointsPerWinner,
-          currency: "POINT", // Legacy fallback
+          currency: "POINT",
           rewardsConfig: rewardsJsonPerWinner,
         },
-      }),
-    ),
-    ...(totalPointsPerWinner > 0
-      ? picked.map((userId) =>
-          prisma.user.update({
-            where: { id: userId },
-            data: { pointBalance: { increment: totalPointsPerWinner } },
-          }),
-        )
-      : []),
-    prisma.campaign.update({
-      where: { id: c.id },
-      data: { status: "DRAWN", drawnAt: new Date() },
-    }),
-  ]);
+      });
+
+      if (totalPointsPerWinner > 0) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { pointBalance: { increment: totalPointsPerWinner } },
+        });
+      }
+    }
+  });
 
   return {
     winners: await prisma.winner.findMany({

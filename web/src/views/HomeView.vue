@@ -1,201 +1,353 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
-import { RouterLink } from 'vue-router'
-import { api, getFileUrl } from '../api/client'
-import { useI18n } from 'vue-i18n'
+import { onMounted, ref, computed } from "vue";
+import { useRouter } from "vue-router";
+import { api } from "../api/client";
+import { useI18n } from "vue-i18n";
+import homeBanner from "../assets/hero_bg_new.png";
+import stepIcon1 from "../assets/new_icon_4.png";
+import stepIcon2 from "../assets/new_icon_5.png";
+import stepIcon3 from "../assets/new_icon_6.png";
+import valueIcon1 from "../assets/new_icon_9.png";
+import valueIcon2 from "../assets/new_icon_10.png";
+import valueIcon3 from "../assets/new_icon_11.png";
+import faqCharacter from "../assets/new_icon_1.png";
+import cpAsset1 from "../assets/new_icon_2.png";
+import cpAsset2 from "../assets/new_icon_3.png";
+import statIconMissions from "../assets/new_icon_7.png";
+import statIconPoints from "../assets/new_icon_6.png";
+import statIconGlobe from "../assets/new_icon_8.png";
+import kakaoCard1 from "../assets/KakaoTalk_20260519_105338133.png";
+import kakaoCard2 from "../assets/KakaoTalk_20260519_105338133_01.png";
+import kakaoCard3 from "../assets/KakaoTalk_20260519_105338133_02.png";
+import kakaoCard4 from "../assets/KakaoTalk_20260519_105338133_03.png";
+import kakaoCard5 from "../assets/KakaoTalk_20260519_105338133_04.png";
+
+const getStepIcon = (i: number) => {
+  if (i === 1) return stepIcon1;
+  if (i === 2) return stepIcon2;
+  return stepIcon3;
+};
+
+const getCampaignIcon = (i: number) => {
+  return i === 0 ? cpAsset1 : cpAsset2;
+};
 
 type Campaign = {
-  id: string
-  title: string
-  description: string
-  companyName: string
-  companyLogoUrl: string
-  status: string
-  winnerCount: number
-  totalRewardPoints: number
-  rewardCurrency: string
-  rewardsConfig: string
-  startsAt: string | null
-  endsAt: string | null
-  missions?: { id: string }[]
-}
+  id: string;
+  title: string;
+  description: string;
+  companyName: string;
+  companyLogoUrl: string;
+  status: string;
+  winnerCount: number;
+  totalRewardPoints: number;
+  rewardCurrency: string;
+  rewardsConfig: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  missions?: { id: string }[];
+};
 
-const { t } = useI18n()
-const list = ref<Campaign[]>([])
-const loading = ref(true)
+const { t } = useI18n();
+const router = useRouter();
+const list = ref<Campaign[]>([]);
+const loading = ref(true);
 
 onMounted(async () => {
   try {
-    const { data } = await api.get<Campaign[]>('/campaigns')
-    list.value = data.filter(c => c.status === 'ACTIVE')
+    const { data } = await api.get<Campaign[]>("/campaigns");
+    list.value = data.filter((c) => c.status === "ACTIVE");
   } catch (err) {
-    console.error(err)
+    console.error(err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-})
+});
 
 // 마감 임박 (종료 시간이 있고 미래인 것 중 빠른 순)
 const closingSoonList = computed(() => {
-  return [...list.value]
-    .filter(c => c.endsAt && new Date(c.endsAt) > new Date())
-    .sort((a, b) => new Date(a.endsAt!).getTime() - new Date(b.endsAt!).getTime())
-    .slice(0, 4)
-})
+  const active = [...list.value]
+    .filter((c) => {
+      if (c.status !== "ACTIVE") return false;
+      if (!c.endsAt) return true;
+      return new Date(c.endsAt) > new Date();
+    })
+    .sort((a, b) => {
+      if (a.endsAt && b.endsAt) {
+        return new Date(a.endsAt).getTime() - new Date(b.endsAt).getTime();
+      }
+      return a.endsAt ? -1 : 1;
+    })
+    .slice(0, 4);
 
+  if (active.length > 0) return active;
 
-const banners = computed(() => [
-  {
-    id: 1,
-    title: t('home.heroTitle'),
-    sub: t('home.heroLead'),
-    image: '/hero_banner_reward_clean.png',
-    link: '/campaigns'
-  }
-])
+  // Dummy Fallback to perfectly match reference image when DB is empty
+  return [
+    {
+      id: "dummy-1",
+      title: "Reward Test",
+      companyName: "pickku",
+      companyLogoUrl: "",
+      status: "ACTIVE",
+      winnerCount: 12345,
+      totalRewardPoints: 100,
+      rewardCurrency: "P",
+      endsAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+    {
+      id: "dummy-2",
+      title: "광고",
+      companyName: "HETAQ",
+      companyLogoUrl: "",
+      status: "ACTIVE",
+      winnerCount: 8765,
+      totalRewardPoints: 100,
+      rewardCurrency: "P",
+      endsAt: new Date(Date.now() + 86400000).toISOString(),
+    },
+  ] as Campaign[];
+});
 
 const faqs = ref([
-  { q: t('home.faq1Q'), a: t('home.faq1A'), open: false },
-  { q: t('home.faq2Q'), a: t('home.faq2A'), open: false },
-  { q: t('home.faq3Q'), a: t('home.faq3A'), open: false },
-  { q: t('home.faq4Q'), a: t('home.faq4A'), open: false },
-])
-
-const steps = computed(() => [
-  { n: 1, title: t('home.step1Title'), desc: t('home.step1Desc'), icon: '👤' },
-  { n: 2, title: t('home.step2Title'), desc: t('home.step2Desc'), icon: '🎯' },
-  { n: 3, title: t('home.step3Title'), desc: t('home.step3Desc'), icon: '💰' },
-])
-
-function getRemainingTime(endsAt: string | null) {
-  if (!endsAt) return ''
-  const end = new Date(endsAt)
-  const now = new Date()
-  const diff = end.getTime() - now.getTime()
-  if (diff <= 0) return t('home.closed')
-  
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-  
-  if (days > 0) return t('home.remainingDays', { n: days })
-  if (hours > 0) return t('home.remainingHours', { n: hours })
-  return t('home.remainingMinutes', { n: minutes })
-}
-
+  { q: t("home.faq1Q"), a: t("home.faq1A"), open: false },
+  { q: t("home.faq2Q"), a: t("home.faq2A"), open: false },
+  { q: t("home.faq3Q"), a: t("home.faq3A"), open: false },
+  { q: t("home.faq4Q"), a: t("home.faq4A"), open: false },
+]);
 </script>
 
 <template>
-  <div class="home-container">
-    <!-- Hero Section -->
-    <section class="banner-area">
-      <div v-for="b in banners" :key="b.id" class="banner-card">
-        <img :src="b.image" alt="" class="banner-bg" />
-        <div class="banner-content">
-          <p class="badge white">{{ $t('home.badge') }}</p>
-          <h1 class="banner-title" v-html="b.title.replace('\n', '<br>')"></h1>
-          <p class="banner-sub">{{ b.sub }}</p>
-          <RouterLink :to="b.link" class="btn primary glass">{{ $t('home.exploreCampaigns') }}</RouterLink>
+  <div class="home-container-wide">
+    <!-- Hero Area (Expansive Vision) -->
+    <section
+      class="hero-expansive"
+      :style="{ backgroundImage: `url(${homeBanner})` }"
+    >
+      <div class="hero-inner-wide">
+        <div class="hero-content-main">
+          <span class="hero-tag-modern">{{ $t("home.heroTag") }}</span>
+          <h1 class="hero-title-main" v-html="$t('home.heroTitleModern')"></h1>
+          <p class="hero-lead-main">{{ $t("home.heroLeadModern") }}</p>
+
+          <div class="hero-btn-group">
+            <button class="btn-start" @click="router.push('/campaigns')">
+              Start Mission ➔
+            </button>
+          </div>
+
+          <div class="active-community">
+            <div class="avatar-stack-modern">
+              <div v-for="i in 3" :key="i" class="avatar-pill"></div>
+              <div class="avatar-count">+36K</div>
+            </div>
+            <span class="community-text">{{ $t("home.activeMembers") }}</span>
+          </div>
+        </div>
+
+        <div class="hero-visual-main">
+          <div class="visual-canvas">
+            <!-- Floating Cards: Exactly like image -->
+            <div class="float-card fc-1">
+              <img :src="kakaoCard1" alt="Social Mission" class="fc-img" />
+            </div>
+            <div class="float-card fc-2">
+              <img :src="kakaoCard2" alt="Daily Mission" class="fc-img" />
+            </div>
+            <div class="float-card fc-3">
+              <img :src="kakaoCard3" alt="Content Mission" class="fc-img" />
+            </div>
+            <div class="float-card fc-4">
+              <img :src="kakaoCard4" alt="Engagement Mission" class="fc-img" />
+            </div>
+            <div class="float-card fc-5">
+              <img :src="kakaoCard5" alt="Quiz Mission" class="fc-img" />
+            </div>
+          </div>
         </div>
       </div>
     </section>
+
+    <!-- Stats Section (Full Width Card) -->
+    <div class="stats-wrapper-modern">
+      <div class="stats-card-modern">
+        <div class="stat-box-modern">
+          <div class="stat-icon-wrap users">👥</div>
+          <div class="stat-data">
+            <span class="stat-number">320K+</span>
+            <span class="stat-label">{{ $t("home.statsActiveUsers") }}</span>
+          </div>
+        </div>
+        <div class="stat-box-modern">
+          <div class="stat-icon-wrap missions">
+            <img :src="statIconMissions" class="stat-img" />
+          </div>
+          <div class="stat-data">
+            <span class="stat-number">1.5M+</span>
+            <span class="stat-label">{{ $t("home.statsMissions") }}</span>
+          </div>
+        </div>
+        <div class="stat-box-modern">
+          <div class="stat-icon-wrap points">
+            <img :src="statIconPoints" class="stat-img" />
+          </div>
+          <div class="stat-data">
+            <span class="stat-number">7.8M+</span>
+            <span class="stat-label">{{ $t("home.statsPoints") }}</span>
+          </div>
+        </div>
+        <div class="stat-box-modern">
+          <div class="stat-icon-wrap communities">
+            <img :src="statIconGlobe" class="stat-img" />
+          </div>
+          <div class="stat-data">
+            <span class="stat-number">150+</span>
+            <span class="stat-label">{{ $t("home.statsCommunities") }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Steps Section -->
-    <section class="landing-section centered">
-      <span class="section-tag">{{ $t('home.stepsTag') }}</span>
-      <h2 class="section-title">{{ $t('home.stepsTitle') }}</h2>
-      <p class="section-desc">{{ $t('home.stepsDesc') }}</p>
-      
-      <div class="step-grid">
-        <div v-for="s in steps" :key="s.n" class="card step-card">
-          <div class="step-number">{{ s.n }}</div>
-          <h3 class="step-title">{{ s.title }}</h3>
-          <p class="step-desc">{{ s.desc }}</p>
-        </div>
-      </div>
-      
-      <RouterLink to="/campaigns" class="btn primary" style="margin-top: 2rem">
-        {{ $t('home.startNow') }}
-      </RouterLink>
-    </section>
-
-    <!-- Campaigns Section (Closing Soon) -->
-    <section class="landing-section">
-      <div class="section-head">
-        <div>
-          <span class="section-tag">{{ $t('home.campaignsTag') }}</span>
-          <h2 class="section-title">{{ $t('home.sectionClosingSoon') }}</h2>
-        </div>
-        <RouterLink to="/campaigns" class="view-all">{{ $t('home.viewAll') }} →</RouterLink>
-      </div>
-      
-      <div v-if="loading" class="skeleton-grid">
-        <div v-for="i in 4" :key="i" class="card skeleton"></div>
-      </div>
-      <div v-else-if="closingSoonList.length" class="trending-grid">
-        <div v-for="c in closingSoonList" :key="c.id" class="trend-card card">
-          <div class="trend-content">
-            <div class="company-row" v-if="c.companyName || c.companyLogoUrl">
-              <img v-if="c.companyLogoUrl" :src="getFileUrl(c.companyLogoUrl)" class="mini-logo" />
-              <span class="company-name">{{ c.companyName }}</span>
-            </div>
-            <h3 class="card-title">{{ c.title }}</h3>
-            <div class="reward-badges-mini">
-              <template v-if="c.rewardsConfig && c.rewardsConfig !== '[]'">
-                <div v-for="(r, idx) in JSON.parse(c.rewardsConfig)" :key="idx" class="reward-chip-mini" :class="r.currency.toLowerCase()">
-                  <span class="reward-icon">{{ r.currency === 'POINT' ? '🪙' : r.currency === 'USDT' ? '💵' : r.currency === 'METAQ' ? '💎' : '🎁' }}</span>
-                  <span class="reward-amount">{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}</span>
-                </div>
-              </template>
-              <template v-else>
-                <div class="reward-chip-mini point">
-                  <span class="reward-icon">🪙</span>
-                  <span class="reward-amount">{{ (c.totalRewardPoints || 0).toLocaleString() }}{{ c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency }}</span>
-                </div>
-              </template>
-            </div>
-            
-            <div class="time-remaining">
-              <span class="clock-icon">⏰</span>
-              <span class="time-text">{{ getRemainingTime(c.endsAt) }}</span>
-            </div>
-          </div>
-          <div class="trend-actions">
-            <RouterLink :to="`/campaigns/${c.id}`" class="btn primary trend-btn">{{ $t('campaign.join') }}</RouterLink>
-          </div>
+    <section class="home-section centered">
+      <span class="section-tag-modern">HOW IT WORKS</span>
+      <h2 class="section-title-modern">{{ $t("home.stepsTitleModern") }}</h2>
+      <div class="steps-grid-modern">
+        <div v-for="i in 3" :key="i" class="step-card-premium card">
+          <div class="step-number-badge">{{ i }}</div>
+          <img :src="getStepIcon(i)" class="step-icon-img" alt="Step Icon" />
+          <h3 class="step-name">{{ $t(`home.step${i}Title`) }}</h3>
+          <p class="step-summary">{{ $t(`home.step${i}Desc`) }}</p>
         </div>
       </div>
     </section>
 
-    <!-- Proof Section -->
-    <section class="landing-section centered">
-      <span class="section-tag">{{ $t('home.proofTag') }}</span>
-      <h2 class="section-title">{{ $t('home.proofTitle') }}</h2>
-      <p class="section-desc">{{ $t('home.proofDesc') }}</p>
-      
-      <div class="proof-grid">
-        <div v-for="i in 4" :key="i" class="card proof-card">
-          <img :src="`/proof_mockup_${i}.png`" class="proof-img" @error="($event.target as HTMLImageElement).src = 'https://placehold.co/300x533?text=Earnings+Proof'" />
+    <!-- Hot Campaigns Section -->
+    <section class="home-section">
+      <div class="section-header-modern">
+        <div class="header-left-side">
+          <span class="section-tag-modern">HOT CAMPAIGNS</span>
+          <h2 class="section-title-modern left">
+            {{ $t("home.hotCampaignsTitle") }}
+          </h2>
         </div>
       </div>
-      
-      <button class="btn primary" style="margin-top: 2rem">{{ $t('home.exploreMore') }}</button>
+
+      <div v-if="loading" class="loading-grid">
+        <div v-for="i in 2" :key="i" class="skeleton-card"></div>
+      </div>
+      <div v-else class="campaign-grid-premium">
+        <div
+          v-for="(c, index) in closingSoonList.slice(0, 2)"
+          :key="c.id"
+          class="campaign-card-premium card"
+        >
+          <div class="cp-visual">
+            <div class="cp-status">진행 중</div>
+            <img
+              :src="getCampaignIcon(index)"
+              class="cp-asset-img"
+              alt="Campaign Asset"
+            />
+          </div>
+          <div class="cp-info">
+            <div class="cp-client">
+              <div class="cp-client-logo"></div>
+              <span class="cp-client-name">{{
+                c.companyName || "pickku"
+              }}</span>
+            </div>
+            <h3 class="cp-title">{{ c.title }}</h3>
+            <div class="cp-reward-box">
+              <span class="cp-reward-val"
+                >+ {{ c.totalRewardPoints || 100 }}P</span
+              >
+            </div>
+            <div class="cp-footer">
+              <span class="cp-users"
+                >참여자 {{ (c.winnerCount || 0).toLocaleString() }}명</span
+              >
+              <div class="cp-avatars"></div>
+              <button
+                class="btn-join-sm"
+                @click="router.push(`/campaigns/${c.id}`)"
+              >
+                참여하기
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
+
+    <!-- Why Pickku Section -->
+    <div class="gray-bg-wrapper">
+      <section class="home-section centered gray-bg-inner">
+        <span class="section-tag-modern">WHY PICKKU</span>
+        <h2 class="section-title-modern">{{ $t("home.valuesTitleModern") }}</h2>
+
+        <div class="values-flex-modern">
+          <div class="value-item-premium card">
+            <img :src="valueIcon1" class="value-icon-img" alt="Safe" />
+            <div class="value-content">
+              <h3>{{ $t("home.whyPickkuSafe") }}</h3>
+              <p>{{ $t("home.whyPickkuSafeDesc") }}</p>
+            </div>
+          </div>
+          <div class="value-item-premium card">
+            <img :src="valueIcon2" class="value-icon-img" alt="Easy" />
+            <div class="value-content">
+              <h3>{{ $t("home.whyPickkuEasy") }}</h3>
+              <p>{{ $t("home.whyPickkuEasyDesc") }}</p>
+            </div>
+          </div>
+          <div class="value-item-premium card">
+            <img :src="valueIcon3" class="value-icon-img" alt="Instant" />
+            <div class="value-content">
+              <h3>{{ $t("home.whyPickkuInstant") }}</h3>
+              <p>{{ $t("home.whyPickkuInstantDesc") }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
 
     <!-- FAQ Section -->
-    <section class="landing-section centered">
-      <span class="section-tag">{{ $t('home.faqTag') }}</span>
-      <h2 class="section-title">{{ $t('home.faqTitle') }}</h2>
-      
-      <div class="faq-list">
-        <div v-for="(f, i) in faqs" :key="i" class="faq-item">
-          <div class="faq-q" @click="f.open = !f.open">
-            <span>{{ f.q }}</span>
-            <span>{{ f.open ? '−' : '+' }}</span>
+    <section class="home-section centered">
+      <div class="faq-container-premium">
+        <div class="faq-text-side">
+          <span class="section-tag-modern">QUESTIONS</span>
+          <h2 class="section-title-modern left">
+            {{ $t("home.faqTitleModern") }}
+          </h2>
+          <div class="faq-accordion-modern">
+            <div v-for="i in 4" :key="i" class="faq-row-modern">
+              <div
+                class="faq-q-modern"
+                @click="faqs[i - 1].open = !faqs[i - 1].open"
+              >
+                <span>{{ $t(`home.faq${i}Q`) }}</span>
+                <span class="faq-toggle">{{
+                  faqs[i - 1].open ? "−" : "+"
+                }}</span>
+              </div>
+              <div
+                class="faq-a-modern"
+                :class="{ 'is-open': faqs[i - 1].open }"
+              >
+                <div class="faq-a-inner">
+                  {{ $t(`home.faq${i}A`) }}
+                </div>
+              </div>
+            </div>
           </div>
-          <div v-if="f.open" class="faq-a">
-            {{ f.a }}
-          </div>
+        </div>
+        <div class="faq-visual-side">
+          <img
+            :src="faqCharacter"
+            class="faq-character-img"
+            alt="FAQ Character"
+          />
         </div>
       </div>
     </section>
@@ -203,361 +355,814 @@ function getRemainingTime(endsAt: string | null) {
 </template>
 
 <style scoped>
-.home-container {
+.home-container-wide {
   display: flex;
   flex-direction: column;
-  gap: 4rem;
-  padding-bottom: 5rem;
+  gap: 10rem;
+  padding-bottom: 12rem;
+  overflow-x: hidden;
+  background: var(--bg);
 }
 
-/* Banner / Hero Section */
-.banner-area {
-  width: 100%;
-  animation: revealUp 0.8s cubic-bezier(0.2, 1, 0.2, 1);
-}
-
-.banner-card {
+/* Hero: Expansive Vision */
+.hero-expansive {
+  padding: 8rem 0 6rem;
   position: relative;
-  width: 100%;
-  aspect-ratio: 21 / 9;
-  min-height: 420px;
-  border-radius: 2rem;
-  overflow: hidden;
-  background: #0f172a;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.hero-inner-wide {
+  max-width: 2400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  align-items: center;
+  gap: 4rem;
+  padding: 0 4rem;
+}
+
+.hero-tag-modern {
+  color: #22c55e !important;
+  font-weight: 800;
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+  display: block;
+  letter-spacing: 0.05em;
+}
+.hero-title-main {
+  font-size: clamp(3.5rem, 7vw, 5.2rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  color: #1e293b !important;
+  margin-bottom: 2.5rem;
+}
+.hero-title-main :deep(.text-indigo) {
+  color: #6c5ce7 !important;
+}
+.hero-title-main :deep(.text-green) {
+  color: #84cc16 !important;
+}
+.hero-lead-main {
+  font-size: 1.4rem;
+  line-height: 1.6;
+  color: #475569 !important;
+  margin-bottom: 4rem;
+  font-weight: 500;
+  max-width: 580px;
+}
+
+.hero-btn-group {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 5rem;
+}
+.btn-start {
+  background: #6366f1;
+  color: white;
+  border: none;
+  padding: 1.25rem 3.5rem;
+  font-weight: 800;
+  border-radius: 18px;
+  font-size: 1.2rem;
+  box-shadow: 0 15px 35px rgba(99, 102, 241, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.btn-start:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 25px 45px rgba(99, 102, 241, 0.4);
+}
+.btn-start.large {
+  padding: 1.5rem 5rem;
+  font-size: 1.3rem;
+}
+
+.btn-explore {
+  background: white;
+  color: #1e293b;
+  border: 2px solid #e2e8f0;
+  padding: 1.25rem 3.5rem;
+  font-weight: 800;
+  border-radius: 18px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.btn-explore:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.active-community {
   display: flex;
   align-items: center;
-  padding: 4rem;
-  box-sizing: border-box;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  gap: 1.5rem;
+}
+.avatar-stack-modern {
+  display: flex;
+  align-items: center;
+}
+.avatar-pill {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  border: 4px solid white;
+  margin-right: -15px;
+}
+.avatar-count {
+  width: 64px;
+  height: 48px;
+  border-radius: 24px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #64748b;
+  margin-left: 10px;
+  border: 1px solid #e2e8f0;
+}
+.community-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #64748b;
 }
 
-/* Dynamic Gradient Background */
-.banner-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 20% 30%, rgba(108, 92, 231, 0.4) 0%, transparent 50%),
-              radial-gradient(circle at 80% 70%, rgba(0, 206, 201, 0.3) 0%, transparent 50%);
-  z-index: 1;
-  animation: pulseGradient 10s ease-in-out infinite alternate;
-}
-
-@keyframes pulseGradient {
-  0% { opacity: 0.5; transform: scale(1); }
-  100% { opacity: 0.8; transform: scale(1.1); }
-}
-
-.banner-bg {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  z-index: 0;
-  opacity: 0.6;
-  filter: saturate(1.2);
-}
-
-.banner-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.4) 50%, transparent 100%);
-  z-index: 2;
-}
-
-.banner-content {
+/* Visual Canvas */
+.hero-visual-main {
   position: relative;
-  z-index: 3;
-  max-width: 650px;
-  animation: revealUp 1s cubic-bezier(0.2, 1, 0.2, 1) 0.2s backwards;
+  height: 750px;
+}
+.visual-canvas {
+  width: 100%;
+  height: 100%;
+  position: relative;
 }
 
-.banner-title {
-  font-size: clamp(2.5rem, 6vw, 3.8rem);
+.float-card {
+  position: absolute;
+  z-index: 2;
+  animation: floating 6s ease-in-out infinite;
+  width: 240px;
+}
+
+.fc-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 1.5rem;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+}
+
+.fc-1 {
+  top: 5%;
+  left: 10%;
+  animation-delay: 0s;
+}
+.fc-2 {
+  top: 10%;
+  right: 5%;
+  animation-delay: 1.5s;
+}
+.fc-3 {
+  top: 45%;
+  left: -5%;
+  animation-delay: 0.8s;
+}
+.fc-4 {
+  bottom: 15%;
+  left: 15%;
+  animation-delay: 2.2s;
+}
+.fc-5 {
+  top: 40%;
+  right: -8%;
+  animation-delay: 3s;
+}
+
+@keyframes floating {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-30px) rotate(3deg);
+  }
+}
+
+/* Stats Card */
+.stats-wrapper-modern {
+  max-width: 1600px;
+  margin: -6rem auto 0;
+  position: relative;
+  z-index: 10;
+  padding: 0 4rem;
+}
+.stats-card-modern {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 3.5rem;
+  background: white;
+  border-radius: 2.5rem;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.02);
+}
+.stat-box-modern {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 0 3rem;
+  border-right: 1px solid #f1f5f9;
+}
+.stat-box-modern:last-child {
+  border: none;
+}
+.stat-icon-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+.stat-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+.stat-number {
+  display: block;
+  font-size: 2rem;
   font-weight: 900;
-  line-height: 1.05;
-  color: #fff;
-  margin: 1.5rem 0 1.2rem;
-  letter-spacing: -0.06em;
-  text-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  color: #1e293b;
+  margin-bottom: 0.4rem;
+}
+.stat-label {
+  font-size: 1rem;
+  color: #94a3b8;
+  font-weight: 700;
 }
 
-.banner-sub {
-  font-size: 1.25rem;
-  color: rgba(255,255,255,0.85);
-  margin-bottom: 3rem;
+/* Sections */
+.home-section {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 4rem;
+  width: 100%;
+}
+.home-section.centered {
+  text-align: center;
+}
+.section-tag-modern {
+  color: #6366f1;
+  font-weight: 900;
+  font-size: 1rem;
+  letter-spacing: 0.2em;
+  margin-bottom: 1.5rem;
+  display: block;
+}
+.section-title-modern {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #1e293b;
+  margin-bottom: 5rem;
+  letter-spacing: -0.02em;
+}
+.section-title-modern.left {
+  text-align: left;
+  margin-bottom: 0;
+}
+
+/* Steps */
+.steps-grid-modern {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3rem;
+  margin-bottom: 6rem;
+}
+.step-card-premium {
+  padding: 4rem 3rem;
+  border-radius: 2.5rem;
+  background: #f8fafc;
+  position: relative;
+}
+.step-number-badge {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  width: 40px;
+  height: 40px;
+  background: #6366f1;
+  color: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+}
+.step-icon-img {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  margin: 0 auto 3rem;
+  display: block;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.05));
+}
+.step-name {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #1e293b;
+  margin-bottom: 1rem;
+}
+.step-summary {
+  color: #64748b;
+  font-size: 1.1rem;
   line-height: 1.6;
-  font-weight: 500;
 }
 
-.badge.white {
-  background: rgba(255,255,255,0.15);
-  color: #fff;
-  backdrop-filter: blur(12px);
+/* Campaigns */
+.section-header-modern {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 4rem;
+}
+.link-view-all {
+  color: #6366f1;
+  font-weight: 800;
+  text-decoration: none;
+  font-size: 1.1rem;
+}
+
+.campaign-grid-premium {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3rem;
+}
+.campaign-card-premium {
+  display: grid;
+  grid-template-columns: 1.2fr 1.5fr;
+  overflow: hidden;
+  border-radius: 2.5rem;
+  background: white;
+  min-height: 380px;
+}
+.cp-visual {
+  background: #f8fafc;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cp-status {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: #fce7f3;
+  color: #ec4899;
   padding: 0.5rem 1rem;
   border-radius: 99px;
   font-weight: 800;
-  border: 1px solid rgba(255,255,255,0.2);
-}
-
-/* Section Common */
-.home-section {
-  display: flex;
-  flex-direction: column;
-  gap: 2.5rem;
-  animation: revealUp 0.8s cubic-bezier(0.2, 1, 0.2, 1) calc(var(--delay, 0) * 0.1s + 0.4s) backwards;
-}
-
-.section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.section-head h2 {
-  font-size: 1.75rem;
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  background: linear-gradient(135deg, var(--text-h), var(--muted));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  margin: 0;
-}
-
-.view-all {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--accent);
-  text-decoration: none;
-}
-
-/* Horizontal Scroll - Mini Cards */
-.horizontal-scroll {
-  display: flex;
-  gap: 1.5rem;
-  overflow-x: auto;
-  padding: 0.5rem 0.5rem 1.5rem;
-  scrollbar-width: none;
-}
-.horizontal-scroll::-webkit-scrollbar { display: none; }
-
-.mini-card {
-  flex: 0 0 300px;
-  transition: all 0.4s cubic-bezier(0.2, 1, 0.2, 1);
-}
-
-.deadline-tag {
-  margin-top: 0.5rem;
   font-size: 0.85rem;
-  font-weight: 700;
-  color: #ff4757;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+  z-index: 2;
 }
-
-.mini-card:hover {
-  transform: translateY(-8px) scale(1.02);
+.cp-asset-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 2rem;
+  transform: scale(1.1);
+  transition: transform 0.3s;
 }
-
-/* Trending Grid */
-.trending-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.25rem;
+.campaign-card-premium:hover .cp-asset-img {
+  transform: scale(1.15);
 }
-
-@media (max-width: 1000px) {
-  .trending-grid {
-    display: flex;
-    overflow-x: auto;
-    padding-bottom: 1rem;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  .trending-grid::-webkit-scrollbar {
-    display: none;
-  }
-  .trend-card {
-    flex: 0 0 280px;
-  }
-}
-
-.trend-card {
-  padding: 1.5rem;
+.cp-info {
+  padding: 3rem;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 1.25rem;
-  border: 1px solid var(--border);
-  background: var(--panel);
+  justify-content: center;
 }
-
-.trend-card:hover {
-  border-color: var(--accent);
-  background: var(--bg-card);
-}
-
-.trend-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.company-row {
+.cp-client {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 0.25rem;
+  margin-bottom: 1rem;
 }
-
-.mini-logo {
-  width: 54px;
-  height: 54px;
-  border-radius: 14px;
-  object-fit: cover;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
+.cp-client-logo {
+  width: 28px;
+  height: 28px;
+  background: #e2e8f0;
+  border-radius: 50%;
 }
-
-.company-name {
-  font-size: 0.9rem;
+.cp-client-name {
   font-weight: 700;
-  color: var(--muted);
-}
-
-.title-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.card-title {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.3;
-  overflow-wrap: break-word;
-}
-
-.reward-badges-mini {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0.5rem 0 1rem;
-}
-
-.reward-chip-mini {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: 0.5rem;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-weight: 800;
-  font-size: 0.85rem;
-  border: 1px solid var(--accent-border);
-  white-space: normal;
-  word-break: keep-all;
-}
-
-.reward-chip-mini.usdt { background: #e6fffa; color: #008a76; border-color: #b2f5ea; }
-.reward-chip-mini.metaq { background: #fff5f7; color: #d53f8c; border-color: #fed7e2; }
-.reward-chip-mini.point { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-border); }
-
-.card-desc {
-  margin: 0.25rem 0 0;
-  font-size: 1rem;
-  line-height: 1.6;
-  color: var(--text);
-  opacity: 0.85;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.trend-actions {
-  width: 100%;
-}
-
-.trend-btn {
-  width: 100%;
-  padding: 0.75rem;
+  color: #64748b;
   font-size: 0.95rem;
-  box-shadow: 0 4px 12px var(--accent-soft);
+}
+.cp-title {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  line-height: 1.3;
+}
+.cp-reward-box {
+  margin-bottom: auto;
+}
+.cp-reward-val {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  background: #f5f3ff;
+  color: #6366f1;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+.cp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #f1f5f9;
+}
+.cp-users {
+  font-weight: 700;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+.btn-join-sm {
+  background: #6366f1;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 800;
+  cursor: pointer;
 }
 
+/* Values */
+.gray-bg-wrapper {
+  background: #f8fafc;
+  width: 100%;
+  margin-bottom: 12rem;
+}
+.gray-bg-inner {
+  padding-top: 8rem;
+  padding-bottom: 8rem;
+  margin-bottom: 0 !important;
+}
+.values-flex-modern {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3rem;
+}
+.value-item-premium {
+  padding: 4rem 3rem;
+  text-align: left;
+  background: white;
+  border-radius: 2rem;
+}
+.value-icon-img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  margin-bottom: 2.5rem;
+  display: block;
+  filter: drop-shadow(0 8px 15px rgba(0, 0, 0, 0.05));
+}
+.value-content h3 {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #1e293b;
+  margin-bottom: 1rem;
+}
+.value-content p {
+  color: #64748b;
+  line-height: 1.6;
+  font-size: 1.05rem;
+}
 
-
-/* Skeleton */
-.skeleton {
-  height: 240px;
+/* FAQ */
+.faq-container-premium {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr;
+  gap: 8rem;
+  align-items: flex-start;
+}
+.faq-accordion-modern {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 4rem;
+}
+.faq-row-modern {
   border-radius: 1.5rem;
-  background: var(--bg-deep);
-  position: relative;
+  background: #f8fafc;
   overflow: hidden;
 }
-
-.skeleton::after {
-  content: "";
-  position: absolute; inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-  animation: skeletonScan 2s infinite;
+.faq-q-modern {
+  padding: 1.75rem 2.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 800;
+  color: #1e293b;
+  font-size: 1.15rem;
+}
+.faq-a-modern {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  color: #64748b;
+  line-height: 1.7;
+  font-size: 1.1rem;
+  padding: 0 2.5rem;
+  transition:
+    max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.25s ease,
+    padding 0.35s ease;
+}
+.faq-a-modern.is-open {
+  max-height: 250px;
+  opacity: 1;
+  padding: 0 2.5rem 2rem;
+}
+.faq-character-img {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  object-fit: contain;
+  animation: floatSlow 6s ease-in-out infinite;
 }
 
-@keyframes skeletonScan {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(100%); }
+@keyframes floatSlow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
 }
 
-@keyframes revealUp {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
+@media (max-width: 1200px) {
+  .hero-inner-wide {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 0 2rem;
+  }
+  .hero-visual-main {
+    height: 500px;
+  }
+  .campaign-grid-premium,
+  .steps-grid-modern,
+  .values-flex-modern {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+  .faq-container-premium {
+    grid-template-columns: 1fr;
+    gap: 4rem;
+  }
+  .stats-card-modern {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    padding: 2.5rem;
+  }
+  .stat-box-modern {
+    border: none;
+    padding: 0 1.5rem;
+  }
+  .home-section {
+    padding: 0 2rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .hero-inner-wide {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 0 2rem;
+    text-align: center;
+  }
+  .hero-visual-main {
+    display: none;
+  }
+  .hero-lead-main {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero-btn-group {
+    justify-content: center;
+  }
+  .active-community {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 900px) {
+  .hero-title-main {
+    font-size: 3rem;
+  }
+  .hero-lead-main {
+    font-size: 1.2rem;
+    margin-bottom: 2.5rem;
+  }
+  .campaign-grid-premium,
+  .steps-grid-modern,
+  .values-flex-modern {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  .campaign-card-premium {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+  .cp-visual {
+    height: 200px;
+  }
+  .cp-info {
+    padding: 2rem;
+  }
+  .value-item-premium,
+  .step-card-premium {
+    padding: 3rem 2rem;
+  }
+  .section-title-modern {
+    font-size: 2.2rem;
+    margin-bottom: 3rem;
+  }
 }
 
 @media (max-width: 768px) {
-  .banner-card { 
-    padding: 2.5rem 1.5rem; 
-    aspect-ratio: auto; 
-    min-height: 450px; 
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
+  .home-container-wide {
+    gap: 6rem;
+    padding-bottom: 6rem;
   }
-  .banner-card::after {
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+  .hero-expansive {
+    padding: 4rem 0 3rem;
   }
-  .banner-content {
-    max-width: 100%;
+  .hero-visual-main {
+    display: none; /* Hide floating cards to fit key content cleanly */
   }
-  .banner-title { 
-    font-size: 2.4rem; 
-    margin-top: 1rem;
+  .stats-wrapper-modern {
+    margin-top: -2rem;
+    padding: 0 1.5rem;
   }
-  .banner-sub {
-    font-size: 1.1rem;
-    margin-bottom: 2rem;
+  .stats-card-modern {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 2rem;
   }
-  
-  .mini-card {
-    flex: 0 0 260px;
+  .stat-box-modern {
+    padding: 0;
   }
-
-  .section-head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
+  .faq-character-img {
+    display: none;
+  }
+  .faq-q-modern {
+    padding: 1.25rem 1.5rem;
+    font-size: 1rem;
+  }
+  .faq-a-modern {
+    padding: 0 1.5rem 1.25rem;
+    font-size: 0.95rem;
   }
 }
 
 @media (max-width: 480px) {
-  .banner-title {
-    font-size: 2rem;
+  .hero-title-main {
+    font-size: 2.2rem;
   }
+  .hero-btn-group {
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 3rem;
+  }
+  .btn-start,
+  .btn-explore {
+    width: 100%;
+    text-align: center;
+    padding: 1rem 2rem;
+  }
+  .active-community {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .avatar-count {
+    margin-left: 0;
+  }
+  .home-section {
+    padding: 0 1.25rem;
+  }
+  .gray-bg-inner {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+  .gray-bg-wrapper {
+    margin-bottom: 6rem;
+  }
+}
+
+/* ==========================================
+   ✨ PREMIUM DARK MODE STYLES FOR HOMEPAGE
+   ========================================== */
+
+/* 1. Stats Card */
+:root.dark .stats-card-modern {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.3) !important;
+}
+:root.dark .stat-box-modern {
+  border-right: 1px solid var(--border) !important;
+}
+:root.dark .stat-icon-wrap {
+  background: var(--code-bg) !important;
+}
+:root.dark .stat-number {
+  color: var(--text-h) !important;
+}
+:root.dark .stat-label {
+  color: var(--muted) !important;
+}
+
+/* 2. Steps Section */
+:root.dark .section-title-modern {
+  color: var(--text-h) !important;
+}
+:root.dark .step-card-premium {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+}
+:root.dark .step-name {
+  color: var(--text-h) !important;
+}
+:root.dark .step-summary {
+  color: var(--muted) !important;
+}
+
+/* 3. Campaign Cards */
+:root.dark .campaign-card-premium {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow) !important;
+}
+:root.dark .campaign-card-premium:hover {
+  box-shadow: var(--shadow-hover) !important;
+}
+:root.dark .cp-visual {
+  background: var(--code-bg) !important;
+}
+:root.dark .cp-client-name {
+  color: var(--muted) !important;
+}
+:root.dark .cp-title {
+  color: var(--text-h) !important;
+}
+:root.dark .cp-footer {
+  border-top: 1px solid var(--border) !important;
+}
+:root.dark .cp-users {
+  color: var(--muted) !important;
+}
+
+/* 4. Values Section */
+:root.dark .gray-bg-wrapper {
+  background: var(
+    --bg-deep
+  ) !important; /* Deep dark coal space bg instead of bright white */
+}
+:root.dark .value-item-premium {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+}
+:root.dark .value-content h3 {
+  color: var(--text-h) !important;
+}
+:root.dark .value-content p {
+  color: var(--muted) !important;
+}
+
+/* 5. FAQ Section */
+:root.dark .faq-row-modern {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+}
+:root.dark .faq-q-modern {
+  color: var(--text-h) !important;
+}
+:root.dark .faq-a-modern {
+  color: var(--muted) !important;
 }
 </style>

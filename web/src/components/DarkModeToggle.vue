@@ -77,7 +77,7 @@ onMounted(() => {
   user-select: none;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 1024px) {
   .dark-mode-toggle {
     bottom: 7.5rem; /* 모바일 하단바 피하기 */
     right: 1.25rem;
