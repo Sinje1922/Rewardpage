@@ -16,6 +16,11 @@ import cpAsset2 from "../assets/new_icon_3.png";
 import statIconMissions from "../assets/new_icon_7.png";
 import statIconPoints from "../assets/new_icon_6.png";
 import statIconGlobe from "../assets/new_icon_8.png";
+import kakaoCard1 from "../assets/KakaoTalk_20260519_105338133.png";
+import kakaoCard2 from "../assets/KakaoTalk_20260519_105338133_01.png";
+import kakaoCard3 from "../assets/KakaoTalk_20260519_105338133_02.png";
+import kakaoCard4 from "../assets/KakaoTalk_20260519_105338133_03.png";
+import kakaoCard5 from "../assets/KakaoTalk_20260519_105338133_04.png";
 
 const getStepIcon = (i: number) => {
   if (i === 1) return stepIcon1;
@@ -147,44 +152,19 @@ const faqs = ref([
           <div class="visual-canvas">
             <!-- Floating Cards: Exactly like image -->
             <div class="float-card fc-1">
-              <div class="fc-header">
-                <span class="fc-tag">Social Mission</span>
-                <div class="fc-check">✓</div>
-              </div>
-              <p class="fc-title">Invite Friends</p>
-              <span class="fc-reward">+200 P</span>
+              <img :src="kakaoCard1" alt="Social Mission" class="fc-img" />
             </div>
             <div class="float-card fc-2">
-              <div class="fc-header">
-                <span class="fc-tag">Daily Mission</span>
-                <div class="fc-check pink">✓</div>
-              </div>
-              <p class="fc-title">Check-in</p>
-              <span class="fc-reward">+100 P</span>
+              <img :src="kakaoCard2" alt="Daily Mission" class="fc-img" />
             </div>
             <div class="float-card fc-3">
-              <div class="fc-header">
-                <span class="fc-tag">Content Mission</span>
-                <div class="fc-play">▶</div>
-              </div>
-              <p class="fc-title">Watch Video</p>
-              <span class="fc-reward">+150 P</span>
+              <img :src="kakaoCard3" alt="Content Mission" class="fc-img" />
             </div>
             <div class="float-card fc-4">
-              <div class="fc-header">
-                <span class="fc-tag">Engagement Mission</span>
-                <div class="fc-icon">👍</div>
-              </div>
-              <p class="fc-title">Like & Share</p>
-              <span class="fc-reward">+120 P</span>
+              <img :src="kakaoCard4" alt="Engagement Mission" class="fc-img" />
             </div>
             <div class="float-card fc-5">
-              <div class="fc-header">
-                <span class="fc-tag">Quiz Mission</span>
-                <div class="fc-icon purple">?</div>
-              </div>
-              <p class="fc-title">Answer Quiz</p>
-              <span class="fc-reward">+250 P</span>
+              <img :src="kakaoCard5" alt="Quiz Mission" class="fc-img" />
             </div>
           </div>
         </div>
@@ -527,60 +507,17 @@ const faqs = ref([
 
 .float-card {
   position: absolute;
-  padding: 1.25rem 1.5rem;
-  background: white;
-  border-radius: 1.5rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
   z-index: 2;
   animation: floating 6s ease-in-out infinite;
-  border: 1px solid rgba(0, 0, 0, 0.02);
   width: 240px;
 }
-.fc-header {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
+
+.fc-img {
   width: 100%;
-  margin-bottom: 0.25rem;
-}
-.fc-tag {
-  font-size: 0.8rem;
-  font-weight: 800;
-  color: #94a3b8;
-}
-.fc-title {
-  font-size: 1.2rem;
-  font-weight: 900;
-  color: #1e293b;
-  margin: 0;
-}
-.fc-reward {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: #f59e0b;
-}
-.fc-check,
-.fc-play,
-.fc-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #6366f1;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  margin-left: 0.5rem;
-}
-.fc-check.pink {
-  background: #ec4899;
-}
-.fc-icon.purple {
-  background: #8b5cf6;
+  height: auto;
+  display: block;
+  border-radius: 1.5rem;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
 }
 
 .fc-1 {
