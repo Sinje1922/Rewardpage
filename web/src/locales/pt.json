@@ -83,6 +83,8 @@
     "listTitle": "Todas as Campanhas",
     "listLead": "Descubra campanhas de recompensa ativas e participe.",
     "searchPlaceholder": "Pesquisar por título ou descrição...",
+    "filter": "Filtro",
+    "adFallback": "Anúncio",
     "filterAll": "Todos os Estados",
     "sortByLatest": "Mais Recente",
     "sortByEndingSoon": "Terminando em Breve",

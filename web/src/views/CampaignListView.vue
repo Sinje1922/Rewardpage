@@ -169,8 +169,8 @@ const filteredList = computed(() => {
     <!-- Header: Match Reference Image -->
     <div class="list-head">
       <div class="head-text">
-        <h1 class="page-title">모든 캠페인</h1>
-        <p class="lead-text">진행 중인 다양한 캠페인에 참여하고 포인트를 받아보세요.</p>
+        <h1 class="page-title">{{ $t("campaign.listTitle") }}</h1>
+        <p class="lead-text">{{ $t("campaign.listLead") }}</p>
       </div>
 
       <div class="filters-bar-modern">
@@ -179,7 +179,7 @@ const filteredList = computed(() => {
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="캠페인 제목이나 설명 검색..."
+            :placeholder="$t('campaign.searchPlaceholder')"
           />
         </div>
         <button 
@@ -188,7 +188,7 @@ const filteredList = computed(() => {
           @click="isFilterPanelOpen = !isFilterPanelOpen"
         >
           <span class="btn-filter-icon">⚙️</span> 
-          필터
+          {{ $t("campaign.filter") }}
           <span v-if="activeFiltersCount > 0" class="filter-count-badge">{{ activeFiltersCount }}</span>
         </button>
       </div>

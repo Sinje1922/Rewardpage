@@ -64,6 +64,8 @@
     "listTitle": "All Campaigns",
     "listLead": "Discover active reward campaigns and join them.",
     "searchPlaceholder": "Search by title or description...",
+    "filter": "Filter",
+    "adFallback": "Ad",
     "filterAll": "All Status",
     "sortByLatest": "Latest",
     "sortByEndingSoon": "Ending Soon",

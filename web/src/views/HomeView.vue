@@ -97,7 +97,7 @@ const closingSoonList = computed(() => {
     },
     {
       id: "dummy-2",
-      title: "광고",
+      title: t("campaign.adFallback"),
       companyName: "HETAQ",
       companyLogoUrl: "",
       status: "ACTIVE",
@@ -243,7 +243,7 @@ const faqs = ref([
           class="campaign-card-premium card"
         >
           <div class="cp-visual">
-            <div class="cp-status">진행 중</div>
+            <div class="cp-status">{{ $t("campaign.statusActive") }}</div>
             <img
               :src="getCampaignIcon(index)"
               class="cp-asset-img"
@@ -265,14 +265,14 @@ const faqs = ref([
             </div>
             <div class="cp-footer">
               <span class="cp-users"
-                >참여자 {{ (c.winnerCount || 0).toLocaleString() }}명</span
+                >{{ $t("home.participantsCount", { n: (c.winnerCount || 0).toLocaleString() }) }}</span
               >
               <div class="cp-avatars"></div>
               <button
                 class="btn-join-sm"
                 @click="router.push(`/campaigns/${c.id}`)"
               >
-                참여하기
+                {{ $t("campaign.join") }}
               </button>
             </div>
           </div>
