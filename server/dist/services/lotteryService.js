@@ -48,23 +48,41 @@ export async function runCampaignDraw(campaignId) {
     }
     if (picked.length === 0)
         return { winners: [], msg: "NO_ELIGIBLE_PARTICIPANTS" };
-    const pointsPerPerson = c.totalRewardPoints > 0
-        ? Math.floor(c.totalRewardPoints / picked.length)
-        : 0;
-    console.log(`[LotteryService] Distributing ${c.totalRewardPoints} points to ${picked.length} winners (${pointsPerPerson}P each) for campaign: ${c.title}`);
+    let rewards = [];
+    try {
+        rewards = JSON.parse(c.rewardsConfig || "[]");
+    }
+    catch (e) {
+        rewards = [{ amount: c.totalRewardPoints, currency: c.rewardCurrency }];
+    }
+    if (rewards.length === 0) {
+        rewards = [{ amount: c.totalRewardPoints, currency: c.rewardCurrency }];
+    }
+    const rewardsPerWinner = rewards.map((r) => ({
+        amount: Math.floor(r.amount / picked.length),
+        currency: r.currency,
+    }));
+    const totalPointsPerWinner = rewardsPerWinner
+        .filter((r) => r.currency === "POINT")
+        .reduce((sum, r) => sum + r.amount, 0);
+    const rewardsJsonPerWinner = JSON.stringify(rewardsPerWinner);
     await prisma.$transaction([
         ...picked.map((userId, i) => prisma.winner.create({
             data: {
                 campaignId: c.id,
                 userId,
                 rank: i + 1,
-                points: pointsPerPerson,
+                points: totalPointsPerWinner,
+                currency: "POINT", // Legacy fallback
+                rewardsConfig: rewardsJsonPerWinner,
             },
         })),
-        ...picked.map((userId) => prisma.user.update({
-            where: { id: userId },
-            data: { pointBalance: { increment: pointsPerPerson } },
-        })),
+        ...(totalPointsPerWinner > 0
+            ? picked.map((userId) => prisma.user.update({
+                where: { id: userId },
+                data: { pointBalance: { increment: totalPointsPerWinner } },
+            }))
+            : []),
         prisma.campaign.update({
             where: { id: c.id },
             data: { status: "DRAWN", drawnAt: new Date() },

@@ -85,7 +85,14 @@ router.get("/submissions", async (req, res) => {
 router.get("/wins", async (req, res) => {
     const wins = await prisma.winner.findMany({
         where: { userId: req.user.id },
-        include: { campaign: { select: { id: true, title: true } } },
+        select: {
+            id: true,
+            rank: true,
+            points: true,
+            currency: true,
+            createdAt: true,
+            campaign: { select: { id: true, title: true } },
+        },
         orderBy: { createdAt: "desc" },
     });
     res.json(wins);

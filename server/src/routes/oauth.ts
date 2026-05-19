@@ -47,8 +47,6 @@ router.get("/discord/callback", async (req, res) => {
     });
     const discordUser = userResponse.data;
 
-    const discordUser = userResponse.data;
-
     // 신규 사용자(태그 0)와 기존 사용자 처리
     const handle = discordUser.discriminator === "0" || !discordUser.discriminator
       ? discordUser.username 

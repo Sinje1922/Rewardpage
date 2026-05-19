@@ -38,6 +38,8 @@ const campaignFieldsSchema = z.object({
     lotteryMode: z.enum(["SIMPLE", "WEIGHTED"]).optional(),
     autoApprove: z.boolean().optional(),
     totalRewardPoints: z.number().int().nonnegative().optional(),
+    rewardCurrency: z.string().optional(),
+    rewardsConfig: z.array(z.object({ amount: z.number().nonnegative(), currency: z.string() })).optional(),
     startsAt: z.string().datetime().optional().nullable(),
     endsAt: z.string().datetime().optional().nullable(),
 });
@@ -86,6 +88,8 @@ router.post("/", authRequired, requireRoles("MANAGER", "ADMIN"), async (req, res
                     creatorId: req.user.id,
                     winnerCount: b.winnerCount ?? 1,
                     totalRewardPoints: b.totalRewardPoints ?? 0,
+                    rewardCurrency: b.rewardCurrency ?? "POINT",
+                    rewardsConfig: JSON.stringify(b.rewardsConfig ?? []),
                     lotteryMode: b.lotteryMode ?? "SIMPLE",
                     autoApprove: b.autoApprove ?? true,
                     startsAt: b.startsAt ? new Date(b.startsAt) : null,
@@ -166,6 +170,8 @@ router.patch("/:id", authRequired, async (req, res) => {
         b.lotteryMode !== undefined ||
         b.autoApprove !== undefined ||
         b.totalRewardPoints !== undefined ||
+        b.rewardCurrency !== undefined ||
+        b.rewardsConfig !== undefined ||
         b.startsAt !== undefined ||
         b.endsAt !== undefined;
     if (hasMeta) {
@@ -180,6 +186,8 @@ router.patch("/:id", authRequired, async (req, res) => {
                 ...(b.lotteryMode !== undefined && { lotteryMode: b.lotteryMode }),
                 ...(b.autoApprove !== undefined && { autoApprove: b.autoApprove }),
                 ...(b.totalRewardPoints !== undefined && { totalRewardPoints: b.totalRewardPoints }),
+                ...(b.rewardCurrency !== undefined && { rewardCurrency: b.rewardCurrency }),
+                ...(b.rewardsConfig !== undefined && { rewardsConfig: JSON.stringify(b.rewardsConfig) }),
                 ...(b.startsAt !== undefined && { startsAt: b.startsAt ? new Date(b.startsAt) : null }),
                 ...(b.endsAt !== undefined && { endsAt: b.endsAt ? new Date(b.endsAt) : null }),
             },
@@ -235,7 +243,10 @@ router.get("/:id/submissions", authRequired, async (req, res) => {
     }
     const list = await prisma.submission.findMany({
         where: { mission: { campaignId: c.id } },
-        include: { user: { select: { id: true, email: true } }, mission: true },
+        include: {
+            user: true,
+            mission: true
+        },
         orderBy: { createdAt: "desc" },
     });
     res.json(list);
@@ -315,12 +326,12 @@ router.get("/:id/participants", authOptional, async (req, res) => {
     }
     const approved = await prisma.submission.findMany({
         where: { missionId: { in: missionIds }, status: "APPROVED" },
-        select: { userId: true, missionId: true, user: { select: { email: true } } },
+        select: { userId: true, missionId: true, user: { select: { email: true, nickname: true } } },
     });
     const byUser = new Map();
     for (const s of approved) {
         if (!byUser.has(s.userId)) {
-            byUser.set(s.userId, { email: s.user.email, completed: new Set() });
+            byUser.set(s.userId, { email: s.user.email, nickname: s.user.nickname, completed: new Set() });
         }
         byUser.get(s.userId).completed.add(s.missionId);
     }
@@ -328,8 +339,18 @@ router.get("/:id/participants", authOptional, async (req, res) => {
         .filter((u) => u.completed.size === missionIds.length)
         .map((u) => {
         const [name, domain] = u.email.split("@");
-        const masked = name.length > 2 ? name.substring(0, 2) + "***" : name + "***";
-        return { email: `${masked}@${domain}` };
+        const maskedEmail = name.length > 2 ? name.substring(0, 2) + "***" : name + "***";
+        let maskedNickname = u.nickname;
+        if (u.nickname && u.nickname.length > 2) {
+            maskedNickname = u.nickname.substring(0, 2) + "***";
+        }
+        else if (u.nickname) {
+            maskedNickname = u.nickname + "***";
+        }
+        return {
+            email: `${maskedEmail}@${domain}`,
+            nickname: maskedNickname
+        };
     });
     res.json({
         count: completedAll.length,
@@ -396,7 +417,7 @@ router.get("/:id/export", authRequired, async (req, res) => {
             orderBy: { createdAt: "desc" },
         });
         // CSV Header
-        let csv = "SubmissionID,CreatedAt,UserEmail,UserNickname,Gender,Age,Region,MissionType,MissionTitle,Payload\n";
+        let csv = "SubmissionID,CreatedAt,UserEmail,UserNickname,WalletAddress,Telegram,Discord,YouTube,Instagram,Gender,Age,Region,MissionType,MissionTitle,Payload\n";
         for (const s of list) {
             const age = s.user.birthYear ? new Date().getFullYear() - s.user.birthYear : "Unknown";
             const row = [
@@ -404,12 +425,17 @@ router.get("/:id/export", authRequired, async (req, res) => {
                 s.createdAt.toISOString(),
                 s.user.email,
                 `"${(s.user.nickname || "").replace(/"/g, '""')}"`,
+                `"${(s.user.walletAddress || "").replace(/"/g, '""')}"`,
+                `"${(s.user.telegramHandle || "").replace(/"/g, '""')}"`,
+                `"${(s.user.discordHandle || "").replace(/"/g, '""')}"`,
+                `"${(s.user.youtubeHandle || "").replace(/"/g, '""')}"`,
+                `"${(s.user.instagramHandle || "").replace(/"/g, '""')}"`,
                 s.user.gender || "Unknown",
                 age,
                 s.user.region || "Unknown",
                 s.mission.type,
                 `"${s.mission.title.replace(/"/g, '""')}"`,
-                `"${s.payload.replace(/"/g, '""')}"`,
+                `"${formatPayloadForCsv(s.mission.type, s.payload).replace(/"/g, '""')}"`,
             ];
             csv += row.join(",") + "\n";
         }
@@ -422,4 +448,29 @@ router.get("/:id/export", authRequired, async (req, res) => {
         res.status(500).json({ error: "Failed to export data" });
     }
 });
+function formatPayloadForCsv(type, payloadStr) {
+    try {
+        const p = JSON.parse(payloadStr);
+        if (type === "SURVEY") {
+            if (p.answers) {
+                return Object.entries(p.answers)
+                    .map(([q, a]) => `${q}: ${a}`)
+                    .join(" | ");
+            }
+        }
+        else if (type === "QUIZ") {
+            return `Selected: ${p.selectedIndex ?? "N/A"}`;
+        }
+        else if (type === "CODE" || type === "FILE_UPLOAD") {
+            return p.code || p.fileUrl || payloadStr;
+        }
+        else if (type === "LINK_VISIT") {
+            return `Dwell: ${p.dwellSeconds ?? 0}s`;
+        }
+        return payloadStr;
+    }
+    catch {
+        return payloadStr;
+    }
+}
 export default router;
