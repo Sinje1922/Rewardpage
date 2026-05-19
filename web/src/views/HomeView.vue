@@ -395,22 +395,24 @@ const faqs = ref([
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.05em;
-  color: #1e293b !important;
+  color: #1E1E2F !important;
   margin-bottom: 2.5rem;
+  text-shadow: 0 2px 12px rgba(255, 255, 255, 0.75), 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 .hero-title-main :deep(.text-indigo) {
-  color: #6c5ce7 !important;
+  color: #6C63FF !important;
 }
 .hero-title-main :deep(.text-green) {
-  color: #84cc16 !important;
+  color: #1E1E2F !important;
 }
 .hero-lead-main {
   font-size: 1.4rem;
   line-height: 1.6;
-  color: #475569 !important;
+  color: rgba(30, 30, 47, 0.8) !important;
   margin-bottom: 4rem;
   font-weight: 500;
   max-width: 580px;
+  text-shadow: 0 2px 10px rgba(255, 255, 255, 0.75);
 }
 
 .hero-btn-group {
