@@ -384,7 +384,7 @@ const faqs = ref([
   background-repeat: no-repeat;
 }
 .hero-inner-wide {
-  max-width: 2000px;
+  max-width: 2400px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr 1.2fr;
@@ -1150,7 +1150,9 @@ const faqs = ref([
 
 /* 4. Values Section */
 :root.dark .gray-bg-wrapper {
-  background: var(--bg-deep) !important; /* Deep dark coal space bg instead of bright white */
+  background: var(
+    --bg-deep
+  ) !important; /* Deep dark coal space bg instead of bright white */
 }
 :root.dark .value-item-premium {
   background: var(--panel) !important;
@@ -1175,4 +1177,3 @@ const faqs = ref([
   color: var(--muted) !important;
 }
 </style>
-
