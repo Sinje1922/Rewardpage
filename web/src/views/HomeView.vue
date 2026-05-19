@@ -391,7 +391,7 @@ const faqs = ref([
 }
 
 .hero-tag-modern {
-  color: #22c55e;
+  color: #22c55e !important;
   font-weight: 800;
   font-size: 1.25rem;
   margin-bottom: 1.5rem;
@@ -403,16 +403,19 @@ const faqs = ref([
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.05em;
-  color: var(--text-h);
+  color: #1e293b !important;
   margin-bottom: 2.5rem;
 }
-.hero-title-main span {
-  color: var(--accent);
+.hero-title-main .text-indigo {
+  color: #6c5ce7 !important;
+}
+.hero-title-main .text-green {
+  color: #84cc16 !important;
 }
 .hero-lead-main {
   font-size: 1.4rem;
   line-height: 1.6;
-  color: var(--muted);
+  color: #475569 !important;
   margin-bottom: 4rem;
   font-weight: 500;
   max-width: 580px;
