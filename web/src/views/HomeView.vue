@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from "vue";
-import { RouterLink, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 import { api } from "../api/client";
 import { useI18n } from "vue-i18n";
 import homeBanner from "../assets/hero_bg_new.png";
@@ -134,9 +134,6 @@ const faqs = ref([
             <button class="btn-start" @click="router.push('/campaigns')">
               Start Mission ➔
             </button>
-            <button class="btn-explore" @click="router.push('/campaigns')">
-              Explore
-            </button>
           </div>
 
           <div class="active-community">
@@ -223,11 +220,6 @@ const faqs = ref([
           <p class="step-summary">{{ $t(`home.step${i}Desc`) }}</p>
         </div>
       </div>
-      <div class="step-action">
-        <button class="btn-start large" @click="router.push('/campaigns')">
-          지금 바로 시작하기
-        </button>
-      </div>
     </section>
 
     <!-- Hot Campaigns Section -->
@@ -239,9 +231,6 @@ const faqs = ref([
             {{ $t("home.hotCampaignsTitle") }}
           </h2>
         </div>
-        <RouterLink to="/campaigns" class="link-view-all"
-          >전체 보기 →</RouterLink
-        >
       </div>
 
       <div v-if="loading" class="loading-grid">
