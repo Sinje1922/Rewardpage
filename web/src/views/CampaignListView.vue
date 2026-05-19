@@ -949,4 +949,91 @@ const filteredList = computed(() => {
     font-size: 0.85rem;
   }
 }
+
+/* ==========================================
+   ✨ PREMIUM DARK MODE STYLES FOR CAMPAIGN LIST
+   ========================================== */
+:root.dark .page-title {
+  color: var(--text-h) !important;
+}
+:root.dark .lead-text {
+  color: var(--muted) !important;
+}
+:root.dark .search-pill-wrap {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+}
+:root.dark .search-pill-wrap input {
+  color: var(--text-h) !important;
+}
+:root.dark .btn-filter-modern {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-h) !important;
+}
+:root.dark .btn-filter-modern:hover {
+  background: var(--code-bg) !important;
+}
+:root.dark .filters-drawer-modern {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow) !important;
+}
+:root.dark .filter-label {
+  color: var(--text-h) !important;
+}
+:root.dark .btn-filter-option {
+  background: var(--code-bg) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+:root.dark .btn-filter-option:hover {
+  background: var(--panel) !important;
+  color: var(--text-h) !important;
+}
+:root.dark .btn-filter-option.is-selected {
+  background: #6366f1 !important;
+  border-color: #6366f1 !important;
+  color: white !important;
+}
+:root.dark .campaign-card-premium {
+  background: var(--panel) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow) !important;
+}
+:root.dark .campaign-card-premium:hover {
+  box-shadow: var(--shadow-hover) !important;
+}
+:root.dark .mission-count-badge {
+  background: var(--code-bg) !important;
+  color: var(--muted) !important;
+}
+:root.dark .right-reward-capsule {
+  background: var(--code-bg) !important;
+}
+:root.dark .campaign-card-title {
+  color: var(--text-h) !important;
+}
+:root.dark .campaign-card-desc {
+  color: var(--muted) !important;
+}
+:root.dark .company-name {
+  color: var(--muted) !important;
+}
+:root.dark .card-footer-info {
+  border-top: 1px solid var(--border) !important;
+}
+:root.dark .count-text {
+  color: var(--muted) !important;
+}
+:root.dark .upcoming-date-wrap .lbl {
+  color: var(--muted) !important;
+}
+:root.dark .upcoming-date-wrap .date-val {
+  color: var(--text-h) !important;
+}
+:root.dark .empty-msg {
+  color: var(--muted) !important;
+}
 </style>
+

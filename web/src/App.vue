@@ -404,7 +404,7 @@ watch(() => route.path, () => {
   margin-bottom: 1.5rem;
 }
 .brand-mark { color: #6366f1; font-size: 1.4rem; font-weight: 900; }
-.brand-text { font-size: 1.6rem; font-weight: 900; color: #1e293b; letter-spacing: -0.04em; }
+.brand-text { font-size: 1.6rem; font-weight: 900; color: var(--text-h); letter-spacing: -0.04em; }
 .footer-desc {
   color: var(--muted);
   line-height: 1.6;
@@ -418,12 +418,12 @@ watch(() => route.path, () => {
 .link-col h4 {
   font-size: 1rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--text-h);
   margin-bottom: 1.5rem;
 }
 .link-col a {
   display: block;
-  color: #64748b;
+  color: var(--text);
   text-decoration: none;
   font-size: 0.95rem;
   font-weight: 600;
@@ -431,15 +431,15 @@ watch(() => route.path, () => {
   transition: color 0.2s;
 }
 .link-col a:hover { color: #6366f1; }
-
+  
 .footer-bottom {
   max-width: 1280px;
   margin: 0 auto;
   padding-top: 2rem;
-  border-top: 1px solid rgba(0,0,0,0.05);
+  border-top: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
-  color: #94a3b8;
+  color: var(--muted);
   font-size: 0.85rem;
   font-weight: 600;
 }
