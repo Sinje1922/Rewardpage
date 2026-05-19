@@ -978,6 +978,7 @@ const faqs = ref([
   .hero-lead-main {
     font-size: 1.2rem;
     margin-bottom: 2.5rem;
+    text-shadow: 0 2px 15px rgba(255, 255, 255, 0.95), 0 1px 5px rgba(255, 255, 255, 0.95), 0 0 30px rgba(255, 255, 255, 0.6) !important;
   }
   .campaign-grid-premium,
   .steps-grid-modern,
