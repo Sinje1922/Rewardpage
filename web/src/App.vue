@@ -125,7 +125,7 @@ watch(() => auth.token, (newVal) => {
           <nav class="nav-pill">
             <RouterLink to="/" class="nav-item">{{ $t('nav.home') }}</RouterLink>
             <RouterLink to="/campaigns" class="nav-item">{{ $t('nav.campaigns') }}</RouterLink>
-            <RouterLink v-if="auth.token" to="/my-page" class="nav-item">{{ $t('nav.myPage') }}</RouterLink>
+            <RouterLink to="/my-page" class="nav-item">{{ $t('nav.myPage') }}</RouterLink>
             <RouterLink v-if="auth.isOperator" to="/ops" class="nav-item">{{ $t('nav.ops') }}</RouterLink>
             <RouterLink v-if="auth.isAdmin" to="/admin" class="nav-item">{{ $t('nav.admin') }}</RouterLink>
           </nav>
