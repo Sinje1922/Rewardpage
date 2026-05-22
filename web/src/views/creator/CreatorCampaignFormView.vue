@@ -48,7 +48,8 @@ const stepGuides = computed(() => {
       step2Tips: [
         '<strong>단순 무작위 추첨 (Simple Draw)</strong>: 모든 미션 완료자가 동일한 확률로 당첨됩니다. 가볍고 빠른 참여 유도형 이벤트에 적합합니다.',
         '<strong>기여도 비례 가중치 추첨 (Weighted Draw)</strong>: 더 많은 미션을 성실히 완수한 유저에게 더 높은 가중치(당첨 확률 티켓)를 자동으로 지급하여 체리피커를 배제합니다. (Pickku 강력 추천! 👑)',
-        '<strong>자동 검증 승인 (Auto Approve)</strong>: 사용자가 소셜 미션을 정확하게 마쳤는지 소셜 API 연동을 통해 실시간으로 자동 대조 및 승인 처리를 수행합니다.'
+        '<strong>자동 검증 승인 (Auto Approve)</strong>: 사용자가 소셜 미션을 정확하게 마쳤는지 소셜 API 연동을 통해 실시간으로 자동 대조 및 승인 처리를 수행합니다.',
+        '<strong>멀티 보상 레이아웃</strong>: 포인트, USDT, BRL, METAQ 등의 재화 보상은 1번째 줄에 배지 형태로 노출되며(여러 개 등록 시 마우스 오버로 부드럽게 무한 루프 슬라이딩), 그 외 기프티콘 등의 일반 경품은 2번째 줄(기타 보상)에 깔끔하게 자동 구분되어 표기됩니다.'
       ],
       step3Title: '미션 구성 및 세부 설계 (3단계)',
       step3Lead: '다양한 소셜 액션과 퀴즈, 설문을 미션으로 추가하여 브랜드 커뮤니티를 효과적으로 빌딩하세요.',
@@ -56,7 +57,7 @@ const stepGuides = computed(() => {
         '<strong>유튜브 구독/좋아요</strong>: 유튜브 채널의 ID 또는 동영상 고유 ID를 정확히 넣어주셔야 참여자의 구글 로그인 검증이 원활하게 연동됩니다.',
         '<strong>텔레그램 채널/그룹</strong>: 픽쿠 텔레그램 공식 검증 봇이 채널 내 실시간 참가 상태를 확인하므로, 올바른 공개 채널 링크(t.me)를 기입해 주세요.',
         '<strong>디스코드 서버 입장</strong>: 디스코드 서버 관리 메뉴에서 만료 기간이 없는 "무제한 초대 링크"를 생성하여 입력하셔야 링크 끊김 없이 안전하게 참가됩니다.',
-        '<strong>정답 퀴즈/설문 조사</strong>: 유저가 서비스나 제품에 대해 직접 학습하고 의견을 개진할 수 있어 단순 클릭 이상의 고농축 브랜드 인지도 전환을 만들어냅니다.'
+        '<strong>정답 퀴즈/설문 조사</strong>: 유저가 직접 학습할 수 있어 고농축 브랜드 인지도 전환을 만들어냅니다. 오답 시 <code>"다시 생각해 보세요"</code> 경고창이 나타나며, 승인이 완료된 미션(<code>APPROVED</code>)은 중복 방지를 위해 제출 버튼이 자동으로 비활성화됩니다.'
       ],
       step4Title: '실시간 미리보기 및 최종 확인 (4단계)',
       step4Lead: '캠페인을 발행하기 전에 유저들에게 노출될 실제 카드 및 상세 페이지 화면을 꼼꼼하게 검토해 보세요.',
@@ -80,7 +81,8 @@ const stepGuides = computed(() => {
       step2Tips: [
         '<strong>Simple Draw</strong>: Every user who completes all core missions has an equal chance of winning. Perfect for quick and light events.',
         '<strong>Weighted Draw (Recommended 👑)</strong>: Users who complete more optional missions earn higher winning probabilities, filtering out bots and low-quality accounts.',
-        '<strong>Auto Approve</strong>: Social network APIs dynamically verify if the user truly completed each action and automatically approve valid entries.'
+        '<strong>Auto Approve</strong>: Social network APIs dynamically verify if the user truly completed each action and automatically approve valid entries.',
+        '<strong>Multi-Reward Layout</strong>: Major financial rewards (POINT, USDT, BRL, METAQ) are displayed on the 1st row as sleek badges (hovering loops them with a smooth marquee slide when multiple are set), while physical prizes/coupons auto-align on the 2nd row (Other Rewards).'
       ],
       step3Title: 'Configure Missions (Step 3)',
       step3Lead: 'Add social followings, video view times, quizzes, or surveys to grow and enrich your brand community.',
@@ -88,7 +90,7 @@ const stepGuides = computed(() => {
         '<strong>YouTube Missions</strong>: Enter the exact YouTube Channel ID or Video ID to guarantee the API verifies subscribes or likes seamlessly.',
         '<strong>Telegram Channels</strong>: Pickku Telegram bot verifies join status. Provide direct public links (t.me).',
         '<strong>Discord Invites</strong>: Generate a non-expiring ("never expire") invitation link from Discord server settings to prevent access dropouts.',
-        '<strong>Quizzes & Surveys</strong>: Prompts users to learn about your product or share high-value feedback, driving deeper brand retention.'
+        '<strong>Quizzes & Surveys</strong>: Prompts users to learn about your product. Wrong quiz entries trigger a <code>"Please think again (다시 생각해 보세요)"</code> alert, and successfully approved missions (<code>APPROVED</code>) dynamically disable their submit buttons.'
       ],
       step4Title: 'Live Preview & Review (Step 4)',
       step4Lead: 'Review how your campaign card and detail page will visually appear to actual users in real-time before publishing.',
@@ -112,7 +114,8 @@ const stepGuides = computed(() => {
       step2Tips: [
         '<strong>Sorteio Simples (Simple Draw)</strong>: Todos os usuários que completarem todas as missões têm a mesma chance de ganhar. Perfeito para eventos rápidos.',
         '<strong>Sorteio Ponderado (Weighted Draw - Recomendado 👑)</strong>: Usuários que realizam mais tarefas ganham maiores probabilidades de ganhar, filtrando bots.',
-        '<strong>Aprovação Automática (Auto Approve)</strong>: As APIs de mídia social verificam dinamicamente se as tarefas foram realmente concluídas.'
+        '<strong>Aprovação Automática (Auto Approve)</strong>: As APIs de mídia social verificam dinamicamente se as tarefas foram realmente concluídas.',
+        '<strong>Layout de Multi-Recompensas</strong>: As principais recompensas financeiras (POINT, USDT, BRL, METAQ) são exibidas na 1ª linha como emblemas elegantes (com slide dinâmico ao passar o mouse se houver múltiplas), enquanto prêmios físicos aparecem na 2ª linha.'
       ],
       step3Title: 'Configuração de Missões (Passo 3)',
       step3Lead: 'Adicione seguidores sociais, visualizações de vídeo, quizzes ou pesquisas para enriquecer sua comunidade.',
@@ -120,7 +123,7 @@ const stepGuides = computed(() => {
         '<strong>Missões do YouTube</strong>: Insira o ID exato do Canal ou Vídeo para garantir que a verificação de inscrição ocorra sem problemas.',
         '<strong>Canais do Telegram</strong>: O bot do Telegram do Pickku verifica a entrada. Forneça links públicos diretos (t.me).',
         '<strong>Convites do Discord</strong>: Crie um link de convite que "nunca expira" nas configurações do seu servidor para evitar quedas de acesso.',
-        '<strong>Quizzes e Pesquisas</strong>: Incentive os usuários a aprender sobre o produto ou compartilhar feedback valioso, aumentando a retenção.'
+        '<strong>Quizzes e Pesquisas</strong>: Incentive os usuários a aprender sobre o produto. Respostas incorretas de quiz disparam um alerta <code>"다시 생각해 보세요" (Pense novamente)</code> e missões concluídas com sucesso (<code>APPROVED</code>) desativam o botão de envio.'
       ],
       step4Title: 'Prévia em Tempo Real & Revisão (Passo 4)',
       step4Lead: 'Revise como o cartão da sua campanha e a página de detalhes aparecerão visualmente para os usuários reais em tempo real.',
