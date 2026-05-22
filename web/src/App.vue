@@ -5,10 +5,13 @@ import { useAuthStore } from './stores/auth'
 import { api } from './api/client'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import DarkModeToggle from './components/DarkModeToggle.vue'
+import AiChatbot from './components/AiChatbot.vue'
 
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+
+const showChatbot = ref(false)
 
 // Notification Center State
 const showNotifications = ref(false)
@@ -179,6 +182,12 @@ watch(() => auth.token, (newVal) => {
               </div>
             </transition>
           </div>
+
+          <!-- AI Chatbot Toggle Button -->
+          <button class="icon-btn chatbot-btn" @click="showChatbot = !showChatbot" aria-label="AI Helper" title="AI Chatbot">
+            <span class="chatbot-icon">🤖</span>
+          </button>
+
           <LanguageSwitcher class="pc-only" />
           <div class="auth-wrapper">
              <button v-if="!auth.token" @click="router.push('/login')" class="btn-login">{{ $t('nav.login') }}</button>
@@ -239,16 +248,19 @@ watch(() => auth.token, (newVal) => {
             <h4>{{ $t('common.platform') }}</h4>
             <RouterLink to="/campaigns">{{ $t('nav.campaigns') }}</RouterLink>
             <RouterLink to="/my-page">{{ $t('nav.myPage') }}</RouterLink>
+            <RouterLink v-if="auth.token && auth.user && auth.user.role === 'USER'" to="/request-manager">
+              {{ $i18n.locale === 'ko' ? '매니저 권한 신청' : ($i18n.locale === 'pt' ? 'Solicitar Gerente' : 'Apply for Manager') }}
+            </RouterLink>
           </div>
           <div class="link-col">
             <h4>{{ $t('common.support') }}</h4>
-            <RouterLink to="/faq">FAQ</RouterLink>
+            <RouterLink to="/faq">{{ $i18n.locale === 'ko' ? '자주 묻는 질문 (FAQ)' : ($i18n.locale === 'pt' ? 'Perguntas Frequentes (FAQ)' : 'FAQ') }}</RouterLink>
             <a href="mailto:support@pickku.com">Contact Us</a>
           </div>
           <div class="link-col">
             <h4>{{ $t('common.legal') }}</h4>
-            <RouterLink to="/terms">Terms of Service</RouterLink>
-            <RouterLink to="/privacy">Privacy Policy</RouterLink>
+            <RouterLink to="/terms">{{ $i18n.locale === 'ko' ? '이용약관' : ($i18n.locale === 'pt' ? 'Termos de Serviço' : 'Terms of Service') }}</RouterLink>
+            <RouterLink to="/privacy">{{ $i18n.locale === 'ko' ? '개인정보처리방침' : ($i18n.locale === 'pt' ? 'Política de Privacidade' : 'Privacy Policy') }}</RouterLink>
           </div>
         </div>
       </div>
@@ -262,6 +274,7 @@ watch(() => auth.token, (newVal) => {
       <LanguageSwitcher />
     </div>
     <DarkModeToggle />
+    <AiChatbot :isOpen="showChatbot" @close="showChatbot = false" />
   </div>
 </template>
 <style scoped>
@@ -418,6 +431,36 @@ watch(() => auth.token, (newVal) => {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+
+.chatbot-btn {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+.chatbot-btn:hover {
+  transform: scale(1.08) rotate(8deg);
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+:root.dark .chatbot-btn {
+  background: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+:root.dark .chatbot-btn:hover {
+  background: rgba(30, 41, 59, 1) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+.chatbot-icon {
+  font-size: 1.25rem;
+  display: inline-block;
+  transition: transform 0.25s ease;
+}
+.chatbot-btn:hover .chatbot-icon {
+  animation: chatbot-bounce 0.5s ease infinite alternate;
+}
+@keyframes chatbot-bounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3px); }
 }
 
 .btn-login {

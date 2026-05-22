@@ -4,7 +4,7 @@
     "reward": "Recompensa",
     "campaigns": "Campanhas",
     "myActivity": "Minha Atividade",
-    "ops": "Operação",
+    "ops": "Gerenciar",
     "admin": "Admin",
     "login": "Login",
     "logout": "Sair",
@@ -322,6 +322,7 @@
     "step1": "Básico",
     "step2": "Logística",
     "step3": "Missões",
+    "step4": "Prévia em Tempo Real",
     "logisticsSection": "Logística e Recompensas"
   },
   "admin": {
@@ -415,7 +416,8 @@
     "brl": "Real Brasileiro",
     "metaq": "METAQ",
     "prev": "Anterior",
-    "next": "Próximo"
+    "next": "Próximo",
+    "otherReward": "Outra Recompensa"
   },
   "mypage": {
     "title": "Configurações da Conta",
@@ -447,14 +449,20 @@
     "faqTitle": "Perguntas Frequentes (FAQ)",
     "termsTitle": "Termos de Serviço",
     "privacyTitle": "Política de Privacidade",
-    "qReward": "Q. Como recebo recompensas?",
-    "aReward": "A. Os pontos são concedidos imediatamente após você completar uma missão e o administrador aprová-la.",
+    "qReward": "Q. Como posso ganhar e receber recompensas?",
+    "aReward": "A. Depois de concluir cada missão de mídia social (como se inscrever no YouTube, iniciar o bot do Telegram ou entrar no servidor do Discord) em uma campanha ativa, o sistema verifica sua conclusão. Após a verificação automatizada bem-sucedida ou aprovação final pelo gerente da campanha, os pontos correspondentes serão creditados imediatamente. Você pode visualizar seus pontos em tempo real no seu painel de pontos e Minha Página.",
     "qDraw": "Q. Como funciona o sorteio da campanha?",
-    "aDraw": "A. Quando uma campanha termina, o sistema realiza um sorteio aleatório.",
-    "qGoogle": "Q. Não consigo fazer login com o Google.",
-    "aGoogle": "A. Verifique se a barra de endereços está correta. Tente novamente em uma guia normal do navegador com o modo de navegação anônima ou bloqueadores de anúncios desativados.",
-    "qWallet": "Q. Por que é necessário um endereço de carteira?",
-    "aWallet": "A. É necessário para pagar recompensas baseadas em blockchain de forma segura e transparente."
+    "aDraw": "A. Quando o período de participação de uma campanha termina, nosso sistema executa automática e justamente o sorteio dos prêmios. Apoiamos dois sistemas de sorteio: o 'Sorteio Simples' (Simple Draw), que dá a todos os qualificados chances iguais, e o 'Sorteio Ponderado' (Weighted Draw), que concede probabilidades de vitória proporcionais ao seu nível de participação e pontos acumulados. Você pode verificar de forma transparente o tipo de sorteio na guia de detalhes de cada campanha.",
+    "qGoogle": "Q. O Login do Google não está funcionando corretamente.",
+    "aGoogle": "A. Se o seu navegador usa extensões que bloqueiam anúncios (como Adblock), é executado no modo Anônimo/Privado ou tem o bloqueio de cookies de terceiros ativado, a janela pop-up do Google OAuth pode não abrir. Desative temporariamente essas extensões do navegador ou tente novamente em uma guia padrão do Chrome/Safari, em vez de uma janela de navegação privada.",
+    "qWallet": "Q. Por que devo inserir um endereço de carteira digital/cripto?",
+    "aWallet": "A. Para alcançar um ecossistema de recompensas transparente e inviolável, a Pickku suporta recompensas de tokens baseadas em blockchain (compatível com EVM, MetaQ, etc.). Solicitamos o endereço da sua carteira para transferir com segurança e rapidez essas recompensas diretamente para sua carteira pessoal. A inserção de um endereço incorreto resultará na perda irreversível de ativos e falhas no pagamento, portanto, copie e cole com cuidado o endereço exato da sua chave pública.",
+    "qVerificationFail": "Q. A verificação da missão de mídia social falha ou está atrasada. O que devo fazer?",
+    "aVerificationFail": "A. Os motivos mais comuns para falhas de verificação e suas soluções são:\n1. **Visibilidade da Conta**: As configurações da sua conta de mídia social vinculada (por exemplo, lista de inscrições do YouTube) devem ser definidas como 'Públicas' para que nosso bot de verificação possa verificar sua atividade.\n2. **Evite Cancelamento Imediato**: Cancelar a inscrição, sair dos canais ou deixar de seguir imediatamente após concluir uma missão resultará na recuperação dos pontos, falha na verificação e possível banimento por abuso do sistema.\n3. **Congestionamento do Tráfego da API**: Os servidores de API de terceiros podem sofrer tráfego pesado ocasional. Aguarde de 1 a 2 minutos e tente verificar novamente.",
+    "qPointExpiry": "Q. Meus pontos têm data de validade?",
+    "aPointExpiry": "A. Todos os pontos padrão ganhos na plataforma Pickku por meio de missões são válidos por 365 dias (1 ano) a partir da data de acúmulo. Os pontos que não forem resgatados por recompensas ou retirados dentro desse período expirarão automaticamente no último dia do mês correspondente. Os pontos expirados não podem ser recuperados, portanto, resgate-os oportunamente via Minha Página.",
+    "qWeightedDraw": "Q. O que é um Sorteio Ponderado e como posso aumentar minhas chances de ganhar?",
+    "aWeightedDraw": "A. O Sorteio Ponderado é o algoritmo exclusivo de distribuição de recompensas da Pickku, projetado para dar mais benefícios aos membros dedicados. Ao concluir missões ponderadas (como responder a questionários, assistir a um vídeo por uma duração definida ou convidar amigos) ou concluir um maior número de missões no total, você acumula pesos de vitória. Quanto maior for o seu peso acumulado, maiores serão as suas chances de ganhar no sorteio."
   },
   "error": {
     "missionTitleRequired": "Missão {n}: Insira um título.",
@@ -463,5 +471,14 @@
     "missionLinkRequired": "Missão {n}: Insira uma URL de link.",
     "logisticsRequired": "Por favor, complete o Passo 2 (Vencedores e recompensas)",
     "missionsRequired": "Por favor, adicione pelo menos uma missão"
+  },
+  "chatbot": {
+    "title": "Assistente de IA da Pickku",
+    "inputPlaceholder": "Pergunte-me qualquer coisa...",
+    "welcomeMsg": "Olá! Eu sou o seu Assistente de IA da Pickku. Toque em um dos tópicos recomendados abaixo ou faça qualquer pergunta! 🤖",
+    "chipPlatform": "🌟 O que é a Pickku?",
+    "chipRewards": "🎁 Como funcionam os prêmios?",
+    "chipRaffle": "🎫 Como funciona o sorteio?",
+    "chipWithdrawal": "🪙 Saques e taxas"
   }
 }

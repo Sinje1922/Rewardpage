@@ -4,7 +4,7 @@
     "reward": "Reward",
     "campaigns": "Campaigns",
     "myActivity": "My Activity",
-    "ops": "Ops",
+    "ops": "Campaigns",
     "admin": "Admin",
     "login": "Login",
     "logout": "Logout",
@@ -310,6 +310,7 @@
     "step1": "Basic",
     "step2": "Logistics",
     "step3": "Missions",
+    "step4": "Live Preview",
     "logisticsSection": "Logistics & Rewards"
   },
   "admin": {
@@ -403,7 +404,8 @@
     "brl": "Brazil Real",
     "metaq": "METAQ",
     "prev": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "otherReward": "Other Reward"
   },
   "mypage": {
     "title": "Account Settings",
@@ -435,14 +437,20 @@
     "faqTitle": "Frequently Asked Questions (FAQ)",
     "termsTitle": "Terms of Service",
     "privacyTitle": "Privacy Policy",
-    "qReward": "Q. How do I get rewards?",
-    "aReward": "A. Points are awarded immediately once you complete a mission and the administrator approves it.",
+    "qReward": "Q. How do I earn and receive rewards?",
+    "aReward": "A. Once you complete each social media mission (such as subscribing to YouTube, starting the Telegram bot, or joining the Discord server) in an active campaign, the system verifies your completion. Upon successful automated verification or final approval by the campaign manager, the corresponding points will be credited immediately. You can view your points in real-time in your points dashboard and My Page.",
     "qDraw": "Q. How does the campaign drawing work?",
-    "aDraw": "A. When a campaign ends, the system conducts a random drawing.",
-    "qGoogle": "Q. I can't log in with Google.",
-    "aGoogle": "A. Please check if the address bar is correct. Try again in a regular browser tab with Incognito mode or Adblockers turned off.",
-    "qWallet": "Q. Why is a wallet address needed?",
-    "aWallet": "A. It is needed to pay blockchain-based rewards safely and transparently."
+    "aDraw": "A. When a campaign's participation period ends, our system automatically and fairly executes the prize drawing. We support two drawing systems: 'Simple Draw' which gives all qualifiers an equal chance, and 'Weighted Draw' which grants winning probabilities proportional to your participation level and points accumulated. You can transparently check the drawing type on the details tab of each campaign.",
+    "qGoogle": "Q. Google Login is not functioning properly.",
+    "aGoogle": "A. If your browser uses extensions that block advertisements (like Adblock), run in Incognito/Private mode, or have third-party cookie blocking enabled, the Google OAuth popup window may fail to open. Please temporarily disable these browser extensions or try again on a standard Chrome/Safari tab rather than a private browsing window.",
+    "qWallet": "Q. Why must I enter a digital/crypto wallet address?",
+    "aWallet": "A. To achieve a transparent and tamper-proof reward ecosystem, Pickku supports blockchain-based token rewards (EVM-compatible, MetaQ, etc.). We require your wallet address to safely and rapidly transfer these token rewards directly to your personal wallet. Entering an incorrect address will lead to irreversible loss of assets and payout failures, so please copy and paste your exact public key address carefully.",
+    "qVerificationFail": "Q. Social media mission verification fails or is delayed. What should I do?",
+    "aVerificationFail": "A. The most common reasons for verification failures and their solutions are:\n1. **Account Visibility**: Your linked social media account settings (e.g., YouTube subscriptions list) must be set to 'Public' so our verification bot can check your activity.\n2. **Avoid Immediate Cancellation**: Unsubscribing, leaving channels, or unfollowing immediately after completing a mission will result in point recovery, verification failure, and potential blacklisting for system abuse.\n3. **API Traffic Congestion**: Third-party API servers may experience occasional heavy traffic. Please wait 1 to 2 minutes and try verifying again.",
+    "qPointExpiry": "Q. Do my points have an expiration date?",
+    "aPointExpiry": "A. All standard points earned on the Pickku platform through missions are valid for 365 days (1 year) from the date of accumulation. Points that are not redeemed for rewards or withdrawn within this period will automatically expire on the last day of the corresponding month. Expired points cannot be recovered, so please redeem them in a timely manner via My Page.",
+    "qWeightedDraw": "Q. What is a Weighted Draw, and how can I increase my winning chances?",
+    "aWeightedDraw": "A. A Weighted Draw is Pickku's signature reward distribution algorithm designed to give more benefits to dedicated members. By completing weighted missions (such as completing quiz answers, watching a video for a set duration, or inviting friends) or completing a higher number of total missions, you accumulate winning weights. The higher your accumulated weight, the higher your odds of winning in the drawing."
   },
   "error": {
     "missionTitleRequired": "Mission {n}: Please enter a title.",
@@ -451,5 +459,14 @@
     "missionLinkRequired": "Mission {n}: Please enter a link URL.",
     "logisticsRequired": "Please complete Step 2 (Winner count and rewards)",
     "missionsRequired": "Please add at least one mission"
+  },
+  "chatbot": {
+    "title": "Pickku AI Helper",
+    "inputPlaceholder": "Ask me anything...",
+    "welcomeMsg": "Hello! I am your Pickku AI Helper. Tap one of the recommended topics below or ask any question! 🤖",
+    "chipPlatform": "🌟 What is Pickku?",
+    "chipRewards": "🎁 How do rewards work?",
+    "chipRaffle": "🎫 How is drawing done?",
+    "chipWithdrawal": "🪙 Payouts and fees"
   }
 }

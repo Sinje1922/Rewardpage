@@ -357,7 +357,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
         <div v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'" class="detail-reward-badges">
             <div v-for="(r, idx) in JSON.parse(camp.rewardsConfig)" :key="idx" class="reward-chip" :class="r.currency.toLowerCase()">
               <span class="reward-icon">{{ r.currency === 'POINT' ? '🪙' : r.currency === 'USDT' ? '💵' : r.currency === 'METAQ' ? '💎' : '🎁' }}</span>
-              <span class="reward-amount">{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}</span>
+              <span class="reward-amount">{{ r.currency === 'OTHER' ? (r.amount.toLocaleString() + '개 (' + (r.customCurrency || $t('common.otherReward')) + ')') : (r.amount.toLocaleString() + (r.currency === 'POINT' ? 'P' : ' ' + r.currency)) }}</span>
             </div>
         </div>
         <span v-else-if="camp.totalRewardPoints > 0" class="badge accent-badge">
@@ -373,7 +373,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
           {{ $t('campaign.rewardPerPersonPrefix') || 'Each' }}
           <template v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'">
             <span v-for="(r, idx) in JSON.parse(camp.rewardsConfig)" :key="idx" class="per-person-item">
-              {{ Number(idx) > 0 ? ' + ' : '' }}{{ Math.floor(r.amount / camp.winnerCount).toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+              {{ Number(idx) > 0 ? ' + ' : '' }}{{ r.currency === 'OTHER' ? (Math.floor(r.amount / camp.winnerCount).toLocaleString() + '개 (' + (r.customCurrency || $t('common.otherReward')) + ')') : (Math.floor(r.amount / camp.winnerCount).toLocaleString() + (r.currency === 'POINT' ? 'P' : ' ' + r.currency)) }}
             </span>
           </template>
           <template v-else>
@@ -387,7 +387,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
           * {{ $t('campaign.manualPaymentNotice') }}
         </p>
         <div v-if="camp.startsAt || camp.endsAt" class="period-text">
-          📅 {{ $t('detail.period', {
+          {{ $t('detail.period', {
             start: camp.startsAt ? new Date(camp.startsAt).toLocaleString() : $t('detail.always'),
             end: camp.endsAt ? new Date(camp.endsAt).toLocaleString() : $t('campaign.durationUntilEnd')
           }) }}
@@ -405,7 +405,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
             (
             <template v-if="w.rewardsConfig && w.rewardsConfig !== '[]'">
               <span v-for="(r, idx) in JSON.parse(w.rewardsConfig)" :key="idx">
-                {{ Number(idx) > 0 ? ' + ' : '' }}{{ r.amount.toLocaleString() }}{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+                {{ Number(idx) > 0 ? ' + ' : '' }}{{ r.currency === 'OTHER' ? (r.amount.toLocaleString() + '개 (' + (r.customCurrency || $t('common.otherReward')) + ')') : (r.amount.toLocaleString() + (r.currency === 'POINT' ? 'P' : ' ' + r.currency)) }}
               </span>
             </template>
             <template v-else-if="w.points > 0">
@@ -429,15 +429,6 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
         <div class="mission-header">
           <div class="mission-type">
             <span class="type-icon">{{ typeIcons[m.type] || '✨' }}</span>
-            <span v-if="camp.totalRewardPoints > 0 || (camp.rewardsConfig && camp.rewardsConfig !== '[]')" class="point-badge">
-              <template v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'">
-                {{ Math.floor(JSON.parse(camp.rewardsConfig)[0].amount / camp.winnerCount).toLocaleString() }}{{ JSON.parse(camp.rewardsConfig)[0].currency === 'POINT' ? 'P' : ' ' + JSON.parse(camp.rewardsConfig)[0].currency }}
-                <span v-if="JSON.parse(camp.rewardsConfig).length > 1">+</span>
-              </template>
-              <template v-else>
-                {{ Math.floor(camp.totalRewardPoints / camp.winnerCount).toLocaleString() }}{{ camp.rewardCurrency === 'POINT' ? 'P' : ' ' + camp.rewardCurrency }}
-              </template>
-            </span>
           </div>
           <span class="badge" :class="{ 'badge-done': myStatus(m.id) === 'APPROVED' }">
             {{ myStatus(m.id) ? myStatus(m.id) : $t('detail.unparticipated') }}
@@ -755,6 +746,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
 .reward-chip.usdt { background: #e6fffa; color: #008a76; border-color: #b2f5ea; }
 .reward-chip.metaq { background: #fff5f7; color: #d53f8c; border-color: #fed7e2; }
 .reward-chip.point { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-border); }
+.reward-chip.other { background: #f0f4f8; color: #475569; border-color: #cbd5e1; }
 
 .per-person-item {
   color: var(--accent);

@@ -65,6 +65,7 @@ export async function runCampaignDraw(campaignId: string) {
   const rewardsPerWinner = rewards.map((r: any) => ({
     amount: Math.floor(r.amount / picked.length),
     currency: r.currency,
+    ...(r.customCurrency && { customCurrency: r.customCurrency }),
   }));
 
   const totalPointsPerWinner = rewardsPerWinner

@@ -24,6 +24,12 @@ const router = createRouter({
       component: () => import('../views/MyPageView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/request-manager',
+      name: 'request-manager',
+      component: () => import('../views/ManagerRequestView.vue'),
+      meta: { requiresAuth: true },
+    },
     { path: '/creator', redirect: '/ops' },
     {
       path: '/ops',
