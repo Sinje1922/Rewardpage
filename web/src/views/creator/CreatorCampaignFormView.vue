@@ -230,6 +230,37 @@ function getMissionTypeName(type: string) {
   return (names[current] || names.ko)[type] || type
 }
 
+const hasFinancialRewards = computed(() => {
+  return rewards.value.some(r => r.currency !== 'OTHER' && r.amount > 0)
+})
+
+const financialRewardsList = computed(() => {
+  return rewards.value.filter(r => r.currency !== 'OTHER' && r.amount > 0)
+})
+
+const hasOtherRewards = computed(() => {
+  return rewards.value.some(r => r.currency === 'OTHER' && r.amount > 0)
+})
+
+const otherRewardsList = computed(() => {
+  return rewards.value.filter(r => r.currency === 'OTHER' && r.amount > 0)
+})
+
+const getCurrencyEmoji = (currency: string) => {
+  const c = (currency || '').toUpperCase()
+  if (c === 'POINT' || c === 'P') return '🪙'
+  if (c === 'USDT') return '💵'
+  if (c === 'METAQ') return '💎'
+  if (c === 'BRL') return '🇧🇷'
+  return '🎁'
+}
+
+const formatRewardText = (r: any) => {
+  const perPerson = Math.floor(r.amount / (winnerCount.value || 1))
+  return `${r.currency === 'POINT' || r.currency === 'P' ? '포인트' : r.currency} ${perPerson.toLocaleString()}${r.currency === 'POINT' || r.currency === 'P' ? 'P' : ' ' + r.currency}`
+}
+
+
 function goToStep(step: number) {
   err.value = ''
   currentStep.value = step
@@ -578,11 +609,40 @@ async function save() {
                   <div class="reward-label-badge">
                     보상
                   </div>
-                  <div class="reward-text-desc">
-                    <span v-for="(r, idx) in rewards" :key="idx" class="reward-desc-item">
-                      {{ Number(idx) > 0 ? ', ' : '' }}
-                      {{ r.currency === 'OTHER' ? (r.amount.toLocaleString() + '개 (' + (r.customCurrency || '기타 보상') + ')') : (r.amount.toLocaleString() + (r.currency === 'POINT' ? 'P' : ' ' + r.currency)) }}
-                    </span>
+                  
+                  <!-- Row 1: Financial Rewards (POINT, USDT, BRL, METAQ) -->
+                  <div v-if="hasFinancialRewards" class="reward-row-wrap financial-row">
+                    <div class="reward-scroll-container">
+                      <div class="reward-scroll-track" :class="{ 'marquee-active': financialRewardsList.length > 1 }" :style="{ '--marquee-duration': (financialRewardsList.length * 5) + 's' }">
+                        <!-- First set -->
+                        <div 
+                          v-for="(r, rIdx) in financialRewardsList" 
+                          :key="'f1-' + rIdx" 
+                          class="reward-wrap"
+                        >
+                          <span class="coin-icon">{{ getCurrencyEmoji(r.currency) }}</span>
+                          <span class="reward-val">{{ formatRewardText(r) }}</span>
+                        </div>
+                        <!-- Duplicated set for seamless marquee loop (only when count > 1) -->
+                        <template v-if="financialRewardsList.length > 1">
+                          <div 
+                            v-for="(r, rIdx) in financialRewardsList" 
+                            :key="'f2-' + rIdx" 
+                            class="reward-wrap"
+                          >
+                            <span class="coin-icon">{{ getCurrencyEmoji(r.currency) }}</span>
+                            <span class="reward-val">{{ formatRewardText(r) }}</span>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Row 2: Other Rewards (OTHER) -->
+                  <div v-if="hasOtherRewards" class="reward-row-wrap other-row">
+                    <div v-for="(r, rIdx) in otherRewardsList" :key="'o-' + rIdx" class="reward-text-desc">
+                      {{ r.customCurrency || '기타 보상' }}
+                    </div>
                   </div>
                 </div>
                 <div class="card-right-visual">
@@ -997,7 +1057,7 @@ async function save() {
   flex-direction: column;
   align-items: stretch;
   justify-content: space-between;
-  padding: 1.5rem;
+  padding: 1.6rem 2rem; /* 좌우 패딩을 살짝 추가하여 콘텐츠가 중앙에 모이도록 설정 */
   gap: 0.75rem;
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1142,6 +1202,74 @@ async function save() {
   background: var(--code-bg) !important;
   color: var(--muted) !important;
 }
+.reward-row-wrap {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.reward-scroll-container {
+  overflow: hidden;
+  width: 100%;
+  position: relative;
+}
+
+.reward-scroll-track {
+  display: flex;
+  gap: 0.5rem;
+  width: max-content;
+  will-change: transform;
+}
+
+.reward-scroll-track.marquee-active {
+  animation: none;
+}
+
+/* 마우스 호버 시 천천히 반복되는 보상 배지 무한 슬라이드 */
+.campaign-card-premium:not(.card-inactive):hover .reward-scroll-track.marquee-active {
+  animation: reward-marquee var(--marquee-duration, 10s) linear infinite;
+}
+
+@keyframes reward-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.reward-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #eef2ff;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #e0e7ff;
+  border-radius: 99px;
+  width: fit-content;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.reward-wrap .coin-icon {
+  font-size: 0.95rem;
+}
+
+.reward-wrap .reward-val {
+  color: #4f46e5;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+:root.dark .reward-wrap {
+  background: rgba(99, 102, 241, 0.15) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+:root.dark .reward-wrap .reward-val {
+  color: #818cf8 !important;
+}
 
 .reward-text-desc {
   font-size: 1.15rem;
@@ -1163,8 +1291,8 @@ async function save() {
 
 /* Centered Visual Image */
 .card-right-visual {
-  width: 115px;
-  height: 115px;
+  width: 130px; /* 보상 이미지 크기를 115px -> 130px로 확대 */
+  height: 130px;
   flex-shrink: 0;
   display: flex;
   align-items: center;

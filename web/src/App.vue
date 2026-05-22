@@ -701,6 +701,35 @@ watch(() => auth.token, (newVal) => {
     z-index: 1000;
     display: flex;
   }
+
+  /* Floating AI Chatbot on the bottom left for mobile viewports */
+  .chatbot-btn {
+    position: fixed;
+    bottom: 7.5rem; /* Matches the dark mode toggle height */
+    left: 1.25rem;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    z-index: 1000;
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.25) !important;
+    background: #6366f1 !important;
+    border: none !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .chatbot-btn .chatbot-icon {
+    font-size: 1.35rem;
+    color: white;
+  }
+  :root.dark .chatbot-btn {
+    background: #4f46e5 !important;
+    box-shadow: 0 8px 32px rgba(79, 70, 229, 0.4) !important;
+  }
+  .chatbot-btn:hover {
+    transform: scale(1.1) rotate(8deg);
+  }
 }
 
 /* Premium Notification Center CSS */

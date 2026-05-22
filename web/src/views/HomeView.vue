@@ -184,24 +184,81 @@ const getDDay = (endsAt: string | null) => {
   return `D-${diffDays}`;
 };
 
-const getRewardDescription = (c: Campaign) => {
+
+
+const hasFinancialRewards = (c: Campaign) => {
   if (c.rewardsConfig && c.rewardsConfig !== "[]") {
     try {
       const parsed = JSON.parse(c.rewardsConfig);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map(r => {
-          if (r.currency === 'OTHER') return r.customCurrency || '기타 보상';
-          const perPerson = Math.floor(r.amount / (c.winnerCount || 1));
-          return `${r.currency === 'POINT' ? '포인트' : r.currency} ${perPerson.toLocaleString()}${r.currency === 'POINT' ? 'P' : ' ' + r.currency}`;
-        }).join('\n');
+      if (Array.isArray(parsed)) {
+        return parsed.some(r => r.currency !== 'OTHER');
       }
     } catch (e) {
       console.error(e);
     }
   }
-  const perPerson = Math.floor((c.totalRewardPoints || 0) / (c.winnerCount || 1));
-  return `${c.rewardCurrency === 'POINT' ? '포인트' : c.rewardCurrency} ${perPerson.toLocaleString()}${c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency}`;
+  return (c.totalRewardPoints || 0) > 0;
 };
+
+const getFinancialRewardsList = (c: Campaign) => {
+  if (c.rewardsConfig && c.rewardsConfig !== "[]") {
+    try {
+      const parsed = JSON.parse(c.rewardsConfig);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(r => r.currency !== 'OTHER');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  if ((c.totalRewardPoints || 0) > 0) {
+    return [{ currency: c.rewardCurrency || 'POINT', amount: c.totalRewardPoints }];
+  }
+  return [];
+};
+
+const hasOtherRewards = (c: Campaign) => {
+  if (c.rewardsConfig && c.rewardsConfig !== "[]") {
+    try {
+      const parsed = JSON.parse(c.rewardsConfig);
+      if (Array.isArray(parsed)) {
+        return parsed.some(r => r.currency === 'OTHER');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  return false;
+};
+
+const getOtherRewardsList = (c: Campaign) => {
+  if (c.rewardsConfig && c.rewardsConfig !== "[]") {
+    try {
+      const parsed = JSON.parse(c.rewardsConfig);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(r => r.currency === 'OTHER');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  return [];
+};
+
+const getCurrencyEmoji = (currency: string) => {
+  const c = (currency || '').toUpperCase();
+  if (c === 'POINT' || c === 'P') return '🪙';
+  if (c === 'USDT') return '💵';
+  if (c === 'METAQ') return '💎';
+  if (c === 'BRL') return '🇧🇷';
+  return '🎁';
+};
+
+const formatRewardText = (r: any, c: Campaign) => {
+  const perPerson = Math.floor(r.amount / (c.winnerCount || 1));
+  return `${r.currency === 'POINT' || r.currency === 'P' ? '포인트' : r.currency} ${perPerson.toLocaleString()}${r.currency === 'POINT' || r.currency === 'P' ? 'P' : ' ' + r.currency}`;
+};
+
 
 const { t } = useI18n();
 const router = useRouter();
@@ -242,50 +299,7 @@ onMounted(async () => {
   }
 });
 
-// 마감 임박 (종료 시간이 있고 미래인 것 중 빠른 순)
-const closingSoonList = computed(() => {
-  const active = [...list.value]
-    .filter((c) => {
-      if (c.status !== "ACTIVE") return false;
-      if (!c.endsAt) return true;
-      return new Date(c.endsAt) > new Date();
-    })
-    .sort((a, b) => {
-      if (a.endsAt && b.endsAt) {
-        return new Date(a.endsAt).getTime() - new Date(b.endsAt).getTime();
-      }
-      return a.endsAt ? -1 : 1;
-    })
-    .slice(0, 4);
 
-  if (active.length > 0) return active;
-
-  // Dummy Fallback to perfectly match reference image when DB is empty
-  return [
-    {
-      id: "dummy-1",
-      title: "Reward Test",
-      companyName: "pickku",
-      companyLogoUrl: "",
-      status: "ACTIVE",
-      winnerCount: 12345,
-      totalRewardPoints: 100,
-      rewardCurrency: "P",
-      endsAt: new Date(Date.now() + 86400000).toISOString(),
-    },
-    {
-      id: "dummy-2",
-      title: t("campaign.adFallback"),
-      companyName: "HETAQ",
-      companyLogoUrl: "",
-      status: "ACTIVE",
-      winnerCount: 8765,
-      totalRewardPoints: 100,
-      rewardCurrency: "P",
-      endsAt: new Date(Date.now() + 86400000).toISOString(),
-    },
-  ] as Campaign[];
-});
 
 const faqs = ref([
   { q: t("home.faq1Q"), a: t("home.faq1A"), open: false },
@@ -355,6 +369,26 @@ const runCountUp = () => {
   };
 
   requestAnimationFrame(step);
+};
+
+const popularCampaigns = computed(() => {
+  return [...list.value]
+    .sort((a, b) => (b.winnerCount || 0) - (a.winnerCount || 0))
+    .slice(0, 10);
+});
+
+const viewportRef = ref<HTMLElement | null>(null);
+
+const slideLeft = () => {
+  if (viewportRef.value) {
+    viewportRef.value.scrollBy({ left: -viewportRef.value.offsetWidth, behavior: "smooth" });
+  }
+};
+
+const slideRight = () => {
+  if (viewportRef.value) {
+    viewportRef.value.scrollBy({ left: viewportRef.value.offsetWidth, behavior: "smooth" });
+  }
 };
 </script>
 
@@ -464,24 +498,34 @@ const runCountUp = () => {
     </section>
 
     <!-- Hot Campaigns Section -->
-    <section class="home-section">
+    <section class="home-section popular-slider-section">
       <div class="section-header-modern">
         <div class="header-left-side">
           <span class="section-tag-modern">HOT CAMPAIGNS</span>
-          <h2 class="section-title-modern left">
-            {{ $t("home.hotCampaignsTitle") }}
-          </h2>
+          <div class="slider-title-wrap">
+            <span class="fire-emoji">🔥</span>
+            <h2 class="section-title-modern left">
+              {{ $t("home.hotCampaignsTitle") }}
+            </h2>
+          </div>
+        </div>
+        <div class="slider-nav-btns" v-if="popularCampaigns.length > 0">
+          <button class="nav-btn prev" @click="slideLeft" aria-label="이전 캠페인">⟨</button>
+          <button class="nav-btn next" @click="slideRight" aria-label="다음 캠페인">⟩</button>
         </div>
       </div>
 
       <div v-if="loading" class="loading-grid">
-        <div v-for="i in 2" :key="i" class="skeleton-card"></div>
+        <div v-for="i in 3" :key="i" class="skeleton-card"></div>
       </div>
-      <div v-else class="campaign-grid-premium">
+      <div v-else-if="popularCampaigns.length === 0" class="empty-msg-home">
+        등록된 캠페인이 존재하지 않습니다.
+      </div>
+      <div v-else class="slider-viewport" ref="viewportRef">
         <div
-          v-for="(c, index) in closingSoonList.slice(0, 2)"
+          v-for="(c, index) in popularCampaigns"
           :key="c.id"
-          class="campaign-card-premium card"
+          class="campaign-card-premium card popular-card-item"
           :class="{ 'card-inactive': getStatusType(c) === 'CLOSED' }"
           :style="{
             background: getBrandTheme(c.companyName).bg,
@@ -513,8 +557,40 @@ const runCountUp = () => {
               <div class="reward-label-badge" :style="{ background: getBrandTheme(c.companyName).badgeBg, color: getBrandTheme(c.companyName).badgeTextColor }">
                 보상
               </div>
-              <div class="reward-text-desc">
-                {{ getRewardDescription(c) }}
+              
+              <!-- Row 1: Financial Rewards (POINT, USDT, BRL, METAQ) -->
+              <div v-if="hasFinancialRewards(c)" class="reward-row-wrap financial-row">
+                <div class="reward-scroll-container">
+                  <div class="reward-scroll-track" :class="{ 'marquee-active': getFinancialRewardsList(c).length > 1 }" :style="{ '--marquee-duration': (getFinancialRewardsList(c).length * 5) + 's' }">
+                    <!-- First set -->
+                    <div 
+                      v-for="(r, rIdx) in getFinancialRewardsList(c)" 
+                      :key="'f1-' + rIdx" 
+                      class="reward-wrap"
+                    >
+                      <span class="coin-icon">{{ getCurrencyEmoji(r.currency) }}</span>
+                      <span class="reward-val">{{ formatRewardText(r, c) }}</span>
+                    </div>
+                    <!-- Duplicated set for seamless marquee loop (only when count > 1) -->
+                    <template v-if="getFinancialRewardsList(c).length > 1">
+                      <div 
+                        v-for="(r, rIdx) in getFinancialRewardsList(c)" 
+                        :key="'f2-' + rIdx" 
+                        class="reward-wrap"
+                      >
+                        <span class="coin-icon">{{ getCurrencyEmoji(r.currency) }}</span>
+                        <span class="reward-val">{{ formatRewardText(r, c) }}</span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Row 2: Other Rewards (OTHER) -->
+              <div v-if="hasOtherRewards(c)" class="reward-row-wrap other-row">
+                <div v-for="(r, rIdx) in getOtherRewardsList(c)" :key="'o-' + rIdx" class="reward-text-desc">
+                  {{ r.customCurrency || '기타 보상' }}
+                </div>
               </div>
             </div>
             <div class="card-right-visual">
@@ -983,7 +1059,7 @@ const runCountUp = () => {
   flex-direction: column;
   align-items: stretch;
   justify-content: space-between;
-  padding: 1.5rem;
+  padding: 1.6rem 2rem; /* 좌우 패딩을 살짝 추가하여 콘텐츠가 중앙에 모이도록 설정 */
   gap: 0.75rem;
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1148,6 +1224,65 @@ const runCountUp = () => {
   font-weight: 850;
   display: inline-block;
 }
+.reward-row-wrap {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.reward-scroll-container {
+  overflow: hidden;
+  width: 100%;
+  position: relative;
+}
+
+.reward-scroll-track {
+  display: flex;
+  gap: 0.5rem;
+  width: max-content;
+  will-change: transform;
+}
+
+.reward-scroll-track.marquee-active {
+  animation: none;
+}
+
+/* 마우스 호버 시 천천히 반복되는 보상 배지 무한 슬라이드 */
+.campaign-card-premium:not(.card-inactive):hover .reward-scroll-track.marquee-active {
+  animation: reward-marquee var(--marquee-duration, 10s) linear infinite;
+}
+
+@keyframes reward-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.reward-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #eef2ff;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #e0e7ff;
+  border-radius: 99px;
+  width: fit-content;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.reward-wrap .coin-icon {
+  font-size: 0.95rem;
+}
+
+.reward-wrap .reward-val {
+  color: #4f46e5;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
 
 .reward-text-desc {
   font-size: 1.15rem;
@@ -1166,8 +1301,8 @@ const runCountUp = () => {
 
 /* Centered Visual Image */
 .card-right-visual {
-  width: 115px;
-  height: 115px;
+  width: 130px; /* 보상 이미지 크기를 115px -> 130px로 확대 */
+  height: 130px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -1419,12 +1554,12 @@ const runCountUp = () => {
   }
   .campaign-card-premium {
     min-height: auto;
-    padding: 0.75rem;
+    padding: 1.25rem 1.5rem; /* 모바일 카드 좌우 패딩 상향 조절 */
     gap: 0.75rem;
   }
   .card-right-visual {
-    width: 95px;
-    height: 95px;
+    width: 110px; /* 모바일 보상 이미지 크기 95px -> 110px로 확대 */
+    height: 110px;
   }
   .value-item-premium,
   .step-card-premium {
@@ -1571,6 +1706,13 @@ const runCountUp = () => {
 :root.dark .reward-text-desc {
   color: var(--text) !important;
 }
+:root.dark .reward-wrap {
+  background: rgba(99, 102, 241, 0.15) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+:root.dark .reward-wrap .reward-val {
+  color: #818cf8 !important;
+}
 :root.dark .upcoming-date-badge {
   background: var(--code-bg) !important;
   border-color: var(--border) !important;
@@ -1601,6 +1743,13 @@ const runCountUp = () => {
 :root.dark .card-inactive .reward-text-desc {
   color: var(--muted) !important;
 }
+:root.dark .card-inactive .reward-wrap {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+:root.dark .card-inactive .reward-wrap .reward-val {
+  color: var(--muted) !important;
+}
 
 /* 4. Values Section */
 :root.dark .gray-bg-wrapper {
@@ -1628,6 +1777,120 @@ const runCountUp = () => {
   color: var(--text-h) !important;
 }
 :root.dark .faq-a-modern {
+  color: var(--muted) !important;
+}
+
+/* ==========================================
+   🔥 PREMIUM POPULAR CAMPAIGNS SLIDER SECTION
+   ========================================== */
+.popular-slider-section {
+  width: 100%;
+}
+
+.slider-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.fire-emoji {
+  font-size: 2.2rem;
+  animation: fire-bounce 1s ease infinite alternate;
+  line-height: 1;
+}
+
+@keyframes fire-bounce {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-4px) scale(1.1); }
+}
+
+.slider-nav-btns {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.nav-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text-h);
+  font-size: 1.2rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  line-height: 1;
+}
+
+.nav-btn:hover {
+  background: #6366f1;
+  color: white;
+  border-color: #6366f1;
+  transform: scale(1.08);
+}
+
+.nav-btn:active {
+  transform: scale(0.95);
+}
+
+.slider-viewport {
+  display: flex;
+  gap: 2.5rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.5rem 0.25rem 1.5rem;
+  margin: 0 -0.25rem;
+}
+
+/* Hide scrollbars */
+.slider-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.slider-viewport {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.popular-card-item {
+  flex: 0 0 calc(50% - 1.25rem); /* PC/데스크톱에서는 기본 2개씩 스크롤되도록 조정 */
+  scroll-snap-align: start;
+  min-width: 320px;
+}
+
+@media (max-width: 900px) {
+  .popular-card-item {
+    flex: 0 0 100%;
+  }
+}
+
+:root.dark .nav-btn {
+  background: var(--panel) !important;
+  border-color: var(--border) !important;
+  color: var(--text-h) !important;
+}
+
+:root.dark .nav-btn:hover {
+  background: #6366f1 !important;
+  color: white !important;
+  border-color: #6366f1 !important;
+}
+
+.empty-msg-home {
+  color: #64748b;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  padding: 4rem 0;
+}
+:root.dark .empty-msg-home {
   color: var(--muted) !important;
 }
 </style>

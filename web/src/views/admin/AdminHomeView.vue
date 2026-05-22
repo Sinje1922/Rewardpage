@@ -740,8 +740,24 @@ function generateLinePath(history: { count: number }[]) {
 
 @media (max-width: 900px) {
   .admin-header { flex-direction: column; align-items: stretch; gap: 1rem; }
-  .tab-group { width: 100%; }
-  .tab-btn { flex: 1; text-align: center; }
+  .tab-group {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    display: flex;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.35rem;
+    scrollbar-width: none; /* Firefox */
+  }
+  .tab-group::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  .tab-btn {
+    flex: 0 0 auto;
+    text-align: center;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+  }
   .stats-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
   .charts-grid { grid-template-columns: 1fr; }
 }

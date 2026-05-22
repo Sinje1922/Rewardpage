@@ -335,6 +335,9 @@ async function submitMission(m: Mission) {
   } catch (e: unknown) {
     const ax = e as { response?: { data?: { error?: string } } }
     err.value = ax.response?.data?.error ?? t('common.submitFail')
+    if (m.type === 'QUIZ') {
+      alert('다시 생각해 보세요')
+    }
   }
 }
 
@@ -609,6 +612,7 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
             v-if="camp.status === 'ACTIVE'"
             type="button"
             class="btn primary submit-btn"
+            :disabled="myStatus(m.id) === 'APPROVED'"
             @click="submitMission(m)"
           >
             {{ $t('detail.submitMission') }}
@@ -931,6 +935,14 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
   height: 3.5rem;
   font-size: 1.1rem;
   border-radius: 14px;
+}
+
+.submit-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: var(--muted) !important;
+  border-color: var(--border) !important;
 }
 
 /* Participants List */

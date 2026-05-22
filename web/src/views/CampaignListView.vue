@@ -191,23 +191,78 @@ const getDDay = (endsAt: string | null) => {
   return `D-${diffDays}`;
 };
 
-const getRewardDescription = (c: Campaign) => {
+
+const hasFinancialRewards = (c: Campaign) => {
   if (c.rewardsConfig && c.rewardsConfig !== "[]") {
     try {
       const parsed = JSON.parse(c.rewardsConfig);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map(r => {
-          if (r.currency === 'OTHER') return r.customCurrency || '기타 보상';
-          const perPerson = Math.floor(r.amount / (c.winnerCount || 1));
-          return `${r.currency === 'POINT' ? '포인트' : r.currency} ${perPerson.toLocaleString()}${r.currency === 'POINT' ? 'P' : ' ' + r.currency}`;
-        }).join('\n');
+      if (Array.isArray(parsed)) {
+        return parsed.some(r => r.currency !== 'OTHER');
       }
     } catch (e) {
       console.error(e);
     }
   }
-  const perPerson = Math.floor((c.totalRewardPoints || 0) / (c.winnerCount || 1));
-  return `${c.rewardCurrency === 'POINT' ? '포인트' : c.rewardCurrency} ${perPerson.toLocaleString()}${c.rewardCurrency === 'POINT' ? 'P' : ' ' + c.rewardCurrency}`;
+  return (c.totalRewardPoints || 0) > 0;
+};
+
+const getFinancialRewardsList = (c: Campaign) => {
+  if (c.rewardsConfig && c.rewardsConfig !== "[]") {
+    try {
+      const parsed = JSON.parse(c.rewardsConfig);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(r => r.currency !== 'OTHER');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  if ((c.totalRewardPoints || 0) > 0) {
+    return [{ currency: c.rewardCurrency || 'POINT', amount: c.totalRewardPoints }];
+  }
+  return [];
+};
+
+const hasOtherRewards = (c: Campaign) => {
+  if (c.rewardsConfig && c.rewardsConfig !== "[]") {
+    try {
+      const parsed = JSON.parse(c.rewardsConfig);
+      if (Array.isArray(parsed)) {
+        return parsed.some(r => r.currency === 'OTHER');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  return false;
+};
+
+const getOtherRewardsList = (c: Campaign) => {
+  if (c.rewardsConfig && c.rewardsConfig !== "[]") {
+    try {
+      const parsed = JSON.parse(c.rewardsConfig);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(r => r.currency === 'OTHER');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  return [];
+};
+
+const getCurrencyEmoji = (currency: string) => {
+  const c = (currency || '').toUpperCase();
+  if (c === 'POINT' || c === 'P') return '🪙';
+  if (c === 'USDT') return '💵';
+  if (c === 'METAQ') return '💎';
+  if (c === 'BRL') return '🇧🇷';
+  return '🎁';
+};
+
+const formatRewardText = (r: any, c: Campaign) => {
+  const perPerson = Math.floor(r.amount / (c.winnerCount || 1));
+  return `${r.currency === 'POINT' || r.currency === 'P' ? '포인트' : r.currency} ${perPerson.toLocaleString()}${r.currency === 'POINT' || r.currency === 'P' ? 'P' : ' ' + r.currency}`;
 };
 
 const isFilterPanelOpen = ref(false);
@@ -304,6 +359,27 @@ const filteredList = computed(() => {
     return new Date(b.startsAt || 0).getTime() - new Date(a.startsAt || 0).getTime();
   });
 });
+
+const popularCampaigns = computed(() => {
+  return [...list.value]
+    .filter(c => getStatusType(c) === "ACTIVE" || getStatusType(c) === "ENDING_SOON")
+    .sort((a, b) => (b.winnerCount || 0) - (a.winnerCount || 0))
+    .slice(0, 10);
+});
+
+const viewportRef = ref<HTMLElement | null>(null);
+
+const slideLeft = () => {
+  if (viewportRef.value) {
+    viewportRef.value.scrollBy({ left: -viewportRef.value.offsetWidth, behavior: "smooth" });
+  }
+};
+
+const slideRight = () => {
+  if (viewportRef.value) {
+    viewportRef.value.scrollBy({ left: viewportRef.value.offsetWidth, behavior: "smooth" });
+  }
+};
 </script>
 
 <template>
@@ -333,6 +409,112 @@ const filteredList = computed(() => {
           {{ $t("campaign.filter") }}
           <span v-if="activeFiltersCount > 0" class="filter-count-badge">{{ activeFiltersCount }}</span>
         </button>
+      </div>
+    </div>
+
+    <!-- 🔥 인기 캠페인 슬라이더 섹션 -->
+    <div v-if="popularCampaigns.length > 0" class="popular-slider-section">
+      <div class="slider-header">
+        <div class="slider-title-wrap">
+          <span class="fire-emoji">🔥</span>
+          <h2 class="slider-title">지금 인기 있는 캠페인</h2>
+        </div>
+        <div class="slider-nav-btns">
+          <button class="nav-btn prev" @click="slideLeft" aria-label="이전 캠페인">⟨</button>
+          <button class="nav-btn next" @click="slideRight" aria-label="다음 캠페인">⟩</button>
+        </div>
+      </div>
+      
+      <div class="slider-viewport" ref="viewportRef">
+        <div
+          v-for="(c, idx) in popularCampaigns"
+          :key="'pop-' + c.id"
+          class="campaign-card-premium card popular-card-item"
+          :class="{ 'card-inactive': getStatusType(c) === 'CLOSED' }"
+          :style="{
+            background: getBrandTheme(c.companyName).bg,
+            borderColor: getBrandTheme(c.companyName).textColor + '25',
+          }"
+          @click="router.push(`/campaigns/${c.id}`)"
+        >
+          <!-- Brand Header -->
+          <div class="card-brand-header">
+            <div class="company-brand-info">
+              <img v-if="c.companyLogoUrl" :src="getFileUrl(c.companyLogoUrl)" class="brand-logo-circular" alt="" />
+              <div v-else class="brand-logo-fallback" :style="{ background: getBrandTheme(c.companyName).btnBg }">
+                {{ getBrandTheme(c.companyName).logoEmoji }}
+              </div>
+              <span class="company-name-txt">{{ c.companyName || 'pickku' }}</span>
+            </div>
+            <div class="dday-pill-badge" :style="{ color: getBrandTheme(c.companyName).btnBg }">
+              🕒 {{ getDDay(c.endsAt) }}
+            </div>
+          </div>
+
+          <!-- Title -->
+          <h2 class="campaign-card-title">{{ c.title }}</h2>
+
+          <!-- Body Content -->
+          <div class="card-body-content">
+            <div class="reward-details-col">
+              <div class="reward-label-badge" :style="{ background: getBrandTheme(c.companyName).badgeBg, color: getBrandTheme(c.companyName).badgeTextColor }">
+                보상
+              </div>
+              
+              <!-- Row 1: Financial Rewards -->
+              <div v-if="hasFinancialRewards(c)" class="reward-row-wrap financial-row">
+                <div class="reward-scroll-container">
+                  <div class="reward-scroll-track" :class="{ 'marquee-active': getFinancialRewardsList(c).length > 1 }" :style="{ '--marquee-duration': (getFinancialRewardsList(c).length * 5) + 's' }">
+                    <div 
+                      v-for="(r, rIdx) in getFinancialRewardsList(c)" 
+                      :key="'pop-f1-' + rIdx" 
+                      class="reward-wrap"
+                    >
+                      <span class="coin-icon">{{ getCurrencyEmoji(r.currency) }}</span>
+                      <span class="reward-val">{{ formatRewardText(r, c) }}</span>
+                    </div>
+                    <template v-if="getFinancialRewardsList(c).length > 1">
+                      <div 
+                        v-for="(r, rIdx) in getFinancialRewardsList(c)" 
+                        :key="'pop-f2-' + rIdx" 
+                        class="reward-wrap"
+                      >
+                        <span class="coin-icon">{{ getCurrencyEmoji(r.currency) }}</span>
+                        <span class="reward-val">{{ formatRewardText(r, c) }}</span>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Row 2: Other Rewards -->
+              <div v-if="hasOtherRewards(c)" class="reward-row-wrap other-row">
+                <div v-for="(r, rIdx) in getOtherRewardsList(c)" :key="'pop-o-' + rIdx" class="reward-text-desc">
+                  {{ r.customCurrency || '기타 보상' }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="card-right-visual">
+              <img
+                :src="getCampaignIllustration(c, idx)"
+                class="visual-right-img"
+                alt="Campaign Illustration"
+              />
+            </div>
+          </div>
+
+          <!-- Footer Row -->
+          <div class="card-footer-row">
+            <div class="participants-count-wrap" :style="{ color: getBrandTheme(c.companyName).textColor }">
+              <span class="part-icon">👤</span>
+              <span class="part-text">{{ c.winnerCount }}명</span>
+            </div>
+            <button class="action-pill-btn" :style="{ background: getBrandTheme(c.companyName).btnBg }">
+              {{ getBrandTheme(c.companyName).btnText }} <span class="chevron">></span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -441,8 +623,41 @@ const filteredList = computed(() => {
             <div class="reward-label-badge" :style="{ background: getBrandTheme(c.companyName).badgeBg, color: getBrandTheme(c.companyName).badgeTextColor }">
               보상
             </div>
-            <div class="reward-text-desc">
-              {{ getRewardDescription(c) }}
+            
+            <!-- Row 1: Financial Rewards (POINT, USDT, BRL, METAQ) -->
+            <div v-if="hasFinancialRewards(c)" class="reward-row-wrap financial-row">
+              <div class="reward-scroll-container">
+                <div class="reward-scroll-track" :class="{ 'marquee-active': getFinancialRewardsList(c).length > 1 }" :style="{ '--marquee-duration': (getFinancialRewardsList(c).length * 5) + 's' }">
+                  <!-- First set -->
+
+                  <div 
+                    v-for="(r, rIdx) in getFinancialRewardsList(c)" 
+                    :key="'f1-' + rIdx" 
+                    class="reward-wrap"
+                  >
+                    <span class="coin-icon">{{ getCurrencyEmoji(r.currency) }}</span>
+                    <span class="reward-val">{{ formatRewardText(r, c) }}</span>
+                  </div>
+                  <!-- Duplicated set for seamless marquee loop (only when count > 1) -->
+                  <template v-if="getFinancialRewardsList(c).length > 1">
+                    <div 
+                      v-for="(r, rIdx) in getFinancialRewardsList(c)" 
+                      :key="'f2-' + rIdx" 
+                      class="reward-wrap"
+                    >
+                      <span class="coin-icon">{{ getCurrencyEmoji(r.currency) }}</span>
+                      <span class="reward-val">{{ formatRewardText(r, c) }}</span>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 2: Other Rewards (OTHER) -->
+            <div v-if="hasOtherRewards(c)" class="reward-row-wrap other-row">
+              <div v-for="(r, rIdx) in getOtherRewardsList(c)" :key="'o-' + rIdx" class="reward-text-desc">
+                {{ r.customCurrency || '기타 보상' }}
+              </div>
             </div>
           </div>
           <div class="card-right-visual">
@@ -476,6 +691,10 @@ const filteredList = computed(() => {
 <style scoped>
 .list-container {
   width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  box-sizing: border-box;
 }
 
 .list-head {
@@ -709,7 +928,7 @@ const filteredList = computed(() => {
   flex-direction: column;
   align-items: stretch;
   justify-content: space-between;
-  padding: 1.5rem;
+  padding: 1.6rem 2rem; /* 좌우 패딩을 살짝 추가하여 콘텐츠가 중앙에 모이도록 설정 */
   gap: 0.75rem;
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -838,7 +1057,7 @@ const filteredList = computed(() => {
   font-size: 1.35rem;
   font-weight: 900;
   color: #1e293b;
-  margin: 0 0 1.25rem;
+  margin: 0;
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -853,7 +1072,6 @@ const filteredList = computed(() => {
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 1.25rem;
 }
 
 .reward-details-col {
@@ -890,8 +1108,8 @@ const filteredList = computed(() => {
 
 /* Centered Visual Image */
 .card-right-visual {
-  width: 115px;
-  height: 115px;
+  width: 130px; /* 보상 이미지 크기를 115px -> 130px로 확대 */
+  height: 130px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -1222,12 +1440,12 @@ const filteredList = computed(() => {
   }
   .campaign-card-premium {
     min-height: auto;
-    padding: 0.75rem;
+    padding: 1.25rem 1.5rem; /* 모바일 카드 좌우 패딩 상향 조절 */
     gap: 0.75rem;
   }
   .card-right-visual {
-    width: 95px;
-    height: 95px;
+    width: 110px; /* 모바일 보상 이미지 크기 95px -> 110px로 확대 */
+    height: 110px;
   }
   .btn-action-primary, .btn-action-secondary {
     padding: 0.5rem;
@@ -1347,6 +1565,136 @@ const filteredList = computed(() => {
 }
 :root.dark .card-inactive .reward-wrap .reward-val {
   color: var(--muted) !important;
+}
+
+/* ==========================================
+   🔥 PREMIUM POPULAR CAMPAIGNS SLIDER SECTION
+   ========================================== */
+.popular-slider-section {
+  margin-bottom: 4rem;
+  width: 100%;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 0 0.5rem;
+}
+
+.slider-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fire-emoji {
+  font-size: 1.6rem;
+  animation: fire-bounce 1s ease infinite alternate;
+}
+
+@keyframes fire-bounce {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-4px) scale(1.1); }
+}
+
+.slider-title {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--text-h);
+  margin: 0;
+}
+
+.slider-nav-btns {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text-h);
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  line-height: 1;
+}
+
+.nav-btn:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  transform: scale(1.08);
+}
+
+.nav-btn:active {
+  transform: scale(0.95);
+}
+
+.slider-viewport {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.5rem 0.25rem 1.5rem;
+  margin: 0 -0.25rem;
+}
+
+/* Hide scrollbars */
+.slider-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.slider-viewport {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.popular-card-item {
+  flex: 0 0 calc(33.333% - 1rem);
+  scroll-snap-align: start;
+  min-width: 280px;
+}
+
+@media (max-width: 950px) {
+  .popular-card-item {
+    flex: 0 0 calc(50% - 0.75rem);
+  }
+}
+
+@media (max-width: 600px) {
+  .popular-slider-section {
+    margin-bottom: 2.5rem;
+  }
+  .slider-title {
+    font-size: 1.3rem;
+  }
+  .popular-card-item {
+    flex: 0 0 100%;
+  }
+}
+
+:root.dark .nav-btn {
+  background: var(--panel) !important;
+  border-color: var(--border) !important;
+  color: var(--text-h) !important;
+}
+
+:root.dark .nav-btn:hover {
+  background: var(--accent) !important;
+  color: white !important;
+  border-color: var(--accent) !important;
 }
 </style>
 
