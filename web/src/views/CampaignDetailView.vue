@@ -297,14 +297,66 @@ async function submitMission(m: Mission) {
   msg.value = ''
   if (!auth.token) {
     err.value = t('common.loginRequired')
+    alert(t('common.loginRequired'))
     return
   }
 
   // SNS Verification check
   if (['YOUTUBE_SUBSCRIBE', 'YOUTUBE_LIKE', 'TELEGRAM_JOIN', 'TELEGRAM_CHANNEL', 'TELEGRAM_GROUP', 'DISCORD_JOIN'].includes(m.type)) {
     if (!verifyStatus.value[m.id]?.ok) {
-      err.value = verifyStatus.value[m.id]?.msg || t('common.checkRequired')
-      return
+      isVerifying.value[m.id] = true
+      verifyStatus.value[m.id] = { ok: false, msg: '' }
+      
+      const cfg = parseCfg(m.config)
+      let endpoint = ''
+      let body: any = {}
+      
+      if (m.type === 'YOUTUBE_SUBSCRIBE') {
+        if (!auth.user?.youtubeHandle) {
+          alert(t('detail.snsLinkRequired', { type: 'YouTube' }))
+          isVerifying.value[m.id] = false
+          return
+        }
+        endpoint = '/verify/youtube/subscribe'
+        body = { channelId: cfg.youtubeChannelId }
+      } else if (m.type === 'YOUTUBE_LIKE') {
+        if (!auth.user?.youtubeHandle) {
+          alert(t('detail.snsLinkRequired', { type: 'YouTube' }))
+          isVerifying.value[m.id] = false
+          return
+        }
+        endpoint = '/verify/youtube/like'
+        body = { videoId: cfg.youtubeVideoId }
+      } else if (m.type === 'TELEGRAM_JOIN' || m.type === 'TELEGRAM_CHANNEL' || m.type === 'TELEGRAM_GROUP') {
+        if (!auth.user?.telegramHandle) {
+          alert(t('detail.snsLinkRequired', { type: 'Telegram' }))
+          isVerifying.value[m.id] = false
+          return
+        }
+        endpoint = '/verify/telegram'
+        body = { missionId: m.id }
+      } else if (m.type === 'DISCORD_JOIN') {
+        if (!auth.user?.discordHandle) {
+          alert(t('detail.snsLinkRequired', { type: 'Discord' }))
+          isVerifying.value[m.id] = false
+          return
+        }
+        endpoint = '/verify/discord'
+        body = { missionId: m.id }
+      }
+      
+      try {
+        const { data } = await api.post(endpoint, body)
+        verifyStatus.value[m.id] = { ok: true, msg: data.message || t('detail.verifySuccess') }
+      } catch (e: any) {
+        const reason = e.response?.data?.error || t('common.errorLoad')
+        verifyStatus.value[m.id] = { ok: false, msg: reason }
+        alert(t('detail.verifyFail', { reason }))
+        isVerifying.value[m.id] = false
+        return
+      } finally {
+        isVerifying.value[m.id] = false
+      }
     }
   }
 
@@ -326,6 +378,7 @@ async function submitMission(m: Mission) {
   } else if (m.type === 'CHECKIN') {
     if (!checkConfirm.value[m.id]) {
       err.value = t('common.checkRequired')
+      alert(t('common.checkRequired'))
       return
     }
     payload = {}
@@ -338,6 +391,7 @@ async function submitMission(m: Mission) {
   } else if (m.type === 'YOUTUBE_WATCH') {
     if (ytRemaining.value[m.id] > 0) {
       err.value = t('detail.ytWatchRequired')
+      alert(t('detail.ytWatchRequired'))
       return
     }
     payload = { watched: true }
@@ -350,12 +404,14 @@ async function submitMission(m: Mission) {
   try {
     await api.post(`/missions/${m.id}/submit`, { payload })
     msg.value = t('common.submitSuccess')
+    alert(t('common.submitSuccess'))
     const { data } = await api.get<CampaignDetail>(`/campaigns/${route.params.id}`)
     camp.value = data
     await loadParticipants()
   } catch (e: unknown) {
     const ax = e as { response?: { data?: { error?: string } } }
     err.value = ax.response?.data?.error ?? t('common.submitFail')
+    alert(err.value)
     if (m.type === 'QUIZ') {
       alert('다시 생각해 보세요')
     }
