@@ -1,9 +1,20 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { api } from '../../api/client'
 
 type UserRow = { id: string; email: string; role: string; blocked: boolean; pointBalance: number }
+type CampaignRow = {
+  id: string
+  title: string
+  status: string
+  companyName: string
+  createdAt: string
+  winnerCount: number
+  missions: { id: string }[]
+  creator: { id: string; email: string } | null
+}
 type DashboardData = {
   summary: {
     users: number
@@ -26,12 +37,18 @@ type DashboardData = {
 }
 
 const { t } = useI18n()
-const tab = ref<'dashboard' | 'users'>('dashboard')
+const tab = ref<'dashboard' | 'users' | 'campaigns' | 'requests'>('dashboard')
 const dashboard = ref<DashboardData | null>(null)
 const users = ref<UserRow[]>([])
+const campaigns = ref<CampaignRow[]>([])
+const managerRequests = ref<any[]>([])
+const requestFilter = ref<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL')
+const adminNote = ref('')
+const processingRequestId = ref<string | null>(null)
 const err = ref('')
 const loading = ref(false)
 const userSearchQuery = ref('')
+const campaignSearchQuery = ref('')
 
 async function refresh() {
   loading.value = true
@@ -44,6 +61,37 @@ async function refresh() {
     dashboard.value = d.data
   } finally {
     loading.value = false
+  }
+}
+
+async function loadCampaigns() {
+  loading.value = true
+  try {
+    const { data } = await api.get<CampaignRow[]>('/campaigns')
+    campaigns.value = data
+  } finally {
+    loading.value = false
+  }
+}
+
+function filteredCampaigns() {
+  const q = campaignSearchQuery.value.toLowerCase().trim()
+  if (!q) return campaigns.value
+  return campaigns.value.filter(c =>
+    c.title.toLowerCase().includes(q) ||
+    (c.creator?.email ?? '').toLowerCase().includes(q) ||
+    c.companyName.toLowerCase().includes(q)
+  )
+}
+
+function campaignStatusColor(status: string) {
+  switch (status) {
+    case 'ACTIVE': return '#22c55e'
+    case 'DRAFT': return '#f59e0b'
+    case 'PENDING_ADMIN': return '#6366f1'
+    case 'CLOSED': return '#94a3b8'
+    case 'DRAWN': return '#0ea5e9'
+    default: return 'var(--muted)'
   }
 }
 
@@ -132,6 +180,50 @@ async function setBlock(id: string, blocked: boolean) {
   await refresh()
 }
 
+async function loadManagerRequests() {
+  loading.value = true
+  try {
+    const statusParam = requestFilter.value === 'ALL' ? undefined : requestFilter.value
+    const { data } = await api.get('/admin/manager-requests', { params: { status: statusParam } })
+    managerRequests.value = data
+  } catch (e) {
+    console.error('Failed to load manager requests:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function approveRequest(id: string) {
+  if (!confirm('정말로 이 신청을 승인하시겠습니까?\n승인 시 유저 권한이 즉시 MANAGER로 변경됩니다.')) return
+  processingRequestId.value = id
+  try {
+    await api.patch(`/admin/manager-requests/${id}/approve`, { adminNote: adminNote.value || 'Approved' })
+    alert('성공적으로 승인되었습니다.')
+    adminNote.value = ''
+    await loadManagerRequests()
+    await refresh()
+  } catch (e: any) {
+    alert(e.response?.data?.error || '승인에 실패했습니다.')
+  } finally {
+    processingRequestId.value = null
+  }
+}
+
+async function rejectRequest(id: string) {
+  const reason = prompt('거절 사유를 입력해주세요 (선택):')
+  if (reason === null) return
+  processingRequestId.value = id
+  try {
+    await api.patch(`/admin/manager-requests/${id}/reject`, { adminNote: reason || 'Rejected' })
+    alert('성공적으로 거절되었습니다.')
+    await loadManagerRequests()
+  } catch (e: any) {
+    alert(e.response?.data?.error || '거절에 실패했습니다.')
+  } finally {
+    processingRequestId.value = null
+  }
+}
+
 </script>
 
 <template>
@@ -149,6 +241,12 @@ async function setBlock(id: string, blocked: boolean) {
         </button>
         <button class="tab-btn" :class="{ active: tab === 'users' }" @click="tab = 'users'">
           👥 {{ $t('admin.tabUsers') }}
+        </button>
+        <button class="tab-btn" :class="{ active: tab === 'campaigns' }" @click="tab = 'campaigns'; loadCampaigns()">
+          🗂️ 캠페인 목록
+        </button>
+        <button class="tab-btn" :class="{ active: tab === 'requests' }" @click="tab = 'requests'; loadManagerRequests()">
+          👑 권한 신청
         </button>
       </div>
     </header>
@@ -323,6 +421,136 @@ async function setBlock(id: string, blocked: boolean) {
                 {{ u.blocked ? $t('admin.unblockBtn') : $t('admin.blockBtn') }}
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAMPAIGNS TAB -->
+    <div v-if="tab === 'campaigns'" class="users-content fade-in">
+      <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap">
+        <input
+          v-model="campaignSearchQuery"
+          type="text"
+          placeholder="캠페인명, 생성자 이메일, 회사명 검색..."
+          style="flex: 1; min-width: 200px"
+          class="search-input"
+        />
+        <button type="button" class="btn primary" @click="loadCampaigns">🔄 새로고침</button>
+      </div>
+
+      <!-- 요약 카운트 -->
+      <div class="campaign-summary">
+        <span class="summary-chip">전체 <strong>{{ filteredCampaigns().length }}</strong>개</span>
+        <span class="summary-chip active-chip">활성 <strong>{{ filteredCampaigns().filter(c => c.status === 'ACTIVE').length }}</strong></span>
+        <span class="summary-chip draft-chip">초안 <strong>{{ filteredCampaigns().filter(c => c.status === 'DRAFT').length }}</strong></span>
+        <span class="summary-chip drawn-chip">완료 <strong>{{ filteredCampaigns().filter(c => c.status === 'DRAWN' || c.status === 'CLOSED').length }}</strong></span>
+      </div>
+
+      <div v-if="loading" style="text-align: center; padding: 3rem; color: var(--muted)">로딩 중...</div>
+
+      <div v-else-if="filteredCampaigns().length === 0" style="text-align: center; padding: 3rem; color: var(--muted)">
+        캠페인이 없습니다.
+      </div>
+
+      <div v-else class="campaign-list">
+        <div
+          v-for="c in filteredCampaigns()"
+          :key="c.id"
+          class="campaign-card"
+        >
+          <!-- 상태 뱃지 + 제목 -->
+          <div class="campaign-card-header">
+            <span class="status-badge" :style="{ background: campaignStatusColor(c.status) + '20', color: campaignStatusColor(c.status), borderColor: campaignStatusColor(c.status) + '40' }">
+              {{ c.status }}
+            </span>
+            <RouterLink :to="`/ops/campaigns/${c.id}`" class="campaign-title-link">
+              {{ c.title }}
+            </RouterLink>
+          </div>
+
+          <!-- 메타 정보 -->
+          <div class="campaign-meta">
+            <div class="meta-item">
+              <span class="meta-label">👤 생성자</span>
+              <span class="meta-value creator-email">{{ c.creator?.email ?? '알 수 없음' }}</span>
+            </div>
+            <div class="meta-item" v-if="c.companyName">
+              <span class="meta-label">🏢 회사</span>
+              <span class="meta-value">{{ c.companyName }}</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">🎯 미션</span>
+              <span class="meta-value">{{ c.missions?.length ?? 0 }}개</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">🏆 당첨자</span>
+              <span class="meta-value">{{ c.winnerCount }}명</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">📅 생성일</span>
+              <span class="meta-value">{{ new Date(c.createdAt).toLocaleDateString('ko-KR') }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>    <!-- REQUESTS TAB -->
+    <div v-if="tab === 'requests'" class="users-content fade-in">
+      <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap">
+        <select v-model="requestFilter" @change="loadManagerRequests" class="search-input" style="min-width: 150px">
+          <option value="ALL">전체 보기</option>
+          <option value="PENDING">대기중</option>
+          <option value="APPROVED">승인됨</option>
+          <option value="REJECTED">거절됨</option>
+        </select>
+        <button type="button" class="btn primary" @click="loadManagerRequests">🔄 새로고침</button>
+      </div>
+
+      <div v-if="loading" style="text-align: center; padding: 3rem; color: var(--muted)">로딩 중...</div>
+
+      <div v-else-if="managerRequests.length === 0" style="text-align: center; padding: 3rem; color: var(--muted)">
+        신청 내역이 없습니다.
+      </div>
+
+      <div v-else class="campaign-list">
+        <div v-for="req in managerRequests" :key="req.id" class="campaign-card" style="display: flex; flex-direction: column; gap: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                <span class="status-badge" :style="{ background: req.status === 'PENDING' ? '#f59e0b20' : (req.status === 'APPROVED' ? '#22c55e20' : '#ef444420'), color: req.status === 'PENDING' ? '#f59e0b' : (req.status === 'APPROVED' ? '#22c55e' : '#ef4444'), borderColor: req.status === 'PENDING' ? '#f59e0b40' : (req.status === 'APPROVED' ? '#22c55e40' : '#ef444440') }">
+                  {{ req.status === 'PENDING' ? '대기중' : (req.status === 'APPROVED' ? '승인됨' : '거절됨') }}
+                </span>
+                <strong style="font-size: 1.1rem; color: var(--text-h)">{{ req.companyName }}</strong>
+              </div>
+              <div style="font-size: 0.85rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 1rem;">
+                <span>👤 담당자: <strong>{{ req.contactName }}</strong></span>
+                <span>📧 이메일: <strong>{{ req.email }}</strong></span>
+                <span v-if="req.phone">📞 연락처: <strong>{{ req.phone }}</strong></span>
+                <span>💼 업종: <strong>{{ req.businessType }}</strong></span>
+                <span>📅 신청일: <strong>{{ new Date(req.createdAt).toLocaleString('ko-KR') }}</strong></span>
+              </div>
+            </div>
+
+            <!-- Action buttons (Only for PENDING status) -->
+            <div v-if="req.status === 'PENDING'" style="display: flex; gap: 0.5rem; align-items: center;">
+              <input v-model="adminNote" type="text" placeholder="승인 메모 입력..." class="search-input" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; max-width: 180px;" />
+              <button type="button" class="btn btn-sm primary" @click="approveRequest(req.id)" :disabled="processingRequestId === req.id">
+                ✅ 승인
+              </button>
+              <button type="button" class="btn btn-sm danger" @click="rejectRequest(req.id)" :disabled="processingRequestId === req.id">
+                ❌ 거절
+              </button>
+            </div>
+          </div>
+
+          <!-- Introduction Message -->
+          <div style="background: var(--bg-deep); padding: 1rem; border-radius: 12px; font-size: 0.92rem; color: var(--text); line-height: 1.6; white-space: pre-wrap; border-left: 3px solid var(--accent);">
+            {{ req.message }}
+          </div>
+
+          <!-- Admin note if processed -->
+          <div v-if="req.adminNote" style="font-size: 0.85rem; padding: 0.75rem 1rem; background: rgba(0, 0, 0, 0.02); border-radius: 8px; border-left: 3px solid var(--border);">
+            <strong>✍️ 처리 메모:</strong> {{ req.adminNote }}
           </div>
         </div>
       </div>
@@ -512,8 +740,24 @@ function generateLinePath(history: { count: number }[]) {
 
 @media (max-width: 900px) {
   .admin-header { flex-direction: column; align-items: stretch; gap: 1rem; }
-  .tab-group { width: 100%; }
-  .tab-btn { flex: 1; text-align: center; }
+  .tab-group {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    display: flex;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.35rem;
+    scrollbar-width: none; /* Firefox */
+  }
+  .tab-group::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  .tab-btn {
+    flex: 0 0 auto;
+    text-align: center;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+  }
   .stats-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
   .charts-grid { grid-template-columns: 1fr; }
 }
@@ -522,4 +766,110 @@ function generateLinePath(history: { count: number }[]) {
   .stats-grid { grid-template-columns: 1fr; }
   .stat-card .value { font-size: 1.5rem; }
 }
+
+/* Campaign List Styles */
+.campaign-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.summary-chip {
+  padding: 0.35rem 0.85rem;
+  border-radius: 99px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: var(--bg-deep);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.summary-chip strong { color: var(--text-h); }
+.summary-chip.active-chip { border-color: #22c55e40; color: #22c55e; background: #22c55e15; }
+.summary-chip.draft-chip { border-color: #f59e0b40; color: #f59e0b; background: #f59e0b15; }
+.summary-chip.drawn-chip { border-color: #0ea5e940; color: #0ea5e9; background: #0ea5e915; }
+
+.campaign-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.campaign-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.campaign-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+}
+.campaign-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+.status-badge {
+  padding: 0.2rem 0.65rem;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  border: 1px solid;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.campaign-title-link {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-h);
+  text-decoration: none;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.campaign-title-link:hover { color: var(--accent); }
+.campaign-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin-bottom: 1rem;
+}
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.meta-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.meta-value {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.meta-value.creator-email {
+  color: var(--accent);
+  font-weight: 700;
+}
+.campaign-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.search-input {
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.search-input:focus { border-color: var(--accent); }
 </style>
+

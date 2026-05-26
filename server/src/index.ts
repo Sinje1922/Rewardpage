@@ -5,6 +5,7 @@ import express from "express";
 import cors from "cors";
 import authRouter from "./routes/auth.js";
 import campaignsRouter from "./routes/campaigns.js";
+import chatRouter from "./routes/chat.js";
 import missionsRouter from "./routes/missions.js";
 import adminRouter from "./routes/admin.js";
 import meRouter from "./routes/me.js";
@@ -12,6 +13,7 @@ import submissionsRouter from "./routes/submissions.js";
 import uploadRouter from "./routes/upload.js";
 import verifyRouter from "./routes/verify.js";
 import oauthRouter from "./routes/oauth.js";
+import managerRequestsRouter from "./routes/managerRequests.js";
 import { startLotteryWorker } from "./workers/lotteryWorker.js";
 import { startTelegramBot } from "./lib/telegram.js";
 
@@ -67,9 +69,11 @@ app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
 app.use("/api/auth", authRouter);
 app.use("/api/campaigns", campaignsRouter);
+app.use("/api/chat", chatRouter);
 app.use("/api/missions", missionsRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/me", meRouter);
+app.use("/api/manager-requests", managerRequestsRouter);
 app.use("/api/submissions", submissionsRouter);
 app.use("/api/upload", uploadRouter);
 app.use("/api/verify", verifyRouter);

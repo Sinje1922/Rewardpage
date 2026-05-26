@@ -21,6 +21,7 @@ model campaign {
   description       String    @default("") @db.LongText
   companyName       String    @default("")
   companyLogoUrl    String    @default("")
+  rewardImageUrl    String    @default("")
   status            String    @default("DRAFT")
   creatorId         String
   startsAt          DateTime?
@@ -100,6 +101,8 @@ model user {
   submissions   submission[]
   campaigns     campaign[]
   winners       winner[]
+  chatMessages  chatmessage[]
+  managerRequests managerrequest[]
 }
 
 model winner {
@@ -116,4 +119,34 @@ model winner {
 
   @@unique([campaignId, userId], map: "Winner_campaignId_userId_key")
   @@index([userId], map: "Winner_userId_fkey")
+}
+
+model chatmessage {
+  id        String   @id @default(cuid())
+  userId    String?
+  sender    String   // "user" | "bot"
+  text      String   @db.Text
+  locale    String   @default("ko")
+  createdAt DateTime @default(now())
+  user      user?    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "ChatMessage_userId_fkey")
+
+  @@index([userId], map: "ChatMessage_userId_fkey")
+}
+
+model managerrequest {
+  id          String   @id @default(cuid())
+  companyName String                       // 회사명
+  contactName String                       // 담당자명
+  email       String                       // 연락처 이메일
+  phone       String?                      // 연락처 전화번호
+  businessType String                      // 업종
+  message     String   @db.Text            // 캠페인 목적 및 설명
+  userId      String                       // 가입된 유저의 ID (방안 A이므로 필수)
+  status      String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  adminNote   String?  @db.Text            // 관리자 메모
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+  user        user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "ManagerRequest_userId_fkey")
+
+  @@index([userId], map: "ManagerRequest_userId_fkey")
 }

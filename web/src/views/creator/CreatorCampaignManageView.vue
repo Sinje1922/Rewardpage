@@ -95,7 +95,7 @@ const draftDescription = ref('')
 const draftWinnerCount = ref(1)
 const draftLotteryMode = ref<'SIMPLE' | 'WEIGHTED'>('SIMPLE')
 const draftAutoApprove = ref(true)
-const draftRewards = ref<{ amount: number; currency: string }[]>([{ amount: 0, currency: 'POINT' }])
+const draftRewards = ref<{ amount: number; currency: string; customCurrency?: string }[]>([{ amount: 0, currency: 'POINT' }])
 const draftStartsAt = ref('')
 const draftEndsAt = ref('')
 const missionRows = ref<MissionRowState[]>([emptyMissionRow(0)])
@@ -593,21 +593,27 @@ async function downloadCsv() {
         </label>
         <div class="field">
           <label>{{ $t('ops.totalReward') }}</label>
-          <div v-for="(r, idx) in draftRewards" :key="idx" style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem">
-            <input v-model.number="r.amount" type="number" min="0" style="flex: 1" />
-            <select v-model="r.currency" style="width: 120px">
-              <option value="POINT">{{ $t('common.point') || 'POINT' }}</option>
-              <option value="USDT">USDT</option>
-              <option value="BRL">BRL ({{ $t('common.brl') || 'Real' }})</option>
-              <option value="METAQ">METAQ ({{ $t('common.metaq') || 'Coin' }})</option>
-            </select>
-            <button v-if="draftRewards.length > 1" type="button" class="btn outline" @click="removeDraftReward(idx)">✕</button>
+          <div v-for="(r, idx) in draftRewards" :key="idx" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem">
+            <div style="display: flex; gap: 0.5rem">
+              <input v-model.number="r.amount" type="number" min="0" style="flex: 1" />
+              <select v-model="r.currency" style="width: 120px">
+                <option value="POINT">{{ $t('common.point') || 'POINT' }}</option>
+                <option value="USDT">USDT</option>
+                <option value="BRL">BRL ({{ $t('common.brl') || 'Real' }})</option>
+                <option value="METAQ">METAQ ({{ $t('common.metaq') || 'Coin' }})</option>
+                <option value="OTHER">기타 보상</option>
+              </select>
+              <button v-if="draftRewards.length > 1" type="button" class="btn outline" @click="removeDraftReward(idx)">✕</button>
+            </div>
+            <div v-if="r.currency === 'OTHER'" style="display: flex; gap: 0.5rem">
+              <input v-model="r.customCurrency" type="text" placeholder="보상명 (예: 스타벅스 디저트 쿠폰, 문화상품권 등)" style="flex: 1" required />
+            </div>
           </div>
           <button type="button" class="btn btn-sm" @click="addDraftReward">+ {{ $t('ops.addReward') || 'Add Reward' }}</button>
           
           <div v-if="draftWinnerCount > 0" class="reward-hint" style="margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.8">
             <p v-for="(r, idx) in draftRewards" :key="idx" style="margin: 0">
-              • {{ r.currency === 'POINT' ? $t('common.point') : r.currency }}: {{ Math.floor(r.amount / draftWinnerCount).toLocaleString() }} / {{ $t('common.person') || 'person' }}
+              • {{ r.currency === 'OTHER' ? (r.customCurrency || '기타 보상') : (r.currency === 'POINT' ? $t('common.point') : r.currency) }}: {{ Math.floor(r.amount / draftWinnerCount).toLocaleString() }}{{ r.currency === 'OTHER' ? '개' : '/' + ($t('common.person') || 'person') }}
             </p>
           </div>
         </div>
