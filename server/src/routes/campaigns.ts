@@ -37,7 +37,23 @@ router.get("/", authOptional, async (req: AuthedRequest, res) => {
 });
 
 const missionInputSchema = z.object({
-  type: z.enum(["LINK_VISIT", "SURVEY", "CODE", "QUIZ", "CHECKIN", "FILE_UPLOAD", "TELEGRAM_JOIN", "DISCORD_JOIN", "YOUTUBE_WATCH"]),
+  type: z.enum([
+    "LINK_VISIT",
+    "SURVEY",
+    "CODE",
+    "QUIZ",
+    "CHECKIN",
+    "FILE_UPLOAD",
+    "TELEGRAM_JOIN",
+    "DISCORD_JOIN",
+    "YOUTUBE_WATCH",
+    "YOUTUBE_SUBSCRIBE",
+    "YOUTUBE_LIKE",
+    "TELEGRAM_CHANNEL",
+    "TELEGRAM_GROUP",
+    "INSTAGRAM_FOLLOW",
+    "INSTAGRAM_LIKE"
+  ]),
   title: z.string().min(1),
   description: z.string().optional(),
   sortOrder: z.number().int().optional(),
