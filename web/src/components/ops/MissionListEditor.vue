@@ -54,14 +54,6 @@ const missionCategories = [
     ]
   },
   {
-    id: 'instagram',
-    labelKey: 'ops.catInstagram',
-    types: [
-      { id: 'INSTAGRAM_FOLLOW', labelKey: 'ops.typeInstagramFollow', icon: '📸' },
-      { id: 'INSTAGRAM_LIKE', labelKey: 'ops.typeInstagramLike', icon: '❤️' },
-    ]
-  },
-  {
     id: 'discord',
     labelKey: 'ops.catDiscord',
     types: [

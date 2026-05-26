@@ -50,9 +50,7 @@ const missionInputSchema = z.object({
     "YOUTUBE_SUBSCRIBE",
     "YOUTUBE_LIKE",
     "TELEGRAM_CHANNEL",
-    "TELEGRAM_GROUP",
-    "INSTAGRAM_FOLLOW",
-    "INSTAGRAM_LIKE"
+    "TELEGRAM_GROUP"
   ]),
   title: z.string().min(1),
   description: z.string().optional(),
