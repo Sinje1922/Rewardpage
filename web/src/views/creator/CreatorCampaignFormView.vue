@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { api, getFileUrl } from '../../api/client'
 import { uploadCompanyLogo } from '../../api/upload'
@@ -308,6 +308,127 @@ function prevStep() {
   }
 }
 
+const showLeaveModal = ref(false)
+const showRestoreModal = ref(false)
+const pendingRoute = ref<any>(null)
+const pendingRestoreData = ref<any>(null)
+const isSubmitting = ref(false)
+
+const isFormDirty = computed(() => {
+  return !!(
+    title.value.trim() ||
+    description.value.trim() ||
+    companyName.value.trim() ||
+    winnerCount.value !== 1 ||
+    rewards.value.some(r => r.amount > 0) ||
+    rewards.value.length > 1 ||
+    missionRows.value.some(m => m.title.trim() || m.description.trim()) ||
+    missionRows.value.length > 1 ||
+    companyLogoUrl.value ||
+    rewardImageUrl.value
+  )
+})
+
+onBeforeRouteLeave((to, _, next) => {
+  if (isSubmitting.value || !isFormDirty.value) {
+    next()
+    return
+  }
+  pendingRoute.value = to
+  showLeaveModal.value = true
+  next(false)
+})
+
+function handleSaveAndExit() {
+  saveToLocalStorage()
+  showLeaveModal.value = false
+  isSubmitting.value = true
+  if (pendingRoute.value) {
+    router.push(pendingRoute.value)
+  }
+}
+
+function handleDiscardAndExit() {
+  localStorage.removeItem('temp_campaign_form')
+  showLeaveModal.value = false
+  isSubmitting.value = true
+  if (pendingRoute.value) {
+    router.push(pendingRoute.value)
+  }
+}
+
+function saveToLocalStorage() {
+  const dataToSave = {
+    currentStep: currentStep.value,
+    companyName: companyName.value,
+    companyLogoUrl: companyLogoUrl.value,
+    title: title.value,
+    description: description.value,
+    winnerCount: winnerCount.value,
+    lotteryMode: lotteryMode.value,
+    autoApprove: autoApprove.value,
+    startsAt: startsAt.value,
+    endsAt: endsAt.value,
+    rewardImageUrl: rewardImageUrl.value,
+    rewards: JSON.parse(JSON.stringify(rewards.value)),
+    missionRows: JSON.parse(JSON.stringify(missionRows.value))
+  }
+  localStorage.setItem('temp_campaign_form', JSON.stringify(dataToSave))
+}
+
+function restoreForm() {
+  if (!pendingRestoreData.value) return
+  const data = pendingRestoreData.value
+  currentStep.value = data.currentStep || 1
+  companyName.value = data.companyName || ''
+  companyLogoUrl.value = data.companyLogoUrl || ''
+  title.value = data.title || ''
+  description.value = data.description || ''
+  winnerCount.value = data.winnerCount || 1
+  lotteryMode.value = data.lotteryMode || 'SIMPLE'
+  autoApprove.value = data.autoApprove !== undefined ? data.autoApprove : true
+  startsAt.value = data.startsAt || ''
+  endsAt.value = data.endsAt || ''
+  rewardImageUrl.value = data.rewardImageUrl || ''
+  rewards.value = data.rewards || [{ amount: 0, currency: 'POINT' }]
+  missionRows.value = data.missionRows || [emptyMissionRow(0)]
+  
+  showRestoreModal.value = false
+  pendingRestoreData.value = null
+}
+
+function discardRestore() {
+  localStorage.removeItem('temp_campaign_form')
+  showRestoreModal.value = false
+  pendingRestoreData.value = null
+}
+
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (isFormDirty.value && !isSubmitting.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
+  
+  const savedDataStr = localStorage.getItem('temp_campaign_form')
+  if (savedDataStr) {
+    try {
+      const savedData = JSON.parse(savedDataStr)
+      pendingRestoreData.value = savedData
+      showRestoreModal.value = true
+    } catch (e) {
+      localStorage.removeItem('temp_campaign_form')
+    }
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+})
+
 async function save() {
   err.value = ''
   
@@ -350,6 +471,8 @@ async function save() {
       endsAt: endsAt.value ? new Date(endsAt.value).toISOString() : null,
       missions,
     })
+    localStorage.removeItem('temp_campaign_form')
+    isSubmitting.value = true
     await router.replace(`/ops/campaigns/${data.id}`)
   } catch {
     err.value = t('ops.saveFail')
@@ -798,6 +921,55 @@ async function save() {
         </button>
       </div>
     </form>
+    
+    <!-- ⚠️ 이탈 경고 모달 -->
+    <transition name="modal-fade">
+      <div v-if="showLeaveModal" class="custom-modal-backdrop">
+        <div class="custom-modal-content">
+          <div class="modal-emoji">⚠️</div>
+          <h2 class="modal-title">
+            {{ locale === 'ko' ? '작성 중인 캠페인이 있습니다' : 'Campaign Draft Detected' }}
+          </h2>
+          <p class="modal-desc">
+            {{ locale === 'ko' ? '페이지를 이동하면 작성하던 내용이 손실될 수 있습니다. 진행 상황을 어떻게 처리할까요?' : 'Leaving this page may result in loss of your changes. How would you like to handle your progress?' }}
+          </p>
+          <div class="modal-btn-group-vertical">
+            <button type="button" class="btn primary modal-btn" @click="handleSaveAndExit">
+              💾 {{ locale === 'ko' ? '저장하고 나가기' : 'Save & Exit' }}
+            </button>
+            <button type="button" class="btn danger modal-btn" @click="handleDiscardAndExit">
+              🗑️ {{ locale === 'ko' ? '저장하지 않고 나가기' : 'Discard & Exit' }}
+            </button>
+            <button type="button" class="btn outline modal-btn" @click="showLeaveModal = false">
+              ❌ {{ locale === 'ko' ? '계속 작성하기 (취소)' : 'Keep Editing (Cancel)' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- 💾 복원 확인 모달 -->
+    <transition name="modal-fade">
+      <div v-if="showRestoreModal" class="custom-modal-backdrop">
+        <div class="custom-modal-content">
+          <div class="modal-emoji">✨</div>
+          <h2 class="modal-title">
+            {{ locale === 'ko' ? '임시 저장된 캠페인이 존재합니다' : 'Temporary Draft Found' }}
+          </h2>
+          <p class="modal-desc">
+            {{ locale === 'ko' ? '이전에 작성 중이던 캠페인 데이터를 불러와 이어서 작성하시겠습니까?' : 'Would you like to load the previously saved campaign data and continue editing?' }}
+          </p>
+          <div class="modal-btn-group-horizontal">
+            <button type="button" class="btn primary modal-btn flex-1" @click="restoreForm">
+              {{ locale === 'ko' ? '이어서 작성하기' : 'Continue Progress' }}
+            </button>
+            <button type="button" class="btn outline modal-btn flex-1" @click="discardRestore">
+              {{ locale === 'ko' ? '새로 작성하기' : 'Start Fresh' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -1720,6 +1892,104 @@ async function save() {
   height: 3.5rem;
   font-size: 1.1rem;
   border-radius: 14px;
+}
+
+/* ==========================================
+   ✨ PREMIUM CUSTOM DIALOG MODALS STYLE
+   ========================================== */
+.custom-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.custom-modal-content {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  width: 90%;
+  max-width: 440px;
+  padding: 2.2rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  animation: modal-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modal-pop {
+  from {
+    transform: scale(0.9) translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-emoji {
+  font-size: 2.8rem;
+  margin-bottom: 1rem;
+}
+
+.modal-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-h);
+  margin-bottom: 0.8rem;
+}
+
+.modal-desc {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--muted);
+  margin-bottom: 2rem;
+}
+
+.modal-btn-group-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.modal-btn-group-horizontal {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.modal-btn {
+  height: 3.2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+/* Modal Fade Transitions */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
 }
 </style>
 
