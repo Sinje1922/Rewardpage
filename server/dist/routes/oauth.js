@@ -7,12 +7,7 @@ const router = Router();
 // 디스코드 OAuth 리다이렉트 URL 생성 및 리다이렉트
 router.get("/discord/login", authRequired, (req, res) => {
     const clientId = process.env.DISCORD_CLIENT_ID;
-    const redirectUriStr = process.env.DISCORD_REDIRECT_URI;
-    if (!clientId || !redirectUriStr) {
-        console.error("Missing Discord OAuth configuration (DISCORD_CLIENT_ID or DISCORD_REDIRECT_URI)");
-        return res.status(500).send("서버의 디스코드 OAuth 설정이 누락되었습니다. 관리자에게 문의하세요.");
-    }
-    const redirectUri = encodeURIComponent(redirectUriStr);
+    const redirectUri = encodeURIComponent(process.env.DISCORD_REDIRECT_URI || "");
     const scope = encodeURIComponent("identify guilds.join");
     // 유저 ID를 state로 전달하여 보안 강화 및 콜백 시 유저 식별
     const state = req.user.id;
@@ -109,12 +104,7 @@ router.post("/telegram/verify", authRequired, async (req, res) => {
 // 유튜브 OAuth 로그인 (구글 사용)
 router.get("/youtube/login", authRequired, (req, res) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
-    const redirectUriStr = process.env.YOUTUBE_REDIRECT_URI;
-    if (!clientId || !redirectUriStr) {
-        console.error("Missing Google OAuth configuration (GOOGLE_CLIENT_ID or YOUTUBE_REDIRECT_URI)");
-        return res.status(500).send("서버의 유튜브 OAuth 설정이 누락되었습니다. 관리자에게 문의하세요.");
-    }
-    const redirectUri = encodeURIComponent(redirectUriStr);
+    const redirectUri = encodeURIComponent(process.env.YOUTUBE_REDIRECT_URI || "");
     const scope = encodeURIComponent("https://www.googleapis.com/auth/youtube.readonly profile email");
     const state = req.user.id;
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}&access_type=offline&prompt=consent`;
