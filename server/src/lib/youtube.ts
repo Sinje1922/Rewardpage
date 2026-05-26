@@ -44,14 +44,63 @@ async function getValidToken(userId: string) {
   return user.youtubeAccessToken;
 }
 
+export function extractYoutubeVideoId(urlOrId: string): string {
+  if (!urlOrId) return '';
+  const clean = urlOrId.trim();
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = clean.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : clean;
+}
+
+export async function resolveYoutubeChannelId(urlOrId: string, accessToken: string): Promise<string> {
+  const clean = urlOrId.trim();
+  if (clean.startsWith('UC') && clean.length === 24) {
+    return clean;
+  }
+
+  // Extract handle or UC id from URL
+  let handle = '';
+  if (clean.includes('youtube.com/') || clean.includes('youtu.be/')) {
+    if (clean.includes('/channel/')) {
+      const match = clean.match(/\/channel\/(UC[a-zA-Z0-9_-]{22})/);
+      if (match) return match[1];
+    }
+    const handleMatch = clean.match(/\/(@[a-zA-Z0-9._-]+)/);
+    if (handleMatch) {
+      handle = handleMatch[1];
+    }
+  } else if (clean.startsWith('@')) {
+    handle = clean;
+  }
+
+  if (handle) {
+    try {
+      const response = await axios.get('https://www.googleapis.com/youtube/v3/channels', {
+        params: {
+          part: 'id',
+          forHandle: handle,
+        },
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      });
+      const channelId = response.data.items?.[0]?.id;
+      if (channelId) return channelId;
+    } catch (err: any) {
+      console.error('Failed to resolve YouTube handle to Channel ID:', err.response?.data || err.message);
+    }
+  }
+
+  return clean; // Fallback
+}
+
 export async function checkYouTubeSubscription(userId: string, targetChannelId: string) {
   const token = await getValidToken(userId);
   try {
+    const channelId = await resolveYoutubeChannelId(targetChannelId, token);
     const response = await axios.get('https://www.googleapis.com/youtube/v3/subscriptions', {
       params: {
         part: 'snippet',
         mine: true,
-        forChannelId: targetChannelId,
+        forChannelId: channelId,
       },
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -63,9 +112,10 @@ export async function checkYouTubeSubscription(userId: string, targetChannelId: 
   }
 }
 
-export async function checkYouTubeLike(userId: string, videoId: string) {
+export async function checkYouTubeLike(userId: string, rawVideoId: string) {
   const token = await getValidToken(userId);
   try {
+    const videoId = extractYoutubeVideoId(rawVideoId);
     const response = await axios.get('https://www.googleapis.com/youtube/v3/videos/getRating', {
       params: { id: videoId },
       headers: { Authorization: `Bearer ${token}` },

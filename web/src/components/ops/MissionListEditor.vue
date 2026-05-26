@@ -306,12 +306,26 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
               <label>{{ $t('ops.telegramUrl') }}</label>
               <input :value="row.linkUrl" type="url" placeholder="https://t.me/your_channel" @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
             </div>
+            <div class="field">
+              <label>{{ $t('ops.telegramChannelId') }} ({{ $t('common.optional') }})</label>
+              <input :value="row.telegramChannel" placeholder="-100xxxxxxxxxx" @input="updateRow(i, { telegramChannel: ($event.target as HTMLInputElement).value })" />
+              <p class="hint" style="margin-top: 0.25rem;">
+                * {{ $t('ops.telegramChannelIdHint') }}
+              </p>
+            </div>
           </template>
 
           <template v-else-if="row.type === 'DISCORD_JOIN'">
             <div class="field">
               <label>{{ $t('ops.discordUrl') }}</label>
               <input :value="row.linkUrl" type="url" placeholder="https://discord.gg/invite_code" @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
+            </div>
+            <div class="field">
+              <label>{{ $t('ops.discordServerId') }}</label>
+              <input :value="row.discordInvite" placeholder="123456789012345678" @input="updateRow(i, { discordInvite: ($event.target as HTMLInputElement).value })" />
+              <p class="hint" style="margin-top: 0.25rem;">
+                * {{ $t('ops.discordServerIdHint') }}
+              </p>
             </div>
           </template>
 

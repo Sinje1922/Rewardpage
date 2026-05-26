@@ -48,18 +48,23 @@ router.post("/telegram", authRequired, async (req: AuthedRequest, res) => {
   if (!mission) return res.status(404).json({ error: "미션을 찾을 수 없습니다." });
 
   const config = JSON.parse(mission.config || '{}');
-  const urlClean = config.linkUrl ? config.linkUrl.replace(/\/+$/, '') : '';
-  const chatId = urlClean ? urlClean.split('/').pop() : null;
+  
+  // Use explicitly provided telegramChannel ID/username first, fallback to parsing linkUrl
+  let chatId = config.telegramChannel ? String(config.telegramChannel).trim() : null;
+  if (!chatId) {
+    const urlClean = config.linkUrl ? config.linkUrl.replace(/\/+$/, '') : '';
+    chatId = urlClean ? urlClean.split('/').pop() : null;
+  }
 
-  if (!chatId) return res.status(400).json({ error: "미션 설정에 텔레그램 채널 정보가 없습니다." });
+  if (!chatId) return res.status(400).json({ error: "미션 설정에 텔레그램 채널/그룹 정보가 없습니다." });
 
   const { checkTelegramMembership } = await import('../lib/telegram.js');
-  const isMember = await checkTelegramMembership(chatId, req.user!.id);
+  const result = await checkTelegramMembership(chatId, req.user!.id);
 
-  if (isMember) {
+  if (result.success) {
     res.json({ success: true, message: "텔레그램 참여가 확인되었습니다!" });
   } else {
-    res.status(400).json({ error: "채널에서 유저를 찾을 수 없습니다. 입장을 완료했는지 확인해 주세요." });
+    res.status(400).json({ error: result.error || "채널에서 유저를 찾을 수 없습니다. 입장을 완료했는지 확인해 주세요." });
   }
 });
 
@@ -88,12 +93,12 @@ router.post("/discord", authRequired, async (req: AuthedRequest, res) => {
     }
 
     const { checkGuildMembership } = await import('../lib/discord.js');
-    const isMember = await checkGuildMembership(guildId, currentUser.discordId);
+    const result = await checkGuildMembership(guildId, currentUser.discordId);
 
-    if (isMember) {
+    if (result.success) {
       res.json({ success: true, message: "디스코드 서버 참여가 확인되었습니다!" });
     } else {
-      res.status(400).json({ error: "서버에서 유저를 찾을 수 없습니다. 입장을 완료했는지 확인해 주세요." });
+      res.status(400).json({ error: result.error || "서버에서 유저를 찾을 수 없습니다. 입장을 완료했는지 확인해 주세요." });
     }
   } catch (err) {
     console.error("Discord Verify Error:", err);

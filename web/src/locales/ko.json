@@ -133,6 +133,7 @@
     "snsNotLinked": "⚠️ {type} 계정이 연동되지 않았습니다. 마이페이지에서 연동해 주세요.",
     "ytWatching": "시청 중... ({n}초 남음)",
     "ytWatchComplete": "✅ 시청 완료! 미션을 제출해 주세요.",
+    "ytWatchOnYoutube": "유튜브에서 시청하기",
     "verifying": "검증 중...",
     "verifySuccess": "✅ 검증 성공!",
     "verifyFail": "❌ 검증 실패: {reason}"
@@ -249,6 +250,9 @@
     "telegramUrl": "텔레그램 채널/그룹 참여 URL (https://t.me/...)",
     "discordUrl": "디스코드 서버 초대 URL (https://discord.gg/...)",
     "discordServerId": "서버 ID (Guild ID)",
+    "discordServerIdHint": "디스코드 앱 설정 - 고급 - 개발자 모드를 활성화한 후, 서버 아이콘을 우클릭하여 ID를 복사해 입력하세요.",
+    "telegramChannelId": "텔레그램 채널/그룹 ID (비공개 채널용)",
+    "telegramChannelIdHint": "비공개 채널/그룹의 경우 봇이 입장한 상태에서 고유 숫자 ID(예: -100xxxxxxxxxx)를 입력해 주세요.",
     "type": "미션 유형",
     "sortOrder": "정렬 순서",
     "missionTitle": "미션 제목",

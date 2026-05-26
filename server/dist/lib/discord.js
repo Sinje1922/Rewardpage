@@ -25,20 +25,27 @@ export function getDiscordClient() {
 export async function checkGuildMembership(guildId, discordId) {
     const bot = getDiscordClient();
     if (!bot)
-        return false;
+        return { success: false, error: "서버의 디스코드 봇 설정이 누락되었습니다." };
     try {
         // 봇이 해당 서버에 들어와 있는지 확인
         const guild = await bot.guilds.fetch(guildId);
-        if (!guild)
-            return false;
+        if (!guild) {
+            return { success: false, error: "디스코드 서버(Guild)를 찾을 수 없습니다. 서버 ID를 확인해 주세요." };
+        }
         // 해당 유저가 멤버인지 확인
-        // discordId가 'username#1234' 형태라면 ID(snowflake)로 변환이 필요할 수 있으나,
-        // 보통 OAuth에서 받은 유저 고유 ID를 사용하는 것이 가장 정확합니다.
         const member = await guild.members.fetch(discordId);
-        return !!member;
+        if (member) {
+            return { success: true };
+        }
+        else {
+            return { success: false, error: "서버에 입장하지 않았습니다. 입장을 완료해 주세요." };
+        }
     }
     catch (err) {
-        // 유저가 서버에 없거나 봇이 접근 권한이 없는 경우 에러 발생
-        return false;
+        console.error('Discord Membership Check Error:', err.message);
+        return {
+            success: false,
+            error: "디스코드 서버를 찾을 수 없거나 봇이 해당 서버에 초대되지 않았습니다. 봇 초대 상태 및 서버 ID를 확인해 주세요."
+        };
     }
 }

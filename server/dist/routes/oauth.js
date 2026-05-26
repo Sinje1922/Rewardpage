@@ -7,7 +7,12 @@ const router = Router();
 // 디스코드 OAuth 리다이렉트 URL 생성 및 리다이렉트
 router.get("/discord/login", authRequired, (req, res) => {
     const clientId = process.env.DISCORD_CLIENT_ID;
-    const redirectUri = encodeURIComponent(process.env.DISCORD_REDIRECT_URI || "");
+    const redirectUriStr = process.env.DISCORD_REDIRECT_URI;
+    if (!clientId || !redirectUriStr) {
+        console.error("Missing Discord OAuth configuration (DISCORD_CLIENT_ID or DISCORD_REDIRECT_URI)");
+        return res.status(500).send("서버의 디스코드 OAuth 설정이 누락되었습니다. 관리자에게 문의하세요.");
+    }
+    const redirectUri = encodeURIComponent(redirectUriStr);
     const scope = encodeURIComponent("identify guilds.join");
     // 유저 ID를 state로 전달하여 보안 강화 및 콜백 시 유저 식별
     const state = req.user.id;
@@ -104,7 +109,12 @@ router.post("/telegram/verify", authRequired, async (req, res) => {
 // 유튜브 OAuth 로그인 (구글 사용)
 router.get("/youtube/login", authRequired, (req, res) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
-    const redirectUri = encodeURIComponent(process.env.YOUTUBE_REDIRECT_URI || "");
+    const redirectUriStr = process.env.YOUTUBE_REDIRECT_URI;
+    if (!clientId || !redirectUriStr) {
+        console.error("Missing Google OAuth configuration (GOOGLE_CLIENT_ID or YOUTUBE_REDIRECT_URI)");
+        return res.status(500).send("서버의 유튜브 OAuth 설정이 누락되었습니다. 관리자에게 문의하세요.");
+    }
+    const redirectUri = encodeURIComponent(redirectUriStr);
     const scope = encodeURIComponent("https://www.googleapis.com/auth/youtube.readonly profile email");
     const state = req.user.id;
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}&access_type=offline&prompt=consent`;
@@ -123,16 +133,22 @@ router.get("/youtube/callback", async (req, res) => {
             redirect_uri: process.env.YOUTUBE_REDIRECT_URI,
             grant_type: "authorization_code",
         });
-        const accessToken = tokenResponse.data.access_token;
+        const { access_token, refresh_token, expires_in } = tokenResponse.data;
+        const expiry = expires_in ? BigInt(Math.floor(Date.now() / 1000) + expires_in) : null;
         // 유튜브 채널 정보 가져오기
         const youtubeResponse = await axios.get("https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true", {
-            headers: { Authorization: `Bearer ${accessToken}` },
+            headers: { Authorization: `Bearer ${access_token}` },
         });
         const channels = youtubeResponse.data.items;
         const channelName = channels && channels.length > 0 ? channels[0].snippet.title : "Linked Account";
         await prisma.user.update({
             where: { id: state },
-            data: { youtubeHandle: channelName },
+            data: {
+                youtubeHandle: channelName,
+                youtubeAccessToken: access_token,
+                youtubeRefreshToken: refresh_token || undefined, // Refresh token is only sent on first consent
+                youtubeTokenExpiry: expiry
+            },
         });
         res.send(`
       <html>

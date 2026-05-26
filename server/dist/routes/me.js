@@ -13,9 +13,6 @@ const profileSchema = z.object({
     gender: z.string().optional().nullable(),
     region: z.string().optional().nullable(),
     country: z.string().optional().nullable(),
-    telegramHandle: z.string().max(100).optional().nullable(),
-    discordHandle: z.string().max(100).optional().nullable(),
-    youtubeHandle: z.string().max(100).optional().nullable(),
     instagramHandle: z.string().max(100).optional().nullable(),
 });
 router.get("/", async (req, res) => {
@@ -85,7 +82,14 @@ router.get("/submissions", async (req, res) => {
 router.get("/wins", async (req, res) => {
     const wins = await prisma.winner.findMany({
         where: { userId: req.user.id },
-        include: { campaign: { select: { id: true, title: true } } },
+        select: {
+            id: true,
+            rank: true,
+            points: true,
+            currency: true,
+            createdAt: true,
+            campaign: { select: { id: true, title: true } },
+        },
         orderBy: { createdAt: "desc" },
     });
     res.json(wins);
@@ -93,7 +97,6 @@ router.get("/wins", async (req, res) => {
 router.put("/profile", async (req, res) => {
     try {
         const data = req.body;
-        // 필터링: 스키마에 없는 필드가 들어오면 에러가 날 수 있으므로 주의
         const updateData = {};
         if (data.birthYear !== undefined)
             updateData.birthYear = data.birthYear;
@@ -101,12 +104,12 @@ router.put("/profile", async (req, res) => {
             updateData.country = data.country;
         if (data.locale !== undefined)
             updateData.locale = data.locale;
-        if (data.discordId !== undefined)
-            updateData.discordId = data.discordId;
-        if (data.telegramHandle !== undefined)
-            updateData.telegramHandle = data.telegramHandle;
-        if (data.telegramId !== undefined)
-            updateData.telegramHandle = data.telegramId; // Compatibility
+        if (data.nickname !== undefined)
+            updateData.nickname = data.nickname;
+        if (data.gender !== undefined)
+            updateData.gender = data.gender;
+        if (data.region !== undefined)
+            updateData.region = data.region;
         const user = await prisma.user.update({
             where: { id: req.user.id },
             data: updateData,

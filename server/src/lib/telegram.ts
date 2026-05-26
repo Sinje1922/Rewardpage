@@ -85,23 +85,44 @@ async function handleLinkRequest(userId: string, tgUser: any) {
   }
 }
 
-export async function checkTelegramMembership(chatId: string, userId: string) {
-  if (!TOKEN) return false;
+export async function checkTelegramMembership(chatId: string, userId: string): Promise<{ success: boolean; error?: string }> {
+  if (!TOKEN) return { success: false, error: "서버에 텔레그램 봇 토큰이 설정되지 않았습니다." };
   try {
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user || !user.telegramId) return false;
+    if (!user || !user.telegramId) return { success: false, error: "텔레그램 계정 연동이 필요합니다. 마이페이지에서 연동해 주세요." };
+
+    const cleanChatId = chatId.startsWith('@') ? chatId : `@${chatId}`;
 
     const response = await axios.get(`${API_URL}/getChatMember`, {
       params: {
-        chat_id: chatId.startsWith('@') ? chatId : `@${chatId}`,
+        chat_id: cleanChatId,
         user_id: user.telegramId,
       },
     });
 
     const status = response.data.result?.status;
-    return ['member', 'administrator', 'creator'].includes(status);
+    const isMember = ['member', 'administrator', 'creator'].includes(status);
+    if (isMember) {
+      return { success: true };
+    } else {
+      return { success: false, error: "채널/그룹에 참여하지 않았습니다. 입장을 완료해 주세요." };
+    }
   } catch (err: any) {
-    console.error('Telegram Membership Check Error:', err.response?.data || err.message);
-    return false;
+    const errorData = err.response?.data;
+    console.error('Telegram Membership Check Error:', errorData || err.message);
+    
+    let friendlyError = "텔레그램 참여 검증에 실패했습니다.";
+    if (errorData?.description) {
+      if (errorData.description.includes("chat not found")) {
+        friendlyError = "채널/그룹을 찾을 수 없습니다. 미션 URL이 올바른지, 혹은 픽쿠 공식 봇(@Pickku_Official_bot)이 채널/그룹에 추가되었는지 확인해 주세요.";
+      } else if (errorData.description.includes("bot is not a member")) {
+        friendlyError = "봇이 채널/그룹의 멤버가 아닙니다. 픽쿠 공식 봇(@Pickku_Official_bot)을 관리자나 멤버로 추가해 주세요.";
+      } else {
+        friendlyError = `텔레그램 오류: ${errorData.description}`;
+      }
+    } else {
+      friendlyError = `네트워크 오류: ${err.message}`;
+    }
+    return { success: false, error: friendlyError };
   }
 }

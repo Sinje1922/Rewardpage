@@ -133,6 +133,7 @@
     "snsNotLinked": "⚠️ {type} account is not linked. Please link it in My Page.",
     "ytWatching": "Watching... ({n}s left)",
     "ytWatchComplete": "✅ Watch complete! Please submit the mission.",
+    "ytWatchOnYoutube": "Watch on YouTube",
     "verifying": "Verifying...",
     "verifySuccess": "✅ Verification Successful!",
     "verifyFail": "❌ Verification Failed: {reason}"
@@ -249,6 +250,9 @@
     "telegramUrl": "Telegram Channel/Group URL (https://t.me/...)",
     "discordUrl": "Discord Server Invite URL (https://discord.gg/...)",
     "discordServerId": "Server ID (Guild ID)",
+    "discordServerIdHint": "Enable Developer Mode in Discord settings (Appearance/Advanced), right-click the server icon, and copy the Server ID.",
+    "telegramChannelId": "Telegram Chat ID / Username (For private channels)",
+    "telegramChannelIdHint": "For private channels/groups, enter the numeric ID (e.g., -100xxxxxxxxxx) with the bot added.",
     "type": "Mission Type",
     "sortOrder": "Sort Order",
     "missionTitle": "Mission Title",

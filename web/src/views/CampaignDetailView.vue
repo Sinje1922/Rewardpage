@@ -129,28 +129,32 @@ onMounted(async () => {
   }
 })
 
+function extractYoutubeId(urlOrId: string): string {
+  if (!urlOrId) return ''
+  const clean = urlOrId.trim()
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
+  const match = clean.match(regExp)
+  return (match && match[2].length === 11) ? match[2] : clean
+}
+
 function initYoutubePlayers() {
   if (!camp.value) return
   const youtubeMissions = camp.value.missions.filter(m => m.type === 'YOUTUBE_WATCH')
   if (youtubeMissions.length === 0) return
 
-  if (!(window as any).YT) {
-    const tag = document.createElement('script')
-    tag.src = "https://www.youtube.com/iframe_api"
-    const firstScriptTag = document.getElementsByTagName('script')[0]
-    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
-  }
-
-  (window as any).onYouTubeIframeAPIReady = () => {
+  const setupPlayers = () => {
     youtubeMissions.forEach(m => {
       const cfg = parseCfg(m.config)
       const targetSec = Number(cfg.targetSeconds || 10)
       ytRemaining.value[m.id] = targetSec
       
+      const vId = extractYoutubeId(cfg.videoId || '')
+      if (!vId) return
+
       new (window as any).YT.Player(`yt-player-${m.id}`, {
         height: '240',
         width: '100%',
-        videoId: cfg.videoId,
+        videoId: vId,
         events: {
           onStateChange: (event: any) => {
             if (event.data === (window as any).YT.PlayerState.PLAYING) {
@@ -162,6 +166,23 @@ function initYoutubePlayers() {
         }
       })
     })
+  }
+
+  if ((window as any).YT && (window as any).YT.Player) {
+    setupPlayers()
+  } else {
+    const prevCallback = (window as any).onYouTubeIframeAPIReady
+    ;(window as any).onYouTubeIframeAPIReady = () => {
+      if (prevCallback) prevCallback()
+      setupPlayers()
+    }
+
+    if (!(window as any).YT) {
+      const tag = document.createElement('script')
+      tag.src = "https://www.youtube.com/iframe_api"
+      const firstScriptTag = document.getElementsByTagName('script')[0]
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
+    }
   }
 }
 
@@ -544,6 +565,16 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
 
           <template v-else-if="m.type === 'YOUTUBE_WATCH'">
             <div :id="'yt-player-' + m.id" class="yt-container mb-3"></div>
+            <!-- Watch on YouTube Button -->
+            <a 
+              v-if="parseCfg(m.config).videoId" 
+              :href="'https://youtube.com/watch?v=' + extractYoutubeId(parseCfg(m.config).videoId)" 
+              target="_blank" 
+              class="btn outline full-width mb-3 text-center d-flex align-items-center justify-content-center"
+              style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; height: 3.5rem; font-size: 1.1rem; border-radius: 14px; margin-bottom: 1rem;"
+            >
+              📺 {{ $t('detail.ytWatchOnYoutube') }}
+            </a>
             <div v-if="ytRemaining[m.id] > 0" class="timer-box">
               {{ $t('detail.ytWatching', { n: ytRemaining[m.id] }) }}
             </div>

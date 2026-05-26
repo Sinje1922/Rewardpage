@@ -48,28 +48,55 @@ export async function runCampaignDraw(campaignId) {
     }
     if (picked.length === 0)
         return { winners: [], msg: "NO_ELIGIBLE_PARTICIPANTS" };
-    const pointsPerPerson = c.totalRewardPoints > 0
-        ? Math.floor(c.totalRewardPoints / picked.length)
-        : 0;
-    console.log(`[LotteryService] Distributing ${c.totalRewardPoints} points to ${picked.length} winners (${pointsPerPerson}P each) for campaign: ${c.title}`);
-    await prisma.$transaction([
-        ...picked.map((userId, i) => prisma.winner.create({
-            data: {
-                campaignId: c.id,
-                userId,
-                rank: i + 1,
-                points: pointsPerPerson,
-            },
-        })),
-        ...picked.map((userId) => prisma.user.update({
-            where: { id: userId },
-            data: { pointBalance: { increment: pointsPerPerson } },
-        })),
-        prisma.campaign.update({
-            where: { id: c.id },
+    let rewards = [];
+    try {
+        rewards = JSON.parse(c.rewardsConfig || "[]");
+    }
+    catch (e) {
+        rewards = [{ amount: c.totalRewardPoints, currency: c.rewardCurrency }];
+    }
+    if (rewards.length === 0) {
+        rewards = [{ amount: c.totalRewardPoints, currency: c.rewardCurrency }];
+    }
+    const rewardsPerWinner = rewards.map((r) => ({
+        amount: Math.floor(r.amount / picked.length),
+        currency: r.currency,
+        ...(r.customCurrency && { customCurrency: r.customCurrency }),
+    }));
+    const totalPointsPerWinner = rewardsPerWinner
+        .filter((r) => r.currency === "POINT")
+        .reduce((sum, r) => sum + r.amount, 0);
+    const rewardsJsonPerWinner = JSON.stringify(rewardsPerWinner);
+    await prisma.$transaction(async (tx) => {
+        // 1. Atomic check & row lock using updateMany to verify campaign isn't already drawn
+        const updateResult = await tx.campaign.updateMany({
+            where: { id: c.id, status: { not: "DRAWN" } },
             data: { status: "DRAWN", drawnAt: new Date() },
-        }),
-    ]);
+        });
+        if (updateResult.count === 0) {
+            throw new Error("ALREADY_DRAWN");
+        }
+        // 2. Safely create winners and award points
+        for (let i = 0; i < picked.length; i++) {
+            const userId = picked[i];
+            await tx.winner.create({
+                data: {
+                    campaignId: c.id,
+                    userId,
+                    rank: i + 1,
+                    points: totalPointsPerWinner,
+                    currency: "POINT",
+                    rewardsConfig: rewardsJsonPerWinner,
+                },
+            });
+            if (totalPointsPerWinner > 0) {
+                await tx.user.update({
+                    where: { id: userId },
+                    data: { pointBalance: { increment: totalPointsPerWinner } },
+                });
+            }
+        }
+    });
     return {
         winners: await prisma.winner.findMany({
             where: { campaignId: c.id },
