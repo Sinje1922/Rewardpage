@@ -50,7 +50,9 @@ const missionInputSchema = z.object({
     "YOUTUBE_SUBSCRIBE",
     "YOUTUBE_LIKE",
     "TELEGRAM_CHANNEL",
-    "TELEGRAM_GROUP"
+    "TELEGRAM_GROUP",
+    "INSTAGRAM_FOLLOW",
+    "INSTAGRAM_LIKE"
   ]),
   title: z.string().min(1),
   description: z.string().optional(),
@@ -178,6 +180,7 @@ router.patch("/:id", authRequired, async (req: AuthedRequest, res) => {
   }
   const parsed = patchCampaignSchema.safeParse(req.body);
   if (!parsed.success) {
+    console.error("Zod Validation Error on PATCH:", JSON.stringify(parsed.error.format(), null, 2));
     res.status(400).json({ error: parsed.error.flatten() });
     return;
   }
