@@ -171,12 +171,12 @@ router.put("/me/profile", authRequired, async (req, res) => {
             updateData.country = data.country;
         if (data.locale !== undefined)
             updateData.locale = data.locale;
-        if (data.discordId !== undefined)
-            updateData.discordId = data.discordId;
-        if (data.telegramHandle !== undefined)
-            updateData.telegramHandle = data.telegramHandle;
-        if (data.telegramId !== undefined)
-            updateData.telegramHandle = data.telegramId; // Compatibility
+        if (data.nickname !== undefined)
+            updateData.nickname = data.nickname;
+        if (data.gender !== undefined)
+            updateData.gender = data.gender;
+        if (data.region !== undefined)
+            updateData.region = data.region;
         const user = await prisma.user.update({
             where: { id: req.user.id },
             data: updateData,

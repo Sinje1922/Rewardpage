@@ -12,18 +12,42 @@ function canSeeCampaign(role, status) {
 }
 router.get("/", authOptional, async (req, res) => {
     const role = req.user?.role;
-    const where = isOperator(role)
-        ? {}
-        : { OR: [{ status: "ACTIVE" }, { status: "CLOSED" }, { status: "DRAWN" }] };
+    let where;
+    if (role === "ADMIN") {
+        // 어드민: 전체 캠페인 조회
+        where = {};
+    }
+    else if (role === "MANAGER") {
+        // 매니저: 본인이 생성한 캠페인만 조회
+        where = { creatorId: req.user.id };
+    }
+    else {
+        // 일반 유저: 공개 캠페인만 조회
+        where = { OR: [{ status: "ACTIVE" }, { status: "CLOSED" }, { status: "DRAWN" }] };
+    }
     const list = await prisma.campaign.findMany({
         where,
         orderBy: { createdAt: "desc" },
-        include: { creator: { select: { id: true, email: true } }, missions: { select: { id: true } } },
+        include: { creator: { select: { id: true, email: true } }, missions: { select: { id: true, type: true } } },
     });
     res.json(list);
 });
 const missionInputSchema = z.object({
-    type: z.enum(["LINK_VISIT", "SURVEY", "CODE", "QUIZ", "CHECKIN", "FILE_UPLOAD", "TELEGRAM_JOIN", "DISCORD_JOIN", "YOUTUBE_WATCH"]),
+    type: z.enum([
+        "LINK_VISIT",
+        "SURVEY",
+        "CODE",
+        "QUIZ",
+        "CHECKIN",
+        "FILE_UPLOAD",
+        "TELEGRAM_JOIN",
+        "DISCORD_JOIN",
+        "YOUTUBE_WATCH",
+        "YOUTUBE_SUBSCRIBE",
+        "YOUTUBE_LIKE",
+        "TELEGRAM_CHANNEL",
+        "TELEGRAM_GROUP"
+    ]),
     title: z.string().min(1),
     description: z.string().optional(),
     sortOrder: z.number().int().optional(),
@@ -34,12 +58,13 @@ const campaignFieldsSchema = z.object({
     description: z.string().optional(),
     companyName: z.string().optional(),
     companyLogoUrl: z.string().optional(),
+    rewardImageUrl: z.string().optional(),
     winnerCount: z.number().int().positive().optional(),
     lotteryMode: z.enum(["SIMPLE", "WEIGHTED"]).optional(),
     autoApprove: z.boolean().optional(),
     totalRewardPoints: z.number().int().nonnegative().optional(),
     rewardCurrency: z.string().optional(),
-    rewardsConfig: z.array(z.object({ amount: z.number().nonnegative(), currency: z.string() })).optional(),
+    rewardsConfig: z.array(z.object({ amount: z.number().nonnegative(), currency: z.string(), customCurrency: z.string().optional() })).optional(),
     startsAt: z.string().datetime().optional().nullable(),
     endsAt: z.string().datetime().optional().nullable(),
 });
@@ -85,6 +110,7 @@ router.post("/", authRequired, requireRoles("MANAGER", "ADMIN"), async (req, res
                     description: b.description ?? "",
                     companyName: b.companyName ?? "",
                     companyLogoUrl: b.companyLogoUrl ?? "",
+                    rewardImageUrl: b.rewardImageUrl ?? "",
                     creatorId: req.user.id,
                     winnerCount: b.winnerCount ?? 1,
                     totalRewardPoints: b.totalRewardPoints ?? 0,
@@ -134,6 +160,11 @@ router.patch("/:id", authRequired, async (req, res) => {
         res.status(403).json({ error: "운영자만 수정할 수 있습니다." });
         return;
     }
+    // MANAGER는 본인이 생성한 캠페인만 수정 가능
+    if (req.user.role === "MANAGER" && c.creatorId !== req.user.id) {
+        res.status(403).json({ error: "본인이 생성한 캠페인만 수정할 수 있습니다." });
+        return;
+    }
     const parsed = patchCampaignSchema.safeParse(req.body);
     if (!parsed.success) {
         res.status(400).json({ error: parsed.error.flatten() });
@@ -166,6 +197,7 @@ router.patch("/:id", authRequired, async (req, res) => {
         b.description !== undefined ||
         b.companyName !== undefined ||
         b.companyLogoUrl !== undefined ||
+        b.rewardImageUrl !== undefined ||
         b.winnerCount !== undefined ||
         b.lotteryMode !== undefined ||
         b.autoApprove !== undefined ||
@@ -182,6 +214,7 @@ router.patch("/:id", authRequired, async (req, res) => {
                 ...(b.description !== undefined && { description: b.description }),
                 ...(b.companyName !== undefined && { companyName: b.companyName }),
                 ...(b.companyLogoUrl !== undefined && { companyLogoUrl: b.companyLogoUrl }),
+                ...(b.rewardImageUrl !== undefined && { rewardImageUrl: b.rewardImageUrl }),
                 ...(b.winnerCount !== undefined && { winnerCount: b.winnerCount }),
                 ...(b.lotteryMode !== undefined && { lotteryMode: b.lotteryMode }),
                 ...(b.autoApprove !== undefined && { autoApprove: b.autoApprove }),
@@ -213,6 +246,11 @@ router.post("/:id/missions", authRequired, async (req, res) => {
         res.status(403).json({ error: "운영자만 미션을 만들 수 있습니다." });
         return;
     }
+    // MANAGER는 본인 캠페인에만 미션 추가 가능
+    if (req.user.role === "MANAGER" && c.creatorId !== req.user.id) {
+        res.status(403).json({ error: "본인이 생성한 캠페인에만 미션을 추가할 수 있습니다." });
+        return;
+    }
     const parsed = missionInputSchema.safeParse(req.body);
     if (!parsed.success) {
         res.status(400).json({ error: parsed.error.flatten() });
@@ -241,6 +279,11 @@ router.get("/:id/submissions", authRequired, async (req, res) => {
         res.status(403).json({ error: "운영자만 열람할 수 있습니다." });
         return;
     }
+    // MANAGER는 본인 캠페인만 조회 가능
+    if (req.user.role === "MANAGER" && c.creatorId !== req.user.id) {
+        res.status(403).json({ error: "본인이 생성한 캠페인만 열람할 수 있습니다." });
+        return;
+    }
     const list = await prisma.submission.findMany({
         where: { mission: { campaignId: c.id } },
         include: {
@@ -263,6 +306,11 @@ router.get("/:id/stats", authRequired, async (req, res) => {
     }
     if (!isOperator(req.user.role)) {
         res.status(403).json({ error: "운영자만 열람할 수 있습니다." });
+        return;
+    }
+    // MANAGER는 본인 캠페인만 통계 조회 가능
+    if (req.user.role === "MANAGER" && c.creatorId !== req.user.id) {
+        res.status(403).json({ error: "본인이 생성한 캠페인만 열람할 수 있습니다." });
         return;
     }
     const missionIds = c.missions.map((m) => m.id);
@@ -300,6 +348,10 @@ router.post("/:id/draw", authRequired, async (req, res) => {
         return res.status(404).json({ error: "Not found" });
     if (!isOperator(req.user.role)) {
         return res.status(403).json({ error: "운영자만 추첨할 수 있습니다." });
+    }
+    // MANAGER는 본인 캠페인만 추첨 가능
+    if (req.user.role === "MANAGER" && c.creatorId !== req.user.id) {
+        return res.status(403).json({ error: "본인이 생성한 캠페인만 추첨할 수 있습니다." });
     }
     try {
         const result = await runCampaignDraw(cid);
@@ -406,6 +458,14 @@ router.get("/:id/export", authRequired, async (req, res) => {
     if (!isOperator(req.user.role)) {
         res.status(403).json({ error: "운영자만 내보낼 수 있습니다." });
         return;
+    }
+    // MANAGER는 본인 캠페인만 내보내기 가능
+    if (req.user.role === "MANAGER") {
+        const camp = await prisma.campaign.findUnique({ where: { id: cid }, select: { creatorId: true } });
+        if (!camp || camp.creatorId !== req.user.id) {
+            res.status(403).json({ error: "본인이 생성한 캠페인만 내보낼 수 있습니다." });
+            return;
+        }
     }
     try {
         const list = await prisma.submission.findMany({

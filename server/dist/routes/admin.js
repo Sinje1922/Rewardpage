@@ -134,4 +134,98 @@ router.get("/dashboard", async (_req, res) => {
         res.status(500).json({ error: "Failed to load dashboard stats" });
     }
 });
+// Admin: Get all manager requests
+router.get("/manager-requests", async (req, res) => {
+    try {
+        const status = req.query.status ? String(req.query.status) : undefined;
+        const requests = await prisma.managerrequest.findMany({
+            where: status ? { status } : {},
+            orderBy: { createdAt: "desc" },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        nickname: true,
+                    },
+                },
+            },
+        });
+        res.json(requests);
+    }
+    catch (error) {
+        console.error("Failed to load manager requests:", error);
+        res.status(500).json({ error: "Failed to load manager requests" });
+    }
+});
+const rejectSchema = z.object({
+    adminNote: z.string().max(500).optional().nullable(),
+});
+// Admin: Approve manager request
+router.patch("/manager-requests/:id/approve", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const request = await prisma.managerrequest.findUnique({
+            where: { id },
+        });
+        if (!request) {
+            res.status(404).json({ error: "Request not found" });
+            return;
+        }
+        if (request.status !== "PENDING") {
+            res.status(400).json({ error: `Request has already been processed (status: ${request.status})` });
+            return;
+        }
+        // Use transaction to ensure both user update and request update succeed
+        await prisma.$transaction([
+            prisma.user.update({
+                where: { id: request.userId },
+                data: { role: "MANAGER" },
+            }),
+            prisma.managerrequest.update({
+                where: { id },
+                data: { status: "APPROVED", adminNote: req.body.adminNote || "Approved by Administrator" },
+            }),
+        ]);
+        res.json({ ok: true, message: "Request approved and user promoted to MANAGER" });
+    }
+    catch (error) {
+        console.error("Failed to approve manager request:", error);
+        res.status(500).json({ error: "Failed to approve request" });
+    }
+});
+// Admin: Reject manager request
+router.patch("/manager-requests/:id/reject", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const parsed = rejectSchema.safeParse(req.body);
+        if (!parsed.success) {
+            res.status(400).json({ error: parsed.error.flatten() });
+            return;
+        }
+        const request = await prisma.managerrequest.findUnique({
+            where: { id },
+        });
+        if (!request) {
+            res.status(404).json({ error: "Request not found" });
+            return;
+        }
+        if (request.status !== "PENDING") {
+            res.status(400).json({ error: `Request has already been processed (status: ${request.status})` });
+            return;
+        }
+        await prisma.managerrequest.update({
+            where: { id },
+            data: {
+                status: "REJECTED",
+                adminNote: parsed.data.adminNote || "Rejected by Administrator",
+            },
+        });
+        res.json({ ok: true, message: "Request rejected" });
+    }
+    catch (error) {
+        console.error("Failed to reject manager request:", error);
+        res.status(500).json({ error: "Failed to reject request" });
+    }
+});
 export default router;

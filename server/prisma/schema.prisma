@@ -18,7 +18,7 @@ model analyticsevent {
 model campaign {
   id                String    @id @default(cuid())
   title             String
-  description       String    @default("") @db.LongText
+  description       String    @default("") @db.Text
   companyName       String    @default("")
   companyLogoUrl    String    @default("")
   rewardImageUrl    String    @default("")
@@ -34,7 +34,7 @@ model campaign {
   rewardsConfig     String    @default("[]") @db.Text
   createdAt         DateTime  @default(now())
   drawnAt           DateTime?
-  creator           user?     @relation(fields: [creatorId], references: [id], map: "Campaign_creatorId_fkey")
+  creator           user?     @relation(fields: [creatorId], references: [id], map: "Campaign_creatorId_fk")
   missions          mission[]
   winners           winner[]
 
@@ -46,11 +46,11 @@ model mission {
   campaignId  String
   type        String
   title       String
-  description String       @default("") @db.LongText
+  description String       @default("") @db.Text
   sortOrder   Int          @default(0)
   config      String       @default("{}") @db.Text
   createdAt   DateTime     @default(now())
-  campaign    campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade, map: "Mission_campaignId_fkey")
+  campaign    campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade, map: "Mission_campaignId_fk")
   submissions  submission[]
 
   @@index([campaignId], map: "Mission_campaignId_fkey")
@@ -63,7 +63,7 @@ model submission {
   status    String   @default("PENDING")
   payload   String   @default("{}") @db.Text
   createdAt DateTime @default(now())
-  mission   mission  @relation(fields: [missionId], references: [id], onDelete: Cascade, map: "Submission_missionId_fkey")
+  mission   mission  @relation(fields: [missionId], references: [id], onDelete: Cascade, map: "Submission_missionId_fk")
   user      user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Submission_userId_fkey")
 
   @@unique([userId, missionId], map: "Submission_userId_missionId_key")
@@ -115,7 +115,7 @@ model winner {
   rewardsConfig String   @default("[]") @db.Text
   createdAt  DateTime @default(now())
   campaign   campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade, map: "Winner_campaignId_fkey")
-  user       user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Winner_userId_fkey")
+  user       user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Winner_userId_fk")
 
   @@unique([campaignId, userId], map: "Winner_campaignId_userId_key")
   @@index([userId], map: "Winner_userId_fkey")
@@ -128,7 +128,7 @@ model chatmessage {
   text      String   @db.Text
   locale    String   @default("ko")
   createdAt DateTime @default(now())
-  user      user?    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "ChatMessage_userId_fkey")
+  user      user?    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "ChatMessage_userId_fk")
 
   @@index([userId], map: "ChatMessage_userId_fkey")
 }
@@ -146,7 +146,7 @@ model managerrequest {
   adminNote   String?  @db.Text            // 관리자 메모
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
-  user        user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "ManagerRequest_userId_fkey")
+  user        user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "ManagerRequest_userId_fk")
 
   @@index([userId], map: "ManagerRequest_userId_fkey")
 }

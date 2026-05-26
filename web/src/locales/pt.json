@@ -147,7 +147,11 @@
     "linkedAccount": "Conta Vinculada: {handle}",
     "snsNotLinked": "⚠️ A conta {type} não está vinculada. Vincule-a na Minha Página.",
     "ytWatching": "Assistindo... (restam {n}s)",
-    "ytWatchComplete": "✅ Visualização concluída! Envie a missão."
+    "ytWatchComplete": "✅ Visualização concluída! Envie a missão.",
+    "ytWatchOnYoutube": "Assistir no YouTube",
+    "verifying": "Verificando...",
+    "verifySuccess": "✅ Verificação bem-sucedida!",
+    "verifyFail": "❌ Falha na verificação: {reason}"
   },
   "auth": {
     "login": "Entrar",
@@ -261,6 +265,9 @@
     "telegramUrl": "URL do Canal/Grupo Telegram (https://t.me/...)",
     "discordUrl": "URL de Convite do Servidor Discord (https://discord.gg/...)",
     "discordServerId": "ID do Servidor (Guild ID)",
+    "discordServerIdHint": "Ative o Modo Desenvolvedor nas configurações do Discord (Aparência/Avançado), clique com o botão direito no ícone do servidor e copie o ID do servidor.",
+    "telegramChannelId": "ID do Chat / Nome de usuário do Telegram (Para canais privados)",
+    "telegramChannelIdHint": "Para canais/grupos privados, insira o ID numérico (ex: -100xxxxxxxxxx) com o bot adicionado.",
     "type": "Tipo de Missão",
     "sortOrder": "Ordem de Classificação",
     "missionTitle": "Título da Missão",
