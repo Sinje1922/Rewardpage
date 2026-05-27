@@ -623,8 +623,8 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
             <div :id="'yt-player-' + m.id" class="yt-container mb-3"></div>
             <!-- Watch on YouTube Button -->
             <a 
-              v-if="parseCfg(m.config).videoId" 
-              :href="'https://youtube.com/watch?v=' + extractYoutubeId(parseCfg(m.config).videoId)" 
+              v-if="parseCfg(m.config).linkUrl || parseCfg(m.config).videoId" 
+              :href="parseCfg(m.config).linkUrl || ('https://youtube.com/watch?v=' + extractYoutubeId(parseCfg(m.config).videoId))" 
               target="_blank" 
               class="btn outline full-width mb-3 text-center d-flex align-items-center justify-content-center"
               style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 0.5rem; height: 3.5rem; font-size: 1.1rem; border-radius: 14px; margin-bottom: 1rem;"

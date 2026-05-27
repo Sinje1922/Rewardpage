@@ -23,6 +23,39 @@ function updateRow(i: number, patch: Partial<MissionRowState>) {
   rows.value = next
 }
 
+function extractYoutubeIdLocal(urlOrId: string): string {
+  if (typeof urlOrId !== 'string') return ''
+  const clean = urlOrId.trim()
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/
+  const match = clean.match(regExp)
+  return (match && match[2].length === 11) ? match[2] : clean
+}
+
+function handleYoutubeWatchInput(i: number, ev: Event) {
+  const target = ev.target as HTMLInputElement | null
+  if (!target) return
+  const val = target.value || ''
+  const parsedId = extractYoutubeIdLocal(val)
+  const finalLink = val.trim().startsWith('http') ? val.trim() : (parsedId ? `https://youtube.com/watch?v=${parsedId}` : '')
+  updateRow(i, { youtubeVideoId: parsedId, linkUrl: finalLink })
+}
+
+function handleYoutubeLikeInput(i: number, ev: Event) {
+  const target = ev.target as HTMLInputElement | null
+  if (!target) return
+  const val = target.value || ''
+  const parsedId = extractYoutubeIdLocal(val)
+  updateRow(i, { linkUrl: val, youtubeVideoId: parsedId || rows.value[i].youtubeVideoId })
+}
+
+function handleYoutubeLikeVideoIdInput(i: number, ev: Event) {
+  const target = ev.target as HTMLInputElement | null
+  if (!target) return
+  const val = target.value || ''
+  const parsedId = extractYoutubeIdLocal(val)
+  updateRow(i, { youtubeVideoId: parsedId })
+}
+
 const missionCategories = [
   {
     id: 'general',
@@ -332,7 +365,11 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
           <template v-else-if="row.type === 'YOUTUBE_WATCH'">
             <div class="field">
               <label>{{ t('ops.youtubeVideoHint') }}</label>
-              <input :value="row.youtubeVideoId" placeholder="dQw4w9WgXcQ" @input="updateRow(i, { youtubeVideoId: ($event.target as HTMLInputElement).value })" />
+              <input
+                :value="row.linkUrl || row.youtubeVideoId"
+                placeholder="https://youtube.com/watch?v=... 또는 ID 입력"
+                @input="handleYoutubeWatchInput(i, $event)"
+              />
             </div>
             <div class="field">
               <label>{{ t('ops.youtubeTargetSeconds') }}</label>
@@ -359,11 +396,20 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
           <template v-else-if="row.type === 'YOUTUBE_LIKE'">
             <div class="field">
               <label>{{ t('ops.linkUrl') }}</label>
-              <input :value="row.linkUrl" type="url" placeholder="https://youtube.com/watch?v=..." @input="updateRow(i, { linkUrl: ($event.target as HTMLInputElement).value })" />
+              <input
+                :value="row.linkUrl"
+                type="url"
+                placeholder="https://youtube.com/watch?v=..."
+                @input="handleYoutubeLikeInput(i, $event)"
+              />
             </div>
             <div class="field">
               <label>{{ t('ops.youtubeVideoHint') }}</label>
-              <input :value="row.youtubeVideoId" placeholder="dQw4w9WgXcQ" @input="updateRow(i, { youtubeVideoId: ($event.target as HTMLInputElement).value })" />
+              <input
+                :value="row.youtubeVideoId"
+                placeholder="dQw4w9WgXcQ"
+                @input="handleYoutubeLikeVideoIdInput(i, $event)"
+              />
             </div>
           </template>
 

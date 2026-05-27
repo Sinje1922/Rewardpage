@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useAuthStore } from '../../stores/auth'
 import { api, getFileUrl } from '../../api/client'
 import { uploadCompanyLogo } from '../../api/upload'
 import * as XLSX from 'xlsx'
@@ -74,6 +75,7 @@ type TabId = 'compose' | 'stats' | 'participants' | 'winners'
 
 const { t } = useI18n()
 const route = useRoute()
+const auth = useAuthStore()
 const stats = ref<CampaignStats | null>(null)
 const camp = ref<CampaignDetail | null>(null)
 const participants = ref<{ email: string; completed: number; status: string }[]>([])
@@ -86,6 +88,10 @@ const logoFileInput = ref<HTMLInputElement | null>(null)
 
 const isDraftLike = computed(
   () => !!camp.value && (camp.value.status === 'DRAFT' || camp.value.status === 'PENDING_ADMIN')
+)
+
+const isEditable = computed(
+  () => isDraftLike.value || auth.user?.role === 'ADMIN'
 )
 
 const draftCompanyName = ref('')
@@ -545,7 +551,7 @@ async function downloadCsv() {
         <RichEditor v-model="draftDescription" :placeholder="t('ops.descPlaceholder')" />
       </div>
 
-      <template v-if="isDraftLike">
+      <template v-if="isEditable">
         <h2 style="font-size: 1.05rem; color: var(--text-h); margin: 1.25rem 0 0.75rem">{{ $t('ops.clientSection') }}</h2>
         <div class="field">
           <label>{{ $t('ops.companyName') }}</label>
