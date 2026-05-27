@@ -345,6 +345,15 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
               <p class="hint" style="margin-top: 0.25rem;">
                 * {{ $t('ops.telegramChannelIdHint') }}
               </p>
+              
+              <!-- 텔레그램 봇 연동 안내 가이드 박스 -->
+              <div class="guide-box" style="margin-top: 0.75rem; padding: 0.75rem; background: var(--bg-deep); border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; line-height: 1.5;">
+                <p style="margin: 0 0 0.5rem; font-weight: 700; color: var(--accent);">🤖 텔레그램 봇 설정 필수 가이드</p>
+                <ol style="margin: 0; padding-left: 1.2rem; color: var(--muted);">
+                  <li>내 채널/그룹에 픽쿠 공식 봇(<a href="https://t.me/Pickku_Official_bot" target="_blank" style="color: var(--accent); font-weight: 700; text-decoration: underline;">@Pickku_Official_bot</a>)을 <strong>관리자(Administrator)</strong>로 추가해 주세요.</li>
+                  <li>공개방은 링크 URL만으로 자동 인증되지만, <strong>비공개방(초대코드방)</strong>은 고유 숫자 Chat ID(예: -100xxxxxxxxxx) 입력이 필수입니다.</li>
+                </ol>
+              </div>
             </div>
           </template>
 
@@ -359,6 +368,15 @@ function removeSurveyOption(mi: number, qi: number, oi: number) {
               <p class="hint" style="margin-top: 0.25rem;">
                 * {{ $t('ops.discordServerIdHint') }}
               </p>
+              
+              <!-- 디스코드 봇 연동 안내 가이드 박스 -->
+              <div class="guide-box" style="margin-top: 0.75rem; padding: 0.75rem; background: var(--bg-deep); border-radius: 8px; border: 1px solid var(--border); font-size: 0.85rem; line-height: 1.5;">
+                <p style="margin: 0 0 0.5rem; font-weight: 700; color: var(--accent);">👾 디스코드 봇 설정 필수 가이드</p>
+                <ol style="margin: 0; padding-left: 1.2rem; color: var(--muted);">
+                  <li>내 디스코드 서버에 픽쿠 공식 봇을 초대하여 연결해야 인증이 가능합니다.<br/>👉 <a href="https://discord.com/oauth2/authorize?client_id=1498207511726264380&permissions=8&scope=bot" target="_blank" style="color: var(--accent); font-weight: 700; text-decoration: underline;">공식 봇 내 서버에 초대(추가)하기</a></li>
+                  <li>디스코드 앱 설정 - 고급 - <strong>개발자 모드</strong>를 켠 뒤, 서버 이름을 우클릭하여 <strong>서버 ID 복사</strong>를 눌러 위 칸에 입력해 주세요.</li>
+                </ol>
+              </div>
             </div>
           </template>
 
