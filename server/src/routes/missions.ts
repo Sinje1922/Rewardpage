@@ -48,9 +48,11 @@ router.post("/:id/submit", authRequired, async (req: AuthedRequest, res) => {
   const cfg = parseConfig(mission.config);
   const evalResult = await evaluateMission(req.user!.id, mission.id, mission.type, cfg, parsed.data.payload);
   if (!evalResult.ok) {
+    console.error(`[Mission Error] User ${req.user!.id} failed mission ${mission.id} (${mission.type}). Reason: ${evalResult.reason}`);
     res.status(400).json({ error: evalResult.reason ?? "검증 실패" });
     return;
   }
+  console.log(`[Mission Success] User ${req.user!.id} completed mission ${mission.id} (${mission.type}).`);
 
   const auto = camp.autoApprove;
   const status = auto ? "APPROVED" : "PENDING";

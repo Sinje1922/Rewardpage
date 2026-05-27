@@ -24,6 +24,13 @@ const app = express();
 app.disable("x-powered-by");
 // 배경 서비스 시작
 startTelegramBot();
+// YouTube API 연동 확인
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    console.log("[YouTube] YouTube API settings are configured.");
+}
+else {
+    console.log("[YouTube] YouTube API settings are missing.");
+}
 const uploadsRoot = path.join(process.cwd(), "uploads");
 fs.mkdirSync(uploadsRoot, { recursive: true });
 const rawCorsOrigin = process.env.CORS_ORIGIN;
