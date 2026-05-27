@@ -105,7 +105,8 @@ router.post("/telegram/verify", authRequired, async (req, res) => {
 router.get("/youtube/login", authRequired, (req, res) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const redirectUri = encodeURIComponent(process.env.YOUTUBE_REDIRECT_URI || "");
-    const scope = encodeURIComponent("https://www.googleapis.com/auth/youtube.readonly profile email");
+    // 좋아요 확인(videos.getRating) API는 youtube.readonly로는 불가능하며 youtube 스코프가 필요합니다.
+    const scope = encodeURIComponent("https://www.googleapis.com/auth/youtube profile email");
     const state = req.user.id;
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}&access_type=offline&prompt=consent`;
     res.redirect(url);
