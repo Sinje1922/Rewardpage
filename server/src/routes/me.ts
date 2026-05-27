@@ -17,6 +17,9 @@ const profileSchema = z.object({
   region: z.string().optional().nullable(),
   country: z.string().optional().nullable(),
   instagramHandle: z.string().max(100).optional().nullable(),
+  telegramHandle: z.string().max(100).optional().nullable(),
+  discordHandle: z.string().max(100).optional().nullable(),
+  youtubeHandle: z.string().max(100).optional().nullable(),
 });
 
 router.get("/", async (req: AuthedRequest, res) => {
@@ -52,9 +55,22 @@ router.patch("/profile", async (req: AuthedRequest, res) => {
     return;
   }
 
-  const data = { ...parsed.data };
+  const data = { ...parsed.data } as any;
   if (data.birthDate) {
     data.birthDate = new Date(data.birthDate) as any;
+  }
+
+  // SNS 연동 해제 시 관련 고유 ID 및 액세스 토큰도 함께 안전하게 제거
+  if (req.body.telegramHandle === null) {
+    data.telegramId = null;
+  }
+  if (req.body.discordHandle === null) {
+    data.discordId = null;
+  }
+  if (req.body.youtubeHandle === null) {
+    data.youtubeAccessToken = null;
+    data.youtubeRefreshToken = null;
+    data.youtubeTokenExpiry = null;
   }
 
   const user = await prisma.user.update({
