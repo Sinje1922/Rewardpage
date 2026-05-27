@@ -11,6 +11,8 @@ router.post("/youtube", authRequired, async (req, res) => {
 });
 // 유튜브 구독 확인
 router.post("/youtube/subscribe", authRequired, async (req, res) => {
+    console.log("verify youtube subscribe body:", req.body);
+    console.log("user:", req.user);
     const { channelId } = req.body;
     if (!channelId)
         return res.status(400).json({ error: "채널 ID가 필요합니다." });
@@ -33,6 +35,8 @@ router.post("/youtube/subscribe", authRequired, async (req, res) => {
 });
 // 유튜브 좋아요 확인
 router.post("/youtube/like", authRequired, async (req, res) => {
+    console.log("verify youtube like body:", req.body);
+    console.log("user:", req.user);
     const { videoId } = req.body;
     if (!videoId)
         return res.status(400).json({ error: "비디오 ID가 필요합니다." });
