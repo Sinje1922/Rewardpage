@@ -183,7 +183,7 @@ function linkDiscord() {
 }
 
 function linkTelegram() {
-  const botName = import.meta.env.VITE_TELEGRAM_BOT_NAME || 'PickQ_bot'
+  const botName = import.meta.env.VITE_TELEGRAM_BOT_NAME || 'Pickku_Official_bot'
   window.open(`https://t.me/${botName}?start=${auth.user?.id}`, '_blank')
   alert(t('mypage.tgBotStartAlert'))
   
