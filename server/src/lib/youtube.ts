@@ -112,6 +112,8 @@ export async function checkYouTubeSubscription(userId: string, targetChannelId: 
 
   try {
     const channelId = await resolveYoutubeChannelId(targetChannelId, token);
+    console.log(`[YouTube] 구독 확인 — 입력값: "${targetChannelId}", 사용 채널ID: "${channelId}"`);
+
     const response = await axios.get('https://www.googleapis.com/youtube/v3/subscriptions', {
       params: {
         part: 'snippet',
@@ -121,14 +123,19 @@ export async function checkYouTubeSubscription(userId: string, targetChannelId: 
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    const found = response.data.items && response.data.items.length > 0;
-    if (found) return { success: true };
+    const items = response.data.items ?? [];
+    console.log(`[YouTube] 구독 API 응답 — items 수: ${items.length}, totalResults: ${response.data.pageInfo?.totalResults}`);
+
+    if (items.length > 0) return { success: true };
     return { success: false, error: '구독 정보가 확인되지 않습니다. 구독 후 잠시 기다렸다가 다시 시도해 주세요.' };
   } catch (err: any) {
     const apiErr = err.response?.data?.error;
-    console.error('YouTube Subscription Check Error:', apiErr || err.message);
+    console.error('[YouTube] 구독 확인 API 오류:', JSON.stringify(apiErr ?? err.message));
     if (apiErr?.status === 'UNAUTHENTICATED' || err.response?.status === 401) {
       return { success: false, error: 'YouTube 인증이 만료되었습니다. 마이페이지에서 재연동해 주세요.' };
+    }
+    if (err.response?.status === 403) {
+      return { success: false, error: 'YouTube API 접근이 거부되었습니다. Google Cloud Console에서 YouTube Data API v3가 활성화되어 있는지 확인하세요.' };
     }
     return { success: false, error: '구독 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' };
   }
@@ -150,19 +157,26 @@ export async function checkYouTubeLike(userId: string, rawVideoId: string): Prom
 
   try {
     const videoId = extractYoutubeVideoId(rawVideoId);
+    console.log(`[YouTube] 좋아요 확인 — 입력값: "${rawVideoId}", 사용 videoId: "${videoId}"`);
+
     const response = await axios.get('https://www.googleapis.com/youtube/v3/videos/getRating', {
       params: { id: videoId },
       headers: { Authorization: `Bearer ${token}` },
     });
 
     const rating = response.data.items?.[0]?.rating;
+    console.log(`[YouTube] 좋아요 API 응답 — rating: "${rating}"`);
+
     if (rating === 'like') return { success: true };
     return { success: false, error: '좋아요 정보가 확인되지 않습니다. 좋아요를 누른 후 다시 시도해 주세요.' };
   } catch (err: any) {
     const apiErr = err.response?.data?.error;
-    console.error('YouTube Like Check Error:', apiErr || err.message);
+    console.error('[YouTube] 좋아요 확인 API 오류:', JSON.stringify(apiErr ?? err.message));
     if (apiErr?.status === 'UNAUTHENTICATED' || err.response?.status === 401) {
       return { success: false, error: 'YouTube 인증이 만료되었습니다. 마이페이지에서 재연동해 주세요.' };
+    }
+    if (err.response?.status === 403) {
+      return { success: false, error: 'YouTube API 접근이 거부되었습니다. Google Cloud Console에서 YouTube Data API v3가 활성화되어 있는지 확인하세요.' };
     }
     return { success: false, error: '좋아요 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' };
   }
