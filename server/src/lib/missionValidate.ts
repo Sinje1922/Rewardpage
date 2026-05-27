@@ -141,15 +141,15 @@ export async function evaluateMission(
       const channelId = config.youtubeChannelId;
       if (!channelId) return { ok: true }; // Skip if not configured
       const { checkYouTubeSubscription } = await import("./youtube.js");
-      const ok = await checkYouTubeSubscription(userId, channelId);
-      return ok ? { ok: true } : { ok: false, reason: "유튜브 구독이 확인되지 않습니다." };
+      const res = await checkYouTubeSubscription(userId, channelId);
+      return res.success ? { ok: true } : { ok: false, reason: res.error || "유튜브 구독이 확인되지 않습니다." };
     }
     case "YOUTUBE_LIKE": {
       const videoId = config.youtubeVideoId;
       if (!videoId) return { ok: true };
       const { checkYouTubeLike } = await import("./youtube.js");
-      const ok = await checkYouTubeLike(userId, videoId);
-      return ok ? { ok: true } : { ok: false, reason: "유튜브 좋아요가 확인되지 않습니다." };
+      const res = await checkYouTubeLike(userId, videoId);
+      return res.success ? { ok: true } : { ok: false, reason: res.error || "유튜브 좋아요가 확인되지 않습니다." };
     }
     case "TELEGRAM_JOIN":
     case "TELEGRAM_CHANNEL":
@@ -158,8 +158,8 @@ export async function evaluateMission(
       const chatId = urlClean ? urlClean.split('/').pop() : null;
       if (!chatId) return { ok: true };
       const { checkTelegramMembership } = await import("./telegram.js");
-      const ok = await checkTelegramMembership(chatId, userId);
-      return ok ? { ok: true } : { ok: false, reason: "텔레그램 참여가 확인되지 않습니다." };
+      const res = await checkTelegramMembership(chatId, userId);
+      return res.success ? { ok: true } : { ok: false, reason: res.error || "텔레그램 참여가 확인되지 않습니다." };
     }
     case "DISCORD_JOIN": {
       const guildId = config.discordInvite;
@@ -168,8 +168,8 @@ export async function evaluateMission(
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (!user?.discordId) return { ok: false, reason: "디스코드 연동이 필요합니다." };
       const { checkGuildMembership } = await import("./discord.js");
-      const ok = await checkGuildMembership(guildId, user.discordId);
-      return ok ? { ok: true } : { ok: false, reason: "디스코드 참여가 확인되지 않습니다." };
+      const res = await checkGuildMembership(guildId, user.discordId);
+      return res.success ? { ok: true } : { ok: false, reason: res.error || "디스코드 참여가 확인되지 않습니다." };
     }
     case "INSTAGRAM_FOLLOW":
     case "INSTAGRAM_LIKE": {
