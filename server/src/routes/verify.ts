@@ -86,10 +86,16 @@ router.post("/discord", authRequired, async (req: AuthedRequest, res) => {
     }
 
     const config = JSON.parse(mission.config || '{}');
-    const guildId = config.discordInvite; // 현재 config에 guild ID가 invite 필드에 저장됨
+    // discordInvite 필드에 Guild ID(숫자 문자열)가 저장됨
+    const guildId = config.discordInvite ? String(config.discordInvite).trim() : null;
 
     if (!guildId) {
-      return res.status(400).json({ error: "미션 설정에 디스코드 서버 ID가 없습니다." });
+      return res.status(400).json({ error: "미션 설정에 디스코드 서버 ID가 없습니다. 캠페인 운영자에게 문의하세요." });
+    }
+
+    // 초대 URL이 잘못 입력된 경우 안내
+    if (guildId.startsWith('http') || guildId.includes('discord.gg')) {
+      return res.status(400).json({ error: "미션 설정 오류: 초대 URL이 아닌 서버 ID(숫자)가 필요합니다. 캠페인 운영자에게 문의하세요." });
     }
 
     const { checkGuildMembership } = await import('../lib/discord.js');

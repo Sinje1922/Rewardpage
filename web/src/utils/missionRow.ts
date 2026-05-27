@@ -178,14 +178,32 @@ export function apiMissionToRow(m: {
 export function validateRows(rows: MissionRowState[]): string | null {
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i]
-    if (!r.title.trim()) return t('error.missionTitleRequired', { n: i + 1 })
+    const n = i + 1
+    if (!r.title.trim()) return t('error.missionTitleRequired', { n })
+
     if (r.type === 'QUIZ') {
       const opts = r.quizOptions.map((s) => s.trim()).filter(Boolean)
-      if (opts.length < 2) return t('error.missionQuizMinOptions', { n: i + 1 })
+      if (opts.length < 2) return t('error.missionQuizMinOptions', { n })
       if (r.quizCorrectIndex < 0 || r.quizCorrectIndex >= opts.length)
-        return t('error.missionQuizAnswerRequired', { n: i + 1 })
+        return t('error.missionQuizAnswerRequired', { n })
     }
-    if (r.type === 'LINK_VISIT' && !r.linkUrl.trim()) return t('error.missionLinkRequired', { n: i + 1 })
+    if (r.type === 'LINK_VISIT' && !r.linkUrl.trim())
+      return t('error.missionLinkRequired', { n })
+
+    // SNS 미션 필수 필드 검사
+    if (r.type === 'YOUTUBE_SUBSCRIBE' && !r.youtubeChannelId.trim())
+      return `미션 ${n}: YouTube 구독 미션에 채널 ID(UC...)를 입력해 주세요.`
+    if (r.type === 'YOUTUBE_LIKE' && !r.youtubeVideoId.trim())
+      return `미션 ${n}: YouTube 좋아요 미션에 비디오 ID를 입력해 주세요.`
+    if (r.type === 'YOUTUBE_WATCH' && !r.youtubeVideoId.trim())
+      return `미션 ${n}: YouTube 시청 미션에 비디오 ID를 입력해 주세요.`
+    if (
+      (r.type === 'TELEGRAM_JOIN' || r.type === 'TELEGRAM_CHANNEL' || r.type === 'TELEGRAM_GROUP') &&
+      !r.telegramChannel.trim()
+    )
+      return `미션 ${n}: Telegram 미션에 채널/그룹 ID 또는 URL을 입력해 주세요.`
+    if (r.type === 'DISCORD_JOIN' && !r.discordInvite.trim())
+      return `미션 ${n}: Discord 미션에 서버 ID(숫자)를 입력해 주세요.`
   }
   return null
 }
