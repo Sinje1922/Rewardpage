@@ -18,9 +18,11 @@ router.post("/youtube/subscribe", authRequired, async (req, res) => {
         const { checkYouTubeSubscription } = await import('../lib/youtube.js');
         const result = await checkYouTubeSubscription(req.user.id, channelId);
         if (result.success) {
+            console.log(`[Verify Success] User ${req.user.id} verified YouTube Subscribe for channel ${channelId}`);
             res.json({ success: true, message: "구독이 확인되었습니다!" });
         }
         else {
+            console.error(`[Verify Error] User ${req.user.id} failed YouTube Subscribe for channel ${channelId}. Reason: ${result.error}`);
             res.status(400).json({ error: result.error || "구독 정보가 확인되지 않습니다. 잠시 후 다시 시도해 주세요." });
         }
     }
@@ -38,9 +40,11 @@ router.post("/youtube/like", authRequired, async (req, res) => {
         const { checkYouTubeLike } = await import('../lib/youtube.js');
         const result = await checkYouTubeLike(req.user.id, videoId);
         if (result.success) {
+            console.log(`[Verify Success] User ${req.user.id} verified YouTube Like for video ${videoId}`);
             res.json({ success: true, message: "좋아요가 확인되었습니다!" });
         }
         else {
+            console.error(`[Verify Error] User ${req.user.id} failed YouTube Like for video ${videoId}. Reason: ${result.error}`);
             res.status(400).json({ error: result.error || "좋아요 정보가 확인되지 않습니다. 잠시 후 다시 시도해 주세요." });
         }
     }
@@ -67,9 +71,11 @@ router.post("/telegram", authRequired, async (req, res) => {
     const { checkTelegramMembership } = await import('../lib/telegram.js');
     const result = await checkTelegramMembership(chatId, req.user.id);
     if (result.success) {
+        console.log(`[Verify Success] User ${req.user.id} verified Telegram join for chatId ${chatId}`);
         res.json({ success: true, message: "텔레그램 참여가 확인되었습니다!" });
     }
     else {
+        console.error(`[Verify Error] User ${req.user.id} failed Telegram join for chatId ${chatId}. Reason: ${result.error}`);
         res.status(400).json({ error: result.error || "채널에서 유저를 찾을 수 없습니다. 입장을 완료했는지 확인해 주세요." });
     }
 });
@@ -100,9 +106,11 @@ router.post("/discord", authRequired, async (req, res) => {
         const { checkGuildMembership } = await import('../lib/discord.js');
         const result = await checkGuildMembership(guildId, currentUser.discordId);
         if (result.success) {
+            console.log(`[Verify Success] User ${req.user.id} verified Discord join for guildId ${guildId}`);
             res.json({ success: true, message: "디스코드 서버 참여가 확인되었습니다!" });
         }
         else {
+            console.error(`[Verify Error] User ${req.user.id} failed Discord join for guildId ${guildId}. Reason: ${result.error}`);
             res.status(400).json({ error: result.error || "서버에서 유저를 찾을 수 없습니다. 입장을 완료했는지 확인해 주세요." });
         }
     }
