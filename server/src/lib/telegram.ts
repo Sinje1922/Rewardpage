@@ -7,7 +7,7 @@ const API_URL = `https://api.telegram.org/bot${TOKEN}`;
 
 export async function startTelegramBot() {
   if (!TOKEN) {
-    console.warn('TELEGRAM_BOT_TOKEN is not set. Telegram Bot service skipped.');
+    console.warn(`[Telegram] TELEGRAM_BOT_TOKEN is not set (cwd: ${process.cwd()}). Telegram Bot service skipped.`);
     return;
   }
 

@@ -118,7 +118,7 @@ router.post("/telegram/verify", authRequired, async (req: AuthedRequest, res) =>
   const tgHandle = username ? `@${username}` : `ID:${id}`;
   await prisma.user.update({
     where: { id: req.user!.id },
-    data: { telegramHandle: tgHandle },
+    data: { telegramHandle: tgHandle, telegramId: String(id) },
   });
 
   res.json({ success: true, handle: tgHandle });
