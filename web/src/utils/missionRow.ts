@@ -112,7 +112,7 @@ function buildConfig(row: MissionRowState): Record<string, unknown> {
     case 'DISCORD_JOIN':
       return { discordInvite: row.discordInvite, linkUrl: row.linkUrl }
     case 'YOUTUBE_WATCH':
-      return { videoId: row.youtubeVideoId, targetSeconds: row.youtubeTargetSeconds }
+      return { videoId: row.youtubeVideoId, targetSeconds: row.youtubeTargetSeconds, linkUrl: row.linkUrl }
     case 'YOUTUBE_SUBSCRIBE':
       return { channelId: row.youtubeChannelId, linkUrl: row.linkUrl }
     case 'YOUTUBE_LIKE':

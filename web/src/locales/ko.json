@@ -244,7 +244,7 @@
     "checkinHint": "참여자가 내용 확인에 동의하면 완료됩니다.",
     "addMissionBtn": "+ 미션 추가",
     "youtubeChannelHint": "채널 ID 또는 핸들 ({'@'}username)",
-    "youtubeVideoHint": "영상 ID (URL의 v= 뒤의 값)",
+    "youtubeVideoHint": "영상 URL 또는 ID (예: https://youtube.com/watch?v=...)",
     "youtubeTargetSeconds": "목표 시청 시간 (초)",
     "instagramHandleHint": "인스타그램 계정 핸들 ({'@'}username)",
     "telegramUrl": "텔레그램 채널/그룹 참여 URL (https://t.me/...)",

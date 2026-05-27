@@ -259,7 +259,7 @@
     "checkinHint": "Concluído quando o participante concorda em verificar o conteúdo.",
     "addMissionBtn": "+ Adicionar Missão",
     "youtubeChannelHint": "ID do Canal ou Handle ({'@'}username)",
-    "youtubeVideoHint": "ID do Vídeo (valor v= na URL)",
+    "youtubeVideoHint": "URL ou ID do Vídeo (ex: https://youtube.com/watch?v=...)",
     "youtubeTargetSeconds": "Tempo de Visualização Alvo (seg)",
     "instagramHandleHint": "Handle do Instagram ({'@'}username)",
     "telegramUrl": "URL do Canal/Grupo Telegram (https://t.me/...)",
