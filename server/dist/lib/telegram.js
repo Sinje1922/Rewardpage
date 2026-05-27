@@ -83,6 +83,7 @@ export async function checkTelegramMembership(chatId, userId) {
         if (!user || !user.telegramId)
             return { success: false, error: "텔레그램 계정 연동이 필요합니다. 마이페이지에서 연동해 주세요." };
         const cleanChatId = chatId.startsWith('@') ? chatId : `@${chatId}`;
+        console.log(`[Telegram] 참여 확인 — 대상 Chat ID/유저네임: "${cleanChatId}", 유저 텔레그램 ID: "${user.telegramId}" (계정: ${user.email})`);
         const response = await axios.get(`${API_URL}/getChatMember`, {
             params: {
                 chat_id: cleanChatId,
@@ -91,6 +92,7 @@ export async function checkTelegramMembership(chatId, userId) {
         });
         const status = response.data.result?.status;
         const isMember = ['member', 'administrator', 'creator'].includes(status);
+        console.log(`[Telegram] API 응답 — 멤버 상태: "${status}", 참여여부: ${isMember}`);
         if (isMember) {
             return { success: true };
         }
