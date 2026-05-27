@@ -46,7 +46,9 @@ const missionInputSchema = z.object({
         "YOUTUBE_SUBSCRIBE",
         "YOUTUBE_LIKE",
         "TELEGRAM_CHANNEL",
-        "TELEGRAM_GROUP"
+        "TELEGRAM_GROUP",
+        "INSTAGRAM_FOLLOW",
+        "INSTAGRAM_LIKE"
     ]),
     title: z.string().min(1),
     description: z.string().optional(),
@@ -74,12 +76,14 @@ const createCampaignSchema = campaignFieldsSchema.extend({
 const patchCampaignSchema = campaignFieldsSchema.partial().extend({
     missions: z.array(missionInputSchema).optional(),
 });
-async function replaceCampaignMissions(campaignId, missions) {
-    const subCount = await prisma.submission.count({
-        where: { mission: { campaignId } },
-    });
-    if (subCount > 0) {
-        throw new Error("SUBMISSIONS_EXIST");
+async function replaceCampaignMissions(campaignId, missions, bypassSubmissionsCheck = false) {
+    if (!bypassSubmissionsCheck) {
+        const subCount = await prisma.submission.count({
+            where: { mission: { campaignId } },
+        });
+        if (subCount > 0) {
+            throw new Error("SUBMISSIONS_EXIST");
+        }
     }
     await prisma.$transaction([
         prisma.mission.deleteMany({ where: { campaignId } }),
@@ -167,12 +171,14 @@ router.patch("/:id", authRequired, async (req, res) => {
     }
     const parsed = patchCampaignSchema.safeParse(req.body);
     if (!parsed.success) {
+        console.error("Zod Validation Error on PATCH:", JSON.stringify(parsed.error.format(), null, 2));
         res.status(400).json({ error: parsed.error.flatten() });
         return;
     }
     const b = parsed.data;
+    const isAdmin = req.user.role === "ADMIN";
     if (b.missions !== undefined) {
-        if (c.status !== "DRAFT" && c.status !== "PENDING_ADMIN") {
+        if (!isAdmin && c.status !== "DRAFT" && c.status !== "PENDING_ADMIN") {
             res.status(400).json({
                 error: "초안(DRAFT) 또는 검수 대기(PENDING_ADMIN) 상태에서만 미션을 일괄 수정할 수 있습니다.",
             });
@@ -183,7 +189,7 @@ router.patch("/:id", authRequired, async (req, res) => {
             return;
         }
         try {
-            await replaceCampaignMissions(c.id, b.missions);
+            await replaceCampaignMissions(c.id, b.missions, isAdmin);
         }
         catch (e) {
             if (e instanceof Error && e.message === "SUBMISSIONS_EXIST") {

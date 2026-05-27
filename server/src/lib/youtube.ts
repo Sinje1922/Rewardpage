@@ -36,10 +36,14 @@ async function getValidToken(userId: string) {
   if (!user || !user.youtubeAccessToken) throw new Error('YouTube not linked');
 
   const now = BigInt(Math.floor(Date.now() / 1000));
-  if (user.youtubeTokenExpiry && user.youtubeTokenExpiry < now + BigInt(60)) {
+  const isExpiredOrSoon = user.youtubeTokenExpiry && user.youtubeTokenExpiry < now + BigInt(60);
+
+  if (isExpiredOrSoon) {
     if (user.youtubeRefreshToken) {
       return await refreshAccessToken(userId, user.youtubeRefreshToken);
     }
+    // 토큰 만료 + 리프레시 토큰 없음 → 재연동 필요
+    throw new Error('YouTube token expired. Please re-link your YouTube account.');
   }
   return user.youtubeAccessToken;
 }
@@ -92,8 +96,20 @@ export async function resolveYoutubeChannelId(urlOrId: string, accessToken: stri
   return clean; // Fallback
 }
 
-export async function checkYouTubeSubscription(userId: string, targetChannelId: string) {
-  const token = await getValidToken(userId);
+export async function checkYouTubeSubscription(userId: string, targetChannelId: string): Promise<{ success: boolean; error?: string }> {
+  let token: string;
+  try {
+    token = await getValidToken(userId);
+  } catch (err: any) {
+    if (err.message === 'YouTube not linked') {
+      return { success: false, error: 'YouTube 계정 연동이 필요합니다. 마이페이지에서 연동해 주세요.' };
+    }
+    if (err.message?.includes('token expired')) {
+      return { success: false, error: 'YouTube 토큰이 만료되었습니다. 마이페이지에서 재연동해 주세요.' };
+    }
+    return { success: false, error: `YouTube 인증 오류: ${err.message}` };
+  }
+
   try {
     const channelId = await resolveYoutubeChannelId(targetChannelId, token);
     const response = await axios.get('https://www.googleapis.com/youtube/v3/subscriptions', {
@@ -105,15 +121,33 @@ export async function checkYouTubeSubscription(userId: string, targetChannelId: 
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    return response.data.items && response.data.items.length > 0;
+    const found = response.data.items && response.data.items.length > 0;
+    if (found) return { success: true };
+    return { success: false, error: '구독 정보가 확인되지 않습니다. 구독 후 잠시 기다렸다가 다시 시도해 주세요.' };
   } catch (err: any) {
-    console.error('YouTube Subscription Check Error:', err.response?.data || err.message);
-    return false;
+    const apiErr = err.response?.data?.error;
+    console.error('YouTube Subscription Check Error:', apiErr || err.message);
+    if (apiErr?.status === 'UNAUTHENTICATED' || err.response?.status === 401) {
+      return { success: false, error: 'YouTube 인증이 만료되었습니다. 마이페이지에서 재연동해 주세요.' };
+    }
+    return { success: false, error: '구독 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' };
   }
 }
 
-export async function checkYouTubeLike(userId: string, rawVideoId: string) {
-  const token = await getValidToken(userId);
+export async function checkYouTubeLike(userId: string, rawVideoId: string): Promise<{ success: boolean; error?: string }> {
+  let token: string;
+  try {
+    token = await getValidToken(userId);
+  } catch (err: any) {
+    if (err.message === 'YouTube not linked') {
+      return { success: false, error: 'YouTube 계정 연동이 필요합니다. 마이페이지에서 연동해 주세요.' };
+    }
+    if (err.message?.includes('token expired')) {
+      return { success: false, error: 'YouTube 토큰이 만료되었습니다. 마이페이지에서 재연동해 주세요.' };
+    }
+    return { success: false, error: `YouTube 인증 오류: ${err.message}` };
+  }
+
   try {
     const videoId = extractYoutubeVideoId(rawVideoId);
     const response = await axios.get('https://www.googleapis.com/youtube/v3/videos/getRating', {
@@ -122,9 +156,14 @@ export async function checkYouTubeLike(userId: string, rawVideoId: string) {
     });
 
     const rating = response.data.items?.[0]?.rating;
-    return rating === 'like';
+    if (rating === 'like') return { success: true };
+    return { success: false, error: '좋아요 정보가 확인되지 않습니다. 좋아요를 누른 후 다시 시도해 주세요.' };
   } catch (err: any) {
-    console.error('YouTube Like Check Error:', err.response?.data || err.message);
-    return false;
+    const apiErr = err.response?.data?.error;
+    console.error('YouTube Like Check Error:', apiErr || err.message);
+    if (apiErr?.status === 'UNAUTHENTICATED' || err.response?.status === 401) {
+      return { success: false, error: 'YouTube 인증이 만료되었습니다. 마이페이지에서 재연동해 주세요.' };
+    }
+    return { success: false, error: '좋아요 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' };
   }
 }

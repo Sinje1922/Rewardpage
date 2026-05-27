@@ -318,7 +318,7 @@ async function submitMission(m: Mission) {
           return
         }
         endpoint = '/verify/youtube/subscribe'
-        body = { channelId: cfg.youtubeChannelId }
+        body = { channelId: cfg.channelId }
       } else if (m.type === 'YOUTUBE_LIKE') {
         if (!auth.user?.youtubeHandle) {
           alert(t('detail.snsLinkRequired', { type: 'YouTube' }))
@@ -326,7 +326,7 @@ async function submitMission(m: Mission) {
           return
         }
         endpoint = '/verify/youtube/like'
-        body = { videoId: cfg.youtubeVideoId }
+        body = { videoId: cfg.videoId }
       } else if (m.type === 'TELEGRAM_JOIN' || m.type === 'TELEGRAM_CHANNEL' || m.type === 'TELEGRAM_GROUP') {
         if (!auth.user?.telegramHandle) {
           alert(t('detail.snsLinkRequired', { type: 'Telegram' }))
