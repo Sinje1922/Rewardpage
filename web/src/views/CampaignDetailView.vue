@@ -227,14 +227,14 @@ async function handleSNSMission(m: Mission) {
       return
     }
     if (url) window.open(url, '_blank')
-    await verifySNS(m, '/verify/youtube/subscribe', { channelId: cfg.youtubeChannelId })
+    await verifySNS(m, '/verify/youtube/subscribe', { channelId: cfg.channelId || cfg.youtubeChannelId })
   } else if (m.type === 'YOUTUBE_LIKE') {
     if (!auth.user?.youtubeHandle) {
       alert(t('detail.snsLinkRequired', { type: 'YouTube' }))
       return
     }
     if (url) window.open(url, '_blank')
-    await verifySNS(m, '/verify/youtube/like', { videoId: cfg.youtubeVideoId })
+    await verifySNS(m, '/verify/youtube/like', { videoId: cfg.videoId || cfg.youtubeVideoId })
   } else if (m.type === 'TELEGRAM_JOIN' || m.type === 'TELEGRAM_CHANNEL' || m.type === 'TELEGRAM_GROUP') {
     if (!auth.user?.telegramHandle) {
       alert(t('detail.snsLinkRequired', { type: 'Telegram' }))
