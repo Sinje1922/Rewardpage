@@ -71,7 +71,25 @@ type CampaignStats = {
 
 
 
-type TabId = 'compose' | 'stats' | 'participants' | 'winners'
+type TabId = 'compose' | 'stats' | 'participants' | 'winners' | 'submissions'
+
+const typeIcons: Record<string, string> = {
+  LINK_VISIT: '🔗',
+  SURVEY: '📝',
+  CODE: '🔑',
+  QUIZ: '❓',
+  CHECKIN: '📍',
+  FILE_UPLOAD: '📁',
+  TELEGRAM_JOIN: '✈️',
+  TELEGRAM_CHANNEL: '📢',
+  TELEGRAM_GROUP: '👥',
+  DISCORD_JOIN: '👾',
+  YOUTUBE_WATCH: '📺',
+  YOUTUBE_SUBSCRIBE: '🔴',
+  YOUTUBE_LIKE: '👍',
+  INSTAGRAM_FOLLOW: '📸',
+  INSTAGRAM_LIKE: '❤️'
+}
 
 const { t } = useI18n()
 const route = useRoute()
@@ -81,11 +99,81 @@ const stats = ref<CampaignStats | null>(null)
 const camp = ref<CampaignDetail | null>(null)
 const participants = ref<{ email: string; completed: number; status: string }[]>([])
 const winnersList = ref<{ email: string }[]>([])
+const submissionsList = ref<SubRow[]>([])
+const subLoading = ref(false)
 const err = ref('')
 const tab = ref<TabId>('compose')
 const saving = ref(false)
 const logoUploading = ref(false)
 const logoFileInput = ref<HTMLInputElement | null>(null)
+
+async function loadSubmissions() {
+  const id = route.params.id as string
+  subLoading.value = true
+  try {
+    const { data } = await api.get<SubRow[]>(`/campaigns/${id}/submissions`)
+    submissionsList.value = data
+  } catch (e) {
+    console.error("Failed to load submissions", e)
+    err.value = t('common.errorLoad')
+  } finally {
+    subLoading.value = false
+  }
+}
+
+async function updateSubmissionStatus(subId: string, nextStatus: 'APPROVED' | 'REJECTED') {
+  err.value = ''
+  try {
+    await api.patch(`/submissions/${subId}`, { status: nextStatus })
+    const found = submissionsList.value.find(s => s.id === subId)
+    if (found) {
+      found.status = nextStatus
+    }
+  } catch (e: unknown) {
+    console.error("Failed to update submission status", e)
+    const ax = e as { response?: { data?: { error?: string } } }
+    err.value = ax.response?.data?.error || t('ops.saveFail')
+  }
+}
+
+function parseSurveyPayload(s: SubRow): { question: string; answer: string }[] {
+  try {
+    const p = JSON.parse(s.payload || '{}')
+    const c = JSON.parse(s.mission.config || '{}')
+    if (p.answers && c.surveyQuestions) {
+      return c.surveyQuestions.map((q: any) => {
+        const ans = p.answers[q.id]
+        let displayAns = ans ?? t('common.notAnswered')
+        if (q.type === 'OBJECTIVE' && ans !== undefined) {
+          displayAns = q.options?.[ans] ?? ans
+        }
+        return {
+          question: q.question,
+          answer: String(displayAns)
+        }
+      })
+    }
+    const legacyAns = p.code || p.note || t('common.submitted')
+    return [{ question: '설문 응답', answer: String(legacyAns) }]
+  } catch {
+    return [{ question: '에러', answer: t('common.parseError') }]
+  }
+}
+
+function getFileUrlFromPayload(s: SubRow): string {
+  try {
+    const p = JSON.parse(s.payload || '{}')
+    return p.fileUrl || ''
+  } catch {
+    return ''
+  }
+}
+
+function isImageFile(url: string): boolean {
+  if (!url) return false
+  const ext = url.split('.').pop()?.toLowerCase() || ''
+  return ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)
+}
 
 const isDraftLike = computed(
   () => !!camp.value && (camp.value.status === 'DRAFT' || camp.value.status === 'PENDING_ADMIN')
@@ -316,6 +404,7 @@ async function openTab(id: TabId) {
   if (id === 'participants') loadParticipants()
   if (id === 'winners') loadWinners()
   if (id === 'stats') loadStats()
+  if (id === 'submissions') loadSubmissions()
 }
 
 function parsePayloadDetail(s: SubRow) {
@@ -528,6 +617,14 @@ async function downloadCsv() {
       <button
         type="button"
         class="opt-tab-btn"
+        :class="{ active: tab === 'submissions' }"
+        @click="openTab('submissions')"
+      >
+        📥 제출 검수
+      </button>
+      <button
+        type="button"
+        class="opt-tab-btn"
         :class="{ active: tab === 'participants' }"
         @click="openTab('participants')"
       >
@@ -715,6 +812,111 @@ async function downloadCsv() {
       </div>
       <p v-if="!winnersList.length" style="color: var(--muted)">{{ $t('ops.noWinners') || 'No Winners' }}</p>
     </section>
+
+    <section v-if="tab === 'submissions'" class="card">
+      <div v-if="subLoading" style="color: var(--muted); padding: 1.5rem; text-align: center;">
+        {{ $t('detail.loading') }}
+      </div>
+      <div v-else-if="!submissionsList.length" style="color: var(--muted); padding: 1.5rem; text-align: center;">
+        제출된 내역이 없습니다.
+      </div>
+      <div v-else class="submission-list">
+        <div 
+          v-for="s in submissionsList" 
+          :key="s.id" 
+          class="sub-item"
+        >
+          <!-- Left side: User details & Mission details -->
+          <div class="sub-main">
+            <div class="sub-header">
+              <span class="user-nickname">{{ s.user.nickname || '익명' }}</span>
+              <span class="user-email">({{ s.user.email }})</span>
+              <span class="mission-badge">
+                <span class="m-icon">{{ typeIcons[s.mission.type] || '✨' }}</span>
+                {{ s.mission.title }}
+              </span>
+            </div>
+            
+            <!-- Payload Detail -->
+            <div class="sub-payload">
+              <!-- If SURVEY: Parse and display questions/answers beautifully -->
+              <template v-if="s.mission.type === 'SURVEY'">
+                <div class="survey-answers">
+                  <div 
+                    v-for="(ansStr, idx) in parseSurveyPayload(s)" 
+                    :key="idx" 
+                    class="survey-ans-row"
+                  >
+                    <span class="q-label">Q.</span>
+                    <div class="q-content">
+                      <div class="q-question">{{ ansStr.question }}</div>
+                      <div class="q-answer">{{ ansStr.answer }}</div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+              
+              <!-- If FILE_UPLOAD: Display download link and image preview -->
+              <template v-else-if="s.mission.type === 'FILE_UPLOAD'">
+                <div class="file-upload-payload">
+                  <div class="file-link-container">
+                    <span class="file-icon">📁</span>
+                    <a :href="getFileUrl(getFileUrlFromPayload(s))" target="_blank" class="file-link">
+                      제출된 파일 열기
+                    </a>
+                  </div>
+                  <!-- Show image preview if image -->
+                  <div v-if="isImageFile(getFileUrlFromPayload(s))" class="image-preview-container">
+                    <img :src="getFileUrl(getFileUrlFromPayload(s))" alt="제출 파일 미리보기" class="image-preview-img" />
+                  </div>
+                </div>
+              </template>
+              
+              <!-- Default payload parser -->
+              <template v-else>
+                <div class="default-payload-text">
+                  {{ parsePayloadDetail(s) }}
+                </div>
+              </template>
+            </div>
+            
+            <div class="sub-meta">
+              제출 일시: {{ new Date(s.createdAt).toLocaleString() }}
+            </div>
+          </div>
+          
+          <!-- Right side: Status and actions -->
+          <div class="sub-actions">
+            <!-- Status Badge -->
+            <div class="status-badge-container">
+              <span class="status-badge" :class="s.status.toLowerCase()">
+                {{ s.status === 'PENDING' ? '검수 대기' : s.status === 'APPROVED' ? '승인 완료' : '반려됨' }}
+              </span>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="action-btn-group">
+              <button 
+                type="button" 
+                class="btn-approve" 
+                :disabled="s.status === 'APPROVED'" 
+                @click="updateSubmissionStatus(s.id, 'APPROVED')"
+              >
+                ✓ 승인
+              </button>
+              <button 
+                type="button" 
+                class="btn-reject" 
+                :disabled="s.status === 'REJECTED'" 
+                @click="updateSubmissionStatus(s.id, 'REJECTED')"
+              >
+                ✕ 반려
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
   <p v-else-if="err && !camp" class="err">{{ err }}</p>
   <p v-else-if="!camp">{{ $t('detail.loading') }}</p>
@@ -846,4 +1048,224 @@ async function downloadCsv() {
 .c-approved { color: var(--mint); }
 .c-pending { color: #f97316; }
 .c-rejected { color: #ef4444; }
+
+/* Submissions Styles */
+.submission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+.sub-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1.25rem;
+  gap: 1.5rem;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sub-item:hover {
+  border-color: var(--accent-border);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+}
+.sub-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.sub-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.user-nickname {
+  font-weight: 800;
+  color: var(--text-h);
+}
+.user-email {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.mission-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 99px;
+  border: 1px solid var(--accent-border);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.sub-payload {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+}
+.survey-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.survey-ans-row {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.q-label {
+  font-weight: 800;
+  color: var(--accent);
+}
+.q-content {
+  display: flex;
+  flex-direction: column;
+}
+.q-question {
+  font-weight: 700;
+  color: var(--text-h);
+}
+.q-answer {
+  color: var(--text-p);
+  margin-top: 0.15rem;
+  background: var(--bg-deep);
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.file-upload-payload {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.file-link-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.file-link {
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.file-link:hover {
+  text-decoration: underline;
+  opacity: 0.85;
+}
+.image-preview-container {
+  max-width: 320px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-deep);
+  line-height: 0;
+}
+.image-preview-img {
+  width: 100%;
+  height: auto;
+  max-height: 200px;
+  object-fit: contain;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.image-preview-img:hover {
+  transform: scale(1.02);
+}
+.default-payload-text {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+.sub-meta {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.sub-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  min-width: 140px;
+  gap: 1rem;
+}
+.status-badge-container {
+  display: flex;
+  justify-content: flex-end;
+}
+.status-badge {
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 0.25rem 0.75rem;
+  border-radius: 99px;
+  display: inline-flex;
+}
+.status-badge.pending {
+  background: rgba(249, 115, 22, 0.12);
+  color: #f97316;
+  border: 1px solid rgba(249, 115, 22, 0.25);
+}
+.status-badge.approved {
+  background: var(--mint-soft);
+  color: var(--mint);
+  border: 1px solid var(--mint-soft);
+}
+.status-badge.rejected {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+.action-btn-group {
+  display: flex;
+  gap: 0.5rem;
+}
+.btn-approve, .btn-reject {
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--panel);
+}
+.btn-approve {
+  color: var(--mint);
+  border-color: var(--mint-soft);
+}
+.btn-approve:hover:not(:disabled) {
+  background: var(--mint-soft);
+}
+.btn-reject {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.12);
+}
+.btn-reject:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.12);
+}
+.btn-approve:disabled, .btn-reject:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .sub-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  .sub-actions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 0;
+  }
+}
 </style>
