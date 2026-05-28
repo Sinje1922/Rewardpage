@@ -16,6 +16,9 @@ interface KnowledgeBase {
   quest: string;
   help: string;
   thanks: string;
+  features: string;
+  creator: string;
+  sns: string;
   default: string;
 }
 
@@ -55,12 +58,32 @@ Pickku에서는 크리에이터가 설정한 다양한 형태의 리워드를 �
     thanks: `💖 별씀을요! 도움이 되어서 진심으로 기쁩니다. ✨
 더 궁금하신 내용이 생기시면 언제든 편하게 저 Pickku AI 헬퍼를 불러주세요. 
 오늘도 행복하고 득템 가득한 하루 보내시길 바랄게요! 🚀`,
+    features: `⚙️ **Pickku 전체 기능 및 미션(Quest) 종류**
+Pickku는 완벽한 참여와 마케팅 효과를 위해 다양한 기능과 미션을 제공합니다.
+1. **링크 방문 (LINK_VISIT)**: 특정 링크를 방문하고 지정된 초(dwell time) 동안 머무르면 완주가 처리됩니다.
+2. **비밀 코드 입력 (CODE)**: 크리에이터가 숨겨둔 시크릿 코드를 입력해 인증합니다.
+3. **퀴즈 풀기 (QUIZ)**: 객관식 문제 중 정답을 선택합니다.
+4. **설문조사 (SURVEY)**: 주관식 및 객관식이 혼합된 맞춤형 설문 문항에 답변을 작성합니다.
+5. **파일 제출 (FILE_UPLOAD)**: 이미지나 문서 링크를 업로드하여 과제를 검증받습니다.
+6. **출석 체크 (CHECKIN)**: 즉시 완료를 터치하여 참여를 확인합니다.
+7. **유튜브 시청 (YOUTUBE_WATCH)**: 크리에이터가 동영상 전체 URL을 붙여넣으면 비디오 ID가 자동 추출되며, 지정된 시간 동안 비디오를 시청하면 자동 검증 완료됩니다.`,
+    creator: `👥 **운영자(Admin) 및 매니저(Manager) 권한 체계 가이드**
+캠페인 관리와 투명한 보상 지급을 위해 정교한 권한 체계가 적용됩니다.
+- **관리자 (ADMIN)**: 캠페인 생성, 메타데이터 수정, 미션 리스트 추가/제거 및 개별 미션 단건 생성, 그리고 캠페인 영구 삭제(연결된 모든 미션, 제출물, 당첨자 연쇄 삭제) 권한까지 전체 통제 권한을 가집니다.
+- **매니저 (MANAGER)**: 캠페인을 최초로 개설할 수 있습니다. 단, 캠페인이 생성된 사후에는 캠페인의 무결성을 해치거나 어뷰징하는 것을 방지하기 위해 **오직 캠페인 제목(Title)과 내용 설명(Description)만 수정 가능**하도록 기능이 타이트하게 제한됩니다. (미션 일괄 편집 및 캠페인 삭제 불가)`,
+    sns: `🤖 **텔레그램 및 디스코드 봇 설정 가이드**
+실시간 SNS 인증이 정상 동작하기 위한 공식 봇 세팅 안내입니다.
+- **텔레그램 봇 추가**: 내 채널/그룹에 픽쿠 공식 봇(@Pickku_Official_bot)을 검색하여 추가하고, 반드시 **관리자(Administrator)** 권한으로 임명하셔야 가입 여부를 실시간 인증할 수 있습니다.
+- **디스코드 봇 초대**: 디스코드 서버 이름 우클릭 후 '서버 ID 복사'를 통해 서버 ID를 캠페인에 등록하고, [공식 봇 초대 링크]를 눌러 봇을 내 서버에 참가시켜야 실시간 멤버십 검증이 작동합니다.`,
     default: `🤖 안녕하세요! **Pickku AI 헬퍼**입니다. 
 아래 주제나 궁금한 점을 편하게 질문해 주시면 성심껏 답변해 드릴게요!
 - **플랫폼 소개**: Pickku가 어떤 플랫폼인지 궁금해요.
+- **제공 기능 & 미션**: 픽쿠가 제공하는 미션과 기능의 종류는 무엇인가요?
+- **운영자 권한 안내**: 어드민과 매니저의 캠페인 관리 권한 차이가 궁금해요.
 - **보상 체계**: 어떤 종류의 보상을 받을 수 있나요? (기타 보상 등)
 - **추첨 방식**: 일반 추첨과 가중치 추첨의 차이는 무엇인가요?
-- **포인트 출금**: 적립된 포인트를 출금하는 방법과 수수료는 어떻게 되나요?`
+- **포인트 출금**: 적립된 포인트를 출금하는 방법과 수수료는 어떻게 되나요?
+- **봇 설정 가이드**: 텔레그램과 디스코드 봇을 초대하고 설정하는 법을 알고 싶어요.`
   },
   en: {
     platform: `🌟 **About Pickku Platform**
@@ -97,13 +120,33 @@ If you experience any issues or get stuck, here are quick fixes:
     thanks: `💖 You're very welcome! I'm glad I could help. ✨
 If you ever need any more assistance, feel free to open this chat again. 
 Have an awesome day and good luck with your campaigns! 🚀`,
+    features: `⚙️ **Pickku Complete Features & Quests Guide**
+Pickku supports various mission types for ultimate engagement:
+1. **Link Visit (LINK_VISIT)**: Visit a specified URL and stay for target dwell seconds.
+2. **Secret Code (CODE)**: Paste and verify a secret code set by creators.
+3. **Quizzes (QUIZ)**: Solve multiple-choice trivia.
+4. **Surveys (SURVEY)**: Submit custom answers to multi-question forms.
+5. **File Upload (FILE_UPLOAD)**: Upload a file/screenshot to prove completion.
+6. **Check-In (CHECKIN)**: Fast instant attendance check-in.
+7. **YouTube Watch (YOUTUBE_WATCH)**: Automated Watch Duration countdown that verifies directly in-platform.`,
+    creator: `👥 **Admin & Manager Permissions & Roles Guide**
+Pickku secures campaigns through distinct role policies:
+- **Admin (ADMIN)**: Full capabilities to create, edit metadata, batch update missions, add individual missions, and permanently delete campaigns (cascading cleanup).
+- **Manager (MANAGER)**: Can create campaign drafts. Once created, Managers are **strictly limited to editing ONLY the Campaign Title and Description** to ensure consistency and prevent abuse. (Cannot edit missions or delete campaigns).`,
+    sns: `🤖 **Telegram & Discord Bot Invitation Guide**
+Setting up official verification bots is simple:
+- **Telegram Bot**: Search \`@Pickku_Official_bot\` and add it to your channel/group as an **Administrator** with basic permissions.
+- **Discord Bot**: Retrieve your Server ID under Developer Mode, save it inside campaign settings, and use the official Discord Invite Link to authorize the bot.`,
     default: `🤖 Hello! I am the **Pickku AI Helper**.
 Feel free to ask me anything about the platform, rewards, or raffle rules!
 💡 **Frequently Asked Topics**:
 - **About Platform**: Tell me more about Pickku.
+- **Provided Features**: What kind of missions and features does Pickku support?
+- **Creator Permission**: What is the difference between Admin and Manager controls?
 - **Reward System**: What kind of rewards can I get? (Other rewards)
 - **Raffle Modes**: What is the difference between Simple and Weighted Raffles?
-- **Point Withdrawal**: How do I withdraw points and are there any fees?`
+- **Point Withdrawal**: How do I withdraw points and are there any fees?
+- **Bot Setup Guide**: How do I invite and set up Telegram and Discord bots?`
   },
   pt: {
     platform: `🌟 **Apresentação da Plataforma Pickku**
@@ -140,13 +183,33 @@ Se você encontrar algum erro, tente os seguintes passos:
     thanks: `💖 De nada! Fico muito feliz em ajudar. ✨
 Se precisar de mais alguma coisa, basta abrir o chat novamente.
 Tenha um ótimo dia e boa sorte nos sorteios! 🚀`,
+    features: `⚙️ **Guia Completo de Recursos e Missões Pickku**
+A Pickku oferece suporte a vários tipos de missões interativas:
+1. **Visita de Link (LINK_VISIT)**: Visite uma página por tempo determinado.
+2. **Código Secreto (CODE)**: Digite um código secreto definido pelo criador.
+3. **Quizzes (QUIZ)**: Responda a perguntas de múltipla escolha.
+4. **Pesquisas (SURVEY)**: Responda a formulários personalizados de várias perguntas.
+5. **Envio de Arquivo (FILE_UPLOAD)**: Envie capturas de tela/arquivos para validação.
+6. **Check-In (CHECKIN)**: Confirmação rápida de presença.
+7. **Assistir no YouTube (YOUTUBE_WATCH)**: Contador automatizado que valida a visualização do vídeo na plataforma.`,
+    creator: `👥 **Guia de Permissões e Regras de Admin e Manager**
+A segurança das campanhas é garantida por políticas de funções:
+- **Admin (ADMIN)**: Permissão total de criação, edição de metadados, alteração de missões e exclusão permanente de campanhas.
+- **Manager (MANAGER)**: Pode criar rascunhos de campanhas. Uma vez criadas, os Managers estão **estritamente limitados a editar apenas o Título e a Descrição** para garantir consistência e evitar abusos.`,
+    sns: `🤖 **Guia de Convite de Bots para Telegram e Discord**
+A configuração dos nossos bots de verificação oficial é muito simples:
+- **Telegram Bot**: Adicione o \`@Pickku_Official_bot\` como **Administrador** no seu canal/grupo.
+- **Discord Bot**: Ative o Modo do Desenvolvedor para copiar o ID do Servidor, salve-o nas configurações e use o link de convite oficial para autorizar o bot no servidor.`,
     default: `🤖 Olá! Eu sou o **Assistente de IA da Pickku**.
 Sinta-se à vontade para perguntar qualquer coisa sobre a plataforma, prêmios ou regras de sorteio!
 💡 **Tópicos Populares**:
 - **Sobre a Plataforma**: O que é a Pickku?
+- **Missões e Recursos**: Que tipos de missões a Pickku suporta?
+- **Funções dos Criadores**: Qual a diferença entre Admin e Manager?
 - **Recompensas**: Que tipos de prêmios posso ganhar? (Outras recompensas)
 - **Modos de Sorteio**: Qual a diferença entre Sorteio Simples e Ponderado?
-- **Saque de Pontos**: Como sacar meus pontos e quais são as taxas?`
+- **Saque de Pontos**: Como sacar meus pontos e quais são as taxas?
+- **Guia de Configuração**: Como convidar e configurar bots no Telegram e Discord?`
   }
 };
 
@@ -203,7 +266,10 @@ function analyzeMessageOffline(message: string, locale: string): string {
     msg.includes("어떻게") ||
     msg.includes("깨는")
   ) {
-    return kb.quest;
+    // 만약 기능종류나 봇초대 등의 세부키워드가 겹치면 뒤로 패스
+    if (!msg.includes("기능") && !msg.includes("종류") && !msg.includes("권한") && !msg.includes("봇")) {
+      return kb.quest;
+    }
   }
 
   // 4. 보상 및 토큰 감지
@@ -262,7 +328,55 @@ function analyzeMessageOffline(message: string, locale: string): string {
     return kb.withdrawal;
   }
 
-  // 7. 에러, 오류, 1:1 문의 감지
+  // 7. 플랫폼 내 세부 미션 기능 종류 감지
+  if (
+    msg.includes("기능") ||
+    msg.includes("미션종류") ||
+    msg.includes("종류") ||
+    msg.includes("방문") ||
+    msg.includes("설문") ||
+    msg.includes("코드") ||
+    msg.includes("퀴즈") ||
+    msg.includes("시청") ||
+    msg.includes("features") ||
+    msg.includes("functions") ||
+    msg.includes("missions") ||
+    msg.includes("survey")
+  ) {
+    return kb.features;
+  }
+
+  // 8. 운영자 및 권한 체계 감지
+  if (
+    msg.includes("관리자") ||
+    msg.includes("매니저") ||
+    msg.includes("권한") ||
+    msg.includes("수정제한") ||
+    msg.includes("삭제") ||
+    msg.includes("어드민") ||
+    msg.includes("admin") ||
+    msg.includes("manager") ||
+    msg.includes("role") ||
+    msg.includes("permission")
+  ) {
+    return kb.creator;
+  }
+
+  // 9. 텔레그램/디스코드 봇 설정 감지
+  if (
+    msg.includes("봇") ||
+    msg.includes("초대") ||
+    msg.includes("텔레그램봇") ||
+    msg.includes("디스코드봇") ||
+    msg.includes("봇설정") ||
+    msg.includes("bot") ||
+    msg.includes("invite") ||
+    msg.includes("convite")
+  ) {
+    return kb.sns;
+  }
+
+  // 10. 에러, 오류, 1:1 문의 감지
   if (
     msg.includes("에러") ||
     msg.includes("오류") ||
@@ -280,7 +394,7 @@ function analyzeMessageOffline(message: string, locale: string): string {
     return kb.help;
   }
 
-  // 8. 감사 인사 및 리액션 감지
+  // 11. 감사 인사 및 리액션 감지
   if (
     msg.includes("고마") ||
     msg.includes("감사") ||
@@ -379,6 +493,21 @@ Here is the official knowledge:
 - Rewards: POINT (withdrawable 1:1, 0% fee), METAQ token, USDT/USDC stablecoins, and OTHER custom rewards (gift vouchers, coupons, physical gifts, etc., set by creators).
 - Raffle: Simple Raffle (equal random chance) and Weighted Raffle (more tickets completed = exponentially higher chance of winning).
 - Withdrawal: Handled in My Page, approved within 1-3 business days, absolutely 0% transaction fee for users.
+- Mission Types: 
+  * LINK_VISIT: Visit URL for a dwell duration in seconds.
+  * CODE: Paste and verify a secret code.
+  * QUIZ: Solve a multiple-choice question.
+  * SURVEY: Multi-question customizable forms (subjective/objective).
+  * FILE_UPLOAD: Upload screenshots/files for validation.
+  * CHECKIN: Attendance confirmations.
+  * YOUTUBE_WATCH: Paste video URL, auto-extracts video ID, watch for target duration (seconds) to verify in-player.
+  * SNS JOIN: YouTube Subscribe, YouTube Like, Telegram Group/Channel Join, Discord Server Join, Instagram Follow, and Instagram Like.
+- Creator Roles & Permissions:
+  * ADMIN: Fully manage campaigns, edit all metadata, batch edit missions, create individual missions, and permanently delete campaigns (cascading cleanup).
+  * MANAGER: Can create campaigns. Once created, strictly limited to editing ONLY campaign Title and Description to preserve integrity and prevent abuse.
+- SNS Bot invitation:
+  * Telegram: Add @Pickku_Official_bot to your channel/group as an Administrator to read member join status.
+  * Discord: Authorize official bot to join your server, configure your 18-digit Server ID in the campaign.
 
 IMPORTANT Guidelines:
 1. Always respond in the requested language: "${lang === "ko" ? "Korean" : lang === "pt" ? "Portuguese" : "English"}".
