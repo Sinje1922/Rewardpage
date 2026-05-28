@@ -608,6 +608,11 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
               <div v-else class="link-notice">
                 {{ $t('detail.snsNotLinked', { type: 'Telegram' }) }} <RouterLink to="/my-page">{{ $t('nav.myPage') }}</RouterLink>
               </div>
+              
+              <!-- 운영자용 텔레그램 봇 초대 안내 -->
+              <div v-if="auth.user && (auth.user.role === 'ADMIN' || auth.user.role === 'MANAGER')" class="operator-guide-link" style="margin-top: 0.75rem; font-size: 0.82rem; background: var(--bg-deep); padding: 0.6rem; border-radius: 8px; border: 1px dashed var(--border); text-align: left; line-height: 1.4;">
+                📢 <span style="font-weight: 700; color: var(--accent);">운영자 안내:</span> 텔레그램 검증이 작동하려면 내 채널/그룹에 픽쿠 공식 봇(<a href="https://t.me/Pickku_Official_bot" target="_blank" style="color: var(--accent); font-weight: 700; text-decoration: underline;">@Pickku_Official_bot</a>)을 <strong>관리자(Administrator)</strong>로 추가하셔야 합니다.
+              </div>
             </div>
           </template>
 
@@ -624,6 +629,11 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
               </div>
               <div v-else class="link-notice">
                 {{ $t('detail.snsNotLinked', { type: 'Discord' }) }} <RouterLink to="/my-page">{{ $t('nav.myPage') }}</RouterLink>
+              </div>
+              
+              <!-- 운영자용 디스코드 봇 초대 안내 -->
+              <div v-if="auth.user && (auth.user.role === 'ADMIN' || auth.user.role === 'MANAGER')" class="operator-guide-link" style="margin-top: 0.75rem; font-size: 0.82rem; background: var(--bg-deep); padding: 0.6rem; border-radius: 8px; border: 1px dashed var(--border); text-align: left; line-height: 1.4;">
+                👾 <span style="font-weight: 700; color: var(--accent);">운영자 안내:</span> 디스코드 검증이 작동하려면 내 서버에 픽쿠 공식 봇을 초대하셔야 합니다.<br/>👉 <a href="https://discord.com/oauth2/authorize?client_id=1498207511726264380&permissions=8&scope=bot" target="_blank" style="color: var(--accent); font-weight: 700; text-decoration: underline;">공식 봇 내 서버에 초대하기</a>
               </div>
             </div>
           </template>
