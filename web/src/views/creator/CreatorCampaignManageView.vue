@@ -102,6 +102,10 @@ const participants = ref<{ email: string; completed: number; status: string }[]>
 const winnersList = ref<{ email: string }[]>([])
 const submissionsList = ref<SubRow[]>([])
 const subLoading = ref(false)
+const subFilter = ref<'SURVEY' | 'FILE_UPLOAD'>('SURVEY')
+const filteredSubmissions = computed(() => {
+  return submissionsList.value.filter(s => s.mission.type === subFilter.value)
+})
 const err = ref('')
 const tab = ref<TabId>('compose')
 const saving = ref(false)
@@ -825,105 +829,127 @@ async function downloadCsv() {
       <div v-if="subLoading" style="color: var(--muted); padding: 1.5rem; text-align: center;">
         {{ $t('detail.loading') }}
       </div>
-      <div v-else-if="!submissionsList.length" style="color: var(--muted); padding: 1.5rem; text-align: center;">
-        제출된 내역이 없습니다.
-      </div>
-      <div v-else class="submission-list">
-        <div 
-          v-for="s in submissionsList" 
-          :key="s.id" 
-          class="sub-item"
-        >
-          <!-- Left side: User details & Mission details -->
-          <div class="sub-main">
-            <div class="sub-header">
-              <span class="user-nickname">{{ s.user.nickname || '익명' }}</span>
-              <span class="user-email">({{ s.user.email }})</span>
-              <span class="mission-badge">
-                <span class="m-icon">{{ typeIcons[s.mission.type] || '✨' }}</span>
-                {{ s.mission.title }}
-              </span>
-            </div>
-            
-            <!-- Payload Detail -->
-            <div class="sub-payload">
-              <!-- If SURVEY: Parse and display questions/answers beautifully -->
-              <template v-if="s.mission.type === 'SURVEY'">
-                <div class="survey-answers">
-                  <div 
-                    v-for="(ansStr, idx) in parseSurveyPayload(s)" 
-                    :key="idx" 
-                    class="survey-ans-row"
-                  >
-                    <span class="q-label">Q.</span>
-                    <div class="q-content">
-                      <div class="q-question">{{ ansStr.question }}</div>
-                      <div class="q-answer">{{ ansStr.answer }}</div>
+      <template v-else>
+        <!-- Sub-tabs for filtering by SURVEY or FILE_UPLOAD -->
+        <div class="sub-filter-tabs">
+          <button 
+            type="button" 
+            class="sub-filter-btn" 
+            :class="{ active: subFilter === 'SURVEY' }"
+            @click="subFilter = 'SURVEY'"
+          >
+            📝 설문조사 검수
+          </button>
+          <button 
+            type="button" 
+            class="sub-filter-btn" 
+            :class="{ active: subFilter === 'FILE_UPLOAD' }"
+            @click="subFilter = 'FILE_UPLOAD'"
+          >
+            📁 파일 업로드 검수
+          </button>
+        </div>
+
+        <div v-if="!filteredSubmissions.length" style="color: var(--muted); padding: 1.5rem; text-align: center;">
+          제출된 내역이 없습니다.
+        </div>
+        <div v-else class="submission-list">
+          <div 
+            v-for="s in filteredSubmissions" 
+            :key="s.id" 
+            class="sub-item"
+          >
+            <!-- Left side: User details & Mission details -->
+            <div class="sub-main">
+              <div class="sub-header">
+                <span class="user-nickname">{{ s.user.nickname || '익명' }}</span>
+                <span class="user-email">({{ s.user.email }})</span>
+                <span class="mission-badge">
+                  <span class="m-icon">{{ typeIcons[s.mission.type] || '✨' }}</span>
+                  {{ s.mission.title }}
+                </span>
+              </div>
+              
+              <!-- Payload Detail -->
+              <div class="sub-payload">
+                <!-- If SURVEY: Parse and display questions/answers beautifully -->
+                <template v-if="s.mission.type === 'SURVEY'">
+                  <div class="survey-answers">
+                    <div 
+                      v-for="(ansStr, idx) in parseSurveyPayload(s)" 
+                      :key="idx" 
+                      class="survey-ans-row"
+                    >
+                      <span class="q-label">Q.</span>
+                      <div class="q-content">
+                        <div class="q-question">{{ ansStr.question }}</div>
+                        <div class="q-answer">{{ ansStr.answer }}</div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </template>
-              
-              <!-- If FILE_UPLOAD: Display download link and image preview -->
-              <template v-else-if="s.mission.type === 'FILE_UPLOAD'">
-                <div class="file-upload-payload">
-                  <div class="file-link-container">
-                    <span class="file-icon">📁</span>
-                    <a :href="getFileUrl(getFileUrlFromPayload(s))" target="_blank" class="file-link">
-                      제출된 파일 열기
-                    </a>
+                </template>
+                
+                <!-- If FILE_UPLOAD: Display download link and image preview -->
+                <template v-else-if="s.mission.type === 'FILE_UPLOAD'">
+                  <div class="file-upload-payload">
+                    <div class="file-link-container">
+                      <span class="file-icon">📁</span>
+                      <a :href="getFileUrl(getFileUrlFromPayload(s))" target="_blank" class="file-link">
+                        제출된 파일 열기
+                      </a>
+                    </div>
+                    <!-- Show image preview if image -->
+                    <div v-if="isImageFile(getFileUrlFromPayload(s))" class="image-preview-container">
+                      <img :src="getFileUrl(getFileUrlFromPayload(s))" alt="제출 파일 미리보기" class="image-preview-img" />
+                    </div>
                   </div>
-                  <!-- Show image preview if image -->
-                  <div v-if="isImageFile(getFileUrlFromPayload(s))" class="image-preview-container">
-                    <img :src="getFileUrl(getFileUrlFromPayload(s))" alt="제출 파일 미리보기" class="image-preview-img" />
+                </template>
+                
+                <!-- Default payload parser -->
+                <template v-else>
+                  <div class="default-payload-text">
+                    {{ parsePayloadDetail(s) }}
                   </div>
-                </div>
-              </template>
+                </template>
+              </div>
               
-              <!-- Default payload parser -->
-              <template v-else>
-                <div class="default-payload-text">
-                  {{ parsePayloadDetail(s) }}
-                </div>
-              </template>
+              <div class="sub-meta">
+                제출 일시: {{ new Date(s.createdAt).toLocaleString() }}
+              </div>
             </div>
             
-            <div class="sub-meta">
-              제출 일시: {{ new Date(s.createdAt).toLocaleString() }}
-            </div>
-          </div>
-          
-          <!-- Right side: Status and actions -->
-          <div class="sub-actions">
-            <!-- Status Badge -->
-            <div class="status-badge-container">
-              <span class="status-badge" :class="s.status.toLowerCase()">
-                {{ s.status === 'PENDING' ? '검수 대기' : s.status === 'APPROVED' ? '승인 완료' : '반려됨' }}
-              </span>
-            </div>
-            
-            <!-- Action Buttons -->
-            <div class="action-btn-group">
-              <button 
-                type="button" 
-                class="btn-approve" 
-                :disabled="s.status === 'APPROVED'" 
-                @click="updateSubmissionStatus(s.id, 'APPROVED')"
-              >
-                ✓ 승인
-              </button>
-              <button 
-                type="button" 
-                class="btn-reject" 
-                :disabled="s.status === 'REJECTED'" 
-                @click="updateSubmissionStatus(s.id, 'REJECTED')"
-              >
-                ✕ 반려
-              </button>
+            <!-- Right side: Status and actions -->
+            <div class="sub-actions">
+              <!-- Status Badge -->
+              <div class="status-badge-container">
+                <span class="status-badge" :class="s.status.toLowerCase()">
+                  {{ s.status === 'PENDING' ? '검수 대기' : s.status === 'APPROVED' ? '승인 완료' : '반려됨' }}
+                </span>
+              </div>
+              
+              <!-- Action Buttons -->
+              <div class="action-btn-group">
+                <button 
+                  type="button" 
+                  class="btn-approve" 
+                  :disabled="s.status === 'APPROVED'" 
+                  @click="updateSubmissionStatus(s.id, 'APPROVED')"
+                >
+                  ✓ 승인
+                </button>
+                <button 
+                  type="button" 
+                  class="btn-reject" 
+                  :disabled="s.status === 'REJECTED'" 
+                  @click="updateSubmissionStatus(s.id, 'REJECTED')"
+                >
+                  ✕ 반려
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </template>
     </section>
   </div>
   <p v-else-if="err && !camp" class="err">{{ err }}</p>
@@ -1261,6 +1287,36 @@ async function downloadCsv() {
 .btn-approve:disabled, .btn-reject:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+
+/* Sub Filter Tabs */
+.sub-filter-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.75rem;
+}
+.sub-filter-btn {
+  padding: 0.55rem 1.1rem;
+  border: none;
+  background: transparent;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+}
+.sub-filter-btn:hover {
+  color: var(--text-h);
+  background: var(--bg-deep);
+}
+.sub-filter-btn.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
 }
 
 @media (max-width: 768px) {
