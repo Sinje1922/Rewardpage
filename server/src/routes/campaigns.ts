@@ -76,6 +76,7 @@ const campaignFieldsSchema = z.object({
   rewardsConfig: z.array(z.object({ amount: z.number().nonnegative(), currency: z.string(), customCurrency: z.string().optional() })).optional(),
   startsAt: z.string().datetime().optional().nullable(),
   endsAt: z.string().datetime().optional().nullable(),
+  drawAt: z.string().datetime().optional().nullable(),
 });
 
 const createCampaignSchema = campaignFieldsSchema.extend({
@@ -135,6 +136,7 @@ router.post("/", authRequired, requireRoles("MANAGER", "ADMIN"), async (req: Aut
           autoApprove: b.autoApprove ?? true,
           startsAt: b.startsAt ? new Date(b.startsAt) : null,
           endsAt: b.endsAt ? new Date(b.endsAt) : null,
+          drawAt: b.drawAt ? new Date(b.drawAt) : null,
           status: req.user!.role === "ADMIN" ? "ACTIVE" : "DRAFT",
         },
       });
@@ -239,7 +241,8 @@ router.patch("/:id", authRequired, async (req: AuthedRequest, res) => {
     b.rewardCurrency !== undefined ||
     b.rewardsConfig !== undefined ||
     b.startsAt !== undefined ||
-    b.endsAt !== undefined;
+    b.endsAt !== undefined ||
+    b.drawAt !== undefined;
 
   if (hasMeta) {
     await prisma.campaign.update({
@@ -258,6 +261,7 @@ router.patch("/:id", authRequired, async (req: AuthedRequest, res) => {
         ...(b.rewardsConfig !== undefined && { rewardsConfig: JSON.stringify(b.rewardsConfig) }),
         ...(b.startsAt !== undefined && { startsAt: b.startsAt ? new Date(b.startsAt) : null }),
         ...(b.endsAt !== undefined && { endsAt: b.endsAt ? new Date(b.endsAt) : null }),
+        ...(b.drawAt !== undefined && { drawAt: b.drawAt ? new Date(b.drawAt) : null }),
       },
     });
   }

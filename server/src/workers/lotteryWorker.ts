@@ -17,14 +17,25 @@ async function runWorkerTask() {
   try {
     const now = new Date();
     
-    // 종료 시간이 지났고, 상태가 ACTIVE인 캠페인 조회
+    // 추첨 예정 시간이 지났거나 (endsAt 기준 자동추첨 대상 포함) 상태가 ACTIVE인 캠페인 조회
     const endedCampaigns = await prisma.campaign.findMany({
       where: {
         status: "ACTIVE",
-        endsAt: {
-          lte: now,
-          not: null,
-        },
+        OR: [
+          {
+            drawAt: {
+              lte: now,
+              not: null,
+            },
+          },
+          {
+            drawAt: null,
+            endsAt: {
+              lte: now,
+              not: null,
+            },
+          },
+        ],
       },
       select: { id: true, title: true }
     });

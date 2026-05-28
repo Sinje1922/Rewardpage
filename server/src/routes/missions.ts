@@ -54,8 +54,7 @@ router.post("/:id/submit", authRequired, async (req: AuthedRequest, res) => {
   }
   console.log(`[Mission Success] User ${req.user!.id} completed mission ${mission.id} (${mission.type}).`);
 
-  const isManualReviewRequired = mission.type === "SURVEY" || mission.type === "FILE_UPLOAD";
-  const status = (camp.autoApprove && !isManualReviewRequired) ? "APPROVED" : "PENDING";
+  const status = camp.autoApprove ? "APPROVED" : "PENDING";
 
   const sub = await prisma.submission.upsert({
     where: { userId_missionId: { userId: req.user!.id, missionId: mission.id } },

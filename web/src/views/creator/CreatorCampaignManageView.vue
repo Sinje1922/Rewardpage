@@ -40,6 +40,7 @@ type CampaignDetail = {
   autoApprove: boolean
   startsAt: string | null
   endsAt: string | null
+  drawAt: string | null
   missions: Mission[]
 }
 
@@ -193,6 +194,7 @@ const draftAutoApprove = ref(true)
 const draftRewards = ref<{ amount: number; currency: string; customCurrency?: string }[]>([{ amount: 0, currency: 'POINT' }])
 const draftStartsAt = ref('')
 const draftEndsAt = ref('')
+const draftDrawAt = ref('')
 const missionRows = ref<MissionRowState[]>([emptyMissionRow(0)])
 
 
@@ -219,6 +221,7 @@ function syncDraftFromCamp() {
   }
   draftStartsAt.value = c.startsAt ? toLocalInput(c.startsAt) : ''
   draftEndsAt.value = c.endsAt ? toLocalInput(c.endsAt) : ''
+  draftDrawAt.value = c.drawAt ? toLocalInput(c.drawAt) : ''
   missionRows.value =
     c.missions?.length ? c.missions.map((m) => apiMissionToRow(m)) : [emptyMissionRow(0)]
 }
@@ -355,6 +358,7 @@ async function saveDraft() {
         rewardsConfig: draftRewards.value,
         startsAt: draftStartsAt.value ? new Date(draftStartsAt.value).toISOString() : null,
         endsAt: draftEndsAt.value ? new Date(draftEndsAt.value).toISOString() : null,
+        drawAt: draftDrawAt.value ? new Date(draftDrawAt.value).toISOString() : null,
         missions,
       })
     }
@@ -763,7 +767,7 @@ async function downloadCsv() {
             </p>
           </div>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem">
           <div class="field">
             <label>{{ $t('ops.startsAt') }}</label>
             <input v-model="draftStartsAt" type="datetime-local" />
@@ -771,6 +775,10 @@ async function downloadCsv() {
           <div class="field">
             <label>{{ $t('ops.endsAt') }}</label>
             <input v-model="draftEndsAt" type="datetime-local" />
+          </div>
+          <div class="field">
+            <label>추첨 예정 일시</label>
+            <input v-model="draftDrawAt" type="datetime-local" />
           </div>
         </div>
 

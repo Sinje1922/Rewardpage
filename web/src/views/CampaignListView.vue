@@ -26,6 +26,7 @@ type Campaign = {
   rewardsConfig: string;
   startsAt: string | null;
   endsAt: string | null;
+  drawAt?: string | null;
   missions?: { id: string; type?: string }[];
 };
 

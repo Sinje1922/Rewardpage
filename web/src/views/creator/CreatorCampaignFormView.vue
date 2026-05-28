@@ -22,6 +22,7 @@ const autoApprove = ref(true)
 const rewards = ref<{ amount: number; currency: string; customCurrency?: string }[]>([{ amount: 0, currency: 'POINT' }])
 const startsAt = ref('')
 const endsAt = ref('')
+const drawAt = ref('')
 const missionRows = ref<MissionRowState[]>([emptyMissionRow(0)])
 const err = ref('')
 
@@ -369,6 +370,7 @@ function saveToLocalStorage() {
     autoApprove: autoApprove.value,
     startsAt: startsAt.value,
     endsAt: endsAt.value,
+    drawAt: drawAt.value,
     rewardImageUrl: rewardImageUrl.value,
     rewards: JSON.parse(JSON.stringify(rewards.value)),
     missionRows: JSON.parse(JSON.stringify(missionRows.value))
@@ -389,6 +391,7 @@ function restoreForm() {
   autoApprove.value = data.autoApprove !== undefined ? data.autoApprove : true
   startsAt.value = data.startsAt || ''
   endsAt.value = data.endsAt || ''
+  drawAt.value = data.drawAt || ''
   rewardImageUrl.value = data.rewardImageUrl || ''
   rewards.value = data.rewards || [{ amount: 0, currency: 'POINT' }]
   missionRows.value = data.missionRows || [emptyMissionRow(0)]
@@ -469,6 +472,7 @@ async function save() {
       rewardsConfig: rewards.value,
       startsAt: startsAt.value ? new Date(startsAt.value).toISOString() : null,
       endsAt: endsAt.value ? new Date(endsAt.value).toISOString() : null,
+      drawAt: drawAt.value ? new Date(drawAt.value).toISOString() : null,
       missions,
     })
     localStorage.removeItem('temp_campaign_form')
@@ -613,7 +617,7 @@ async function save() {
             {{ $t('ops.autoApprove') }}
           </label>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem">
             <div class="field">
               <label>{{ $t('ops.startsAt') }}</label>
               <input v-model="startsAt" type="datetime-local" />
@@ -621,6 +625,10 @@ async function save() {
             <div class="field">
               <label>{{ $t('ops.endsAt') }}</label>
               <input v-model="endsAt" type="datetime-local" />
+            </div>
+            <div class="field">
+              <label>추첨 예정 일시</label>
+              <input v-model="drawAt" type="datetime-local" />
             </div>
           </div>
 

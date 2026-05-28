@@ -27,6 +27,7 @@ type CampaignDetail = {
   rewardsConfig: string
   startsAt: string | null
   endsAt: string | null
+  drawAt: string | null
   missions: Mission[]
   mySubmissions?: { missionId: string; status: string }[]
 }
@@ -480,6 +481,9 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
             start: camp.startsAt ? new Date(camp.startsAt).toLocaleString() : $t('detail.always'),
             end: camp.endsAt ? new Date(camp.endsAt).toLocaleString() : $t('campaign.durationUntilEnd')
           }) }}
+        </div>
+        <div v-if="camp.drawAt" class="period-text" style="margin-top: 0.25rem; color: var(--accent); font-weight: 700">
+          🎁 추첨 예정 일시: {{ new Date(camp.drawAt).toLocaleString() }}
         </div>
       </div>
     </div>

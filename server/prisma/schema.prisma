@@ -26,6 +26,7 @@ model campaign {
   creatorId         String
   startsAt          DateTime?
   endsAt            DateTime?
+  drawAt            DateTime?
   winnerCount       Int       @default(1)
   lotteryMode       String    @default("SIMPLE")
   autoApprove       Boolean   @default(true)
