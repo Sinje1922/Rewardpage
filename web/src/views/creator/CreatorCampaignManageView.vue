@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../../stores/auth'
 import { api, getFileUrl } from '../../api/client'
@@ -75,6 +75,7 @@ type TabId = 'compose' | 'stats' | 'participants' | 'winners'
 
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 const stats = ref<CampaignStats | null>(null)
 const camp = ref<CampaignDetail | null>(null)
@@ -91,7 +92,7 @@ const isDraftLike = computed(
 )
 
 const isEditable = computed(
-  () => isDraftLike.value || auth.user?.role === 'ADMIN'
+  () => auth.user?.role === 'ADMIN' || (isDraftLike.value && auth.user?.role !== 'MANAGER')
 )
 
 const draftCompanyName = ref('')
@@ -230,34 +231,47 @@ function removeDraftReward(index: number) {
 
 async function saveDraft() {
   err.value = ''
-  const v = validateRows(missionRows.value)
-  if (v) {
-    err.value = v
-    return
+  
+  // 매니저는 오직 제목과 설명만 패치하므로 미션 유효성 검사 불필요
+  if (auth.user?.role !== 'MANAGER') {
+    const v = validateRows(missionRows.value)
+    if (v) {
+      err.value = v
+      return
+    }
   }
+  
   if (!draftTitle.value.trim()) {
     err.value = t('ops.titleRequired')
     return
   }
   const id = route.params.id as string
-  const missions = missionRows.value.map((r, i) => rowToPayload(r, i))
   saving.value = true
   try {
-    await api.patch(`/campaigns/${id}`, {
-      title: draftTitle.value.trim(),
-      description: draftDescription.value,
-      companyName: draftCompanyName.value.trim(),
-      companyLogoUrl: draftCompanyLogo.value.trim(),
-      winnerCount: draftWinnerCount.value,
-      lotteryMode: draftLotteryMode.value,
-      autoApprove: draftAutoApprove.value,
-      totalRewardPoints: draftRewards.value[0]?.amount || 0,
-      rewardCurrency: draftRewards.value[0]?.currency || "POINT",
-      rewardsConfig: draftRewards.value,
-      startsAt: draftStartsAt.value ? new Date(draftStartsAt.value).toISOString() : null,
-      endsAt: draftEndsAt.value ? new Date(draftEndsAt.value).toISOString() : null,
-      missions,
-    })
+    const payload: any = {}
+    if (auth.user?.role === 'MANAGER') {
+      payload.title = draftTitle.value.trim()
+      payload.description = draftDescription.value
+    } else {
+      const missions = missionRows.value.map((r, i) => rowToPayload(r, i))
+      Object.assign(payload, {
+        title: draftTitle.value.trim(),
+        description: draftDescription.value,
+        companyName: draftCompanyName.value.trim(),
+        companyLogoUrl: draftCompanyLogo.value.trim(),
+        winnerCount: draftWinnerCount.value,
+        lotteryMode: draftLotteryMode.value,
+        autoApprove: draftAutoApprove.value,
+        totalRewardPoints: draftRewards.value[0]?.amount || 0,
+        rewardCurrency: draftRewards.value[0]?.currency || "POINT",
+        rewardsConfig: draftRewards.value,
+        startsAt: draftStartsAt.value ? new Date(draftStartsAt.value).toISOString() : null,
+        endsAt: draftEndsAt.value ? new Date(draftEndsAt.value).toISOString() : null,
+        missions,
+      })
+    }
+
+    await api.patch(`/campaigns/${id}`, payload)
     await reload()
   } catch (e: unknown) {
     const ax = e as { response?: { data?: { error?: any } } }
@@ -271,6 +285,26 @@ async function saveDraft() {
       err.value = t('ops.saveFail')
     }
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  } finally {
+    saving.value = false
+  }
+}
+
+async function deleteCampaign() {
+  if (!camp.value) return
+  const confirmMsg = "⚠️ 경고: 캠페인을 삭제하면 해당 캠페인의 모든 미션, 참가 제출(submissions) 및 당첨자(winners) 데이터가 영구적으로 삭제되며 복구할 수 없습니다.\n\n정말로 이 캠페인을 삭제하시겠습니까?"
+  if (!confirm(confirmMsg)) return
+
+  saving.value = true
+  err.value = ''
+  try {
+    await api.delete(`/campaigns/${camp.value.id}`)
+    alert("캠페인이 성공적으로 삭제되었습니다.")
+    router.push('/ops')
+  } catch (e: unknown) {
+    console.error("Failed to delete campaign:", e)
+    const ax = e as { response?: { data?: { error?: string } } }
+    alert(ax.response?.data?.error || "캠페인 삭제에 실패했습니다.")
   } finally {
     saving.value = false
   }
@@ -647,9 +681,21 @@ async function downloadCsv() {
         <MissionListEditor v-model="missionRows" />
       </template>
 
-      <button type="button" class="btn primary" style="margin-top: 1rem" :disabled="saving" @click="saveDraft">
-        {{ saving ? $t('ops.saving') : $t('ops.saveDraft') }}
-      </button>
+      <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem; align-items: center;">
+        <button type="button" class="btn primary" :disabled="saving" @click="saveDraft">
+          {{ saving ? $t('ops.saving') : $t('ops.saveDraft') }}
+        </button>
+        <button
+          v-if="auth.user?.role === 'ADMIN'"
+          type="button"
+          class="btn"
+          style="background-color: var(--danger, #ef4444); color: white; border: none; font-weight: 800;"
+          :disabled="saving"
+          @click="deleteCampaign"
+        >
+          🗑️ 캠페인 삭제
+        </button>
+      </div>
     </section>
 
     <section v-if="tab === 'participants'" class="card">

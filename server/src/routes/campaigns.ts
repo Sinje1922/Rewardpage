@@ -187,6 +187,21 @@ router.patch("/:id", authRequired, async (req: AuthedRequest, res) => {
     return;
   }
   const b = parsed.data;
+
+  // MANAGER는 오직 캠페인 제목(title)과 설명(description)만 수정 가능
+  if (req.user!.role === "MANAGER") {
+    if (b.missions !== undefined) {
+      res.status(403).json({ error: "매니저는 미션을 수정할 수 없습니다. 관리자에게 문의하세요." });
+      return;
+    }
+    const keys = Object.keys(b).filter(k => b[k as keyof typeof b] !== undefined);
+    const invalidKeys = keys.filter(k => k !== "title" && k !== "description");
+    if (invalidKeys.length > 0) {
+      res.status(403).json({ error: "매니저는 캠페인의 제목과 내용(설명)만 수정할 수 있습니다." });
+      return;
+    }
+  }
+
   const isAdmin = req.user!.role === "ADMIN";
 
   if (b.missions !== undefined) {
@@ -257,20 +272,11 @@ router.patch("/:id", authRequired, async (req: AuthedRequest, res) => {
   res.json(full);
 });
 
-router.post("/:id/missions", authRequired, async (req: AuthedRequest, res) => {
+router.post("/:id/missions", authRequired, requireRoles("ADMIN"), async (req: AuthedRequest, res) => {
   const cid = String(req.params.id);
   const c = await prisma.campaign.findUnique({ where: { id: cid } });
   if (!c) {
     res.status(404).json({ error: "Not found" });
-    return;
-  }
-  if (!isOperator(req.user!.role)) {
-    res.status(403).json({ error: "운영자만 미션을 만들 수 있습니다." });
-    return;
-  }
-  // MANAGER는 본인 캠페인에만 미션 추가 가능
-  if (req.user!.role === "MANAGER" && c.creatorId !== req.user!.id) {
-    res.status(403).json({ error: "본인이 생성한 캠페인에만 미션을 추가할 수 있습니다." });
     return;
   }
   const parsed = missionInputSchema.safeParse(req.body);
@@ -569,5 +575,22 @@ function formatPayloadForCsv(type: string, payloadStr: string): string {
     return payloadStr;
   }
 }
+
+router.delete("/:id", authRequired, requireRoles("ADMIN"), async (req: AuthedRequest, res) => {
+  const cid = String(req.params.id);
+  const c = await prisma.campaign.findUnique({ where: { id: cid } });
+  if (!c) {
+    res.status(404).json({ error: "캠페인을 찾을 수 없습니다." });
+    return;
+  }
+
+  try {
+    await prisma.campaign.delete({ where: { id: cid } });
+    res.json({ success: true, message: "캠페인이 성공적으로 삭제되었습니다." });
+  } catch (err: any) {
+    console.error("Campaign Delete Error:", err);
+    res.status(500).json({ error: "캠페인 삭제 중 서버 오류가 발생했습니다." });
+  }
+});
 
 export default router;
