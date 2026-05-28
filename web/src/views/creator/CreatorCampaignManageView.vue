@@ -260,8 +260,17 @@ async function saveDraft() {
     })
     await reload()
   } catch (e: unknown) {
-    const ax = e as { response?: { data?: { error?: string } } }
-    err.value = ax.response?.data?.error ?? t('ops.saveFail')
+    const ax = e as { response?: { data?: { error?: any } } }
+    const resErr = ax.response?.data?.error
+    if (typeof resErr === 'string') {
+      err.value = resErr
+    } else if (resErr && typeof resErr === 'object') {
+      err.value = t('ops.saveFail') + ' (입력값을 다시 확인해 주세요)'
+      console.error("Save Error:", resErr)
+    } else {
+      err.value = t('ops.saveFail')
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   } finally {
     saving.value = false
   }
