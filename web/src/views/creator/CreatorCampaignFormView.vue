@@ -848,7 +848,7 @@ const checkRewardOverflow = (event: MouseEvent) => {
                 </div>
                 <div class="browser-address">
                   <span class="lock-icon">🔒</span>
-                  <span class="url-text">pickku.com/campaigns/{{ title ? encodeURIComponent(title.toLowerCase().replace(/\s+/g, '-')) : 'preview' }}</span>
+                  <span class="url-text">pickku.com/campaigns/{{ title ? title.toLowerCase().replace(/\s+/g, '-') : 'preview' }}</span>
                 </div>
               </div>
               
@@ -1640,6 +1640,7 @@ const checkRewardOverflow = (event: MouseEvent) => {
 
 .browser-address {
   flex: 1;
+  min-width: 0;
   background: rgba(255, 255, 255, 0.6);
   border-radius: 8px;
   padding: 0.35rem 1rem;
@@ -1652,6 +1653,13 @@ const checkRewardOverflow = (event: MouseEvent) => {
   gap: 0.4rem;
   max-width: 320px;
   margin: 0 auto;
+}
+
+.browser-address .url-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 :root.dark .browser-address {
