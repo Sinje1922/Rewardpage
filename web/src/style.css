@@ -11,6 +11,7 @@
   --panel: rgba(255, 255, 255, 0.75);
   --border: rgba(220, 215, 230, 0.6);
   --code-bg: #f0edf5;
+  --bg-card: rgba(255, 255, 255, 0.9);
 
   --accent: #6c5ce7;
   --accent-bright: #a29bfe;
@@ -65,6 +66,7 @@ strong, b {
   --panel: rgba(17, 24, 39, 0.85);
   --border: rgba(55, 65, 81, 0.4);
   --code-bg: #1f2937;
+  --bg-card: rgba(17, 24, 39, 0.85);
   --accent: #818cf8;
   --accent-bright: #a5b4fc;
   --accent-soft: rgba(129, 140, 248, 0.15);
