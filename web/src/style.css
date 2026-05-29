@@ -51,6 +51,16 @@ input, select, textarea, button {
   font: inherit;
 }
 
+select option {
+  background-color: #ffffff;
+  color: #1a1523;
+}
+
+:root.dark select option {
+  background-color: #1e293b;
+  color: #ffffff;
+}
+
 strong, b {
   color: var(--text-h);
 }
