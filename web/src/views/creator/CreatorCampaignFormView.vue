@@ -492,6 +492,29 @@ async function save() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
+
+const isRewardOverflowing = ref(false)
+
+const checkRewardOverflow = (event: MouseEvent) => {
+  const n = financialRewardsList.value.length
+  if (n <= 1) {
+    isRewardOverflowing.value = false
+    return
+  }
+  const card = event.currentTarget as HTMLElement
+  const container = card.querySelector('.reward-scroll-container')
+  const track = card.querySelector('.reward-scroll-track')
+  if (container && track) {
+    const badges = track.querySelectorAll('.reward-wrap')
+    let totalWidth = 0
+    const gap = 8
+    for (let i = 0; i < n && i < badges.length; i++) {
+      totalWidth += (badges[i] as HTMLElement).offsetWidth
+      if (i > 0) totalWidth += gap
+    }
+    isRewardOverflowing.value = totalWidth > container.clientWidth
+  }
+}
 </script>
 
 <template>
@@ -729,7 +752,7 @@ async function save() {
           <section class="card preview-card-box">
             <h2 class="section-title">📂 {{ locale === 'ko' ? '목록 카드 미리보기' : locale === 'pt' ? 'Visualização do Cartão' : 'List Card Preview' }}</h2>
             
-            <div class="campaign-card-premium card preview-simulated-card">
+            <div class="campaign-card-premium card preview-simulated-card" @mouseenter="checkRewardOverflow($event)">
               <!-- Brand Header (Circular brand logo, brand name, D-day badge) -->
               <div class="card-brand-header">
                 <div class="company-brand-info">
@@ -757,7 +780,7 @@ async function save() {
                   <!-- Row 1: Financial Rewards (POINT, USDT, BRL, METAQ) -->
                   <div v-if="hasFinancialRewards" class="reward-row-wrap financial-row">
                     <div class="reward-scroll-container">
-                      <div class="reward-scroll-track" :class="{ 'marquee-active': financialRewardsList.length > 1 }" :style="{ '--marquee-duration': (financialRewardsList.length * 5) + 's' }">
+                      <div class="reward-scroll-track" :class="{ 'marquee-active': isRewardOverflowing }" :style="{ '--marquee-duration': (financialRewardsList.length * 5) + 's' }">
                         <!-- First set -->
                         <div 
                           v-for="(r, rIdx) in financialRewardsList" 
@@ -767,8 +790,8 @@ async function save() {
                           <span class="coin-icon">{{ getCurrencyEmoji(r.currency) }}</span>
                           <span class="reward-val">{{ formatRewardText(r) }}</span>
                         </div>
-                        <!-- Duplicated set for seamless marquee loop (only when count > 1) -->
-                        <template v-if="financialRewardsList.length > 1">
+                        <!-- Duplicated set for seamless marquee loop (only when count > 1 and overflows) -->
+                        <template v-if="isRewardOverflowing">
                           <div 
                             v-for="(r, rIdx) in financialRewardsList" 
                             :key="'f2-' + rIdx" 

@@ -391,6 +391,30 @@ const slideRight = () => {
     viewportRef.value.scrollBy({ left: viewportRef.value.offsetWidth, behavior: "smooth" });
   }
 };
+
+const overflowCampaigns = ref<Record<string, boolean>>({});
+
+const checkRewardOverflow = (campaignId: string, event: MouseEvent, campaign: Campaign) => {
+  const rewards = getFinancialRewardsList(campaign);
+  const n = rewards.length;
+  if (n <= 1) {
+    overflowCampaigns.value[campaignId] = false;
+    return;
+  }
+  const card = event.currentTarget as HTMLElement;
+  const container = card.querySelector('.reward-scroll-container');
+  const track = card.querySelector('.reward-scroll-track');
+  if (container && track) {
+    const badges = track.querySelectorAll('.reward-wrap');
+    let totalWidth = 0;
+    const gap = 8;
+    for (let i = 0; i < n && i < badges.length; i++) {
+      totalWidth += (badges[i] as HTMLElement).offsetWidth;
+      if (i > 0) totalWidth += gap;
+    }
+    overflowCampaigns.value[campaignId] = totalWidth > container.clientWidth;
+  }
+};
 </script>
 
 <template>
@@ -534,6 +558,7 @@ const slideRight = () => {
             boxShadow: '0 10px 25px rgba(0, 0, 0, 0.02)'
           }"
           @click="router.push(`/campaigns/${c.id}`)"
+          @mouseenter="checkRewardOverflow(c.id, $event, c)"
         >
           <!-- Brand Header (Circular brand logo, brand name, D-day badge) -->
           <div class="card-brand-header">
@@ -562,7 +587,7 @@ const slideRight = () => {
               <!-- Row 1: Financial Rewards (POINT, USDT, BRL, METAQ) -->
               <div v-if="hasFinancialRewards(c)" class="reward-row-wrap financial-row">
                 <div class="reward-scroll-container">
-                  <div class="reward-scroll-track" :class="{ 'marquee-active': getFinancialRewardsList(c).length > 1 }" :style="{ '--marquee-duration': (getFinancialRewardsList(c).length * 5) + 's' }">
+                  <div class="reward-scroll-track" :class="{ 'marquee-active': overflowCampaigns[c.id] }" :style="{ '--marquee-duration': (getFinancialRewardsList(c).length * 5) + 's' }">
                     <!-- First set -->
                     <div 
                       v-for="(r, rIdx) in getFinancialRewardsList(c)" 
@@ -572,8 +597,8 @@ const slideRight = () => {
                       <span class="coin-icon">{{ getCurrencyEmoji(r.currency) }}</span>
                       <span class="reward-val">{{ formatRewardText(r, c) }}</span>
                     </div>
-                    <!-- Duplicated set for seamless marquee loop (only when count > 1) -->
-                    <template v-if="getFinancialRewardsList(c).length > 1">
+                    <!-- Duplicated set for seamless marquee loop (only when count > 1 and overflows) -->
+                    <template v-if="overflowCampaigns[c.id]">
                       <div 
                         v-for="(r, rIdx) in getFinancialRewardsList(c)" 
                         :key="'f2-' + rIdx" 
