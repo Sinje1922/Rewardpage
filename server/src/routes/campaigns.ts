@@ -36,6 +36,41 @@ router.get("/", authOptional, async (req: AuthedRequest, res) => {
   res.json(list);
 });
 
+router.get("/active-avatars", authOptional, async (req: AuthedRequest, res) => {
+  try {
+    const dbUsers = await prisma.user.findMany({
+      where: {
+        NOT: [
+          { avatarUrl: null },
+          { avatarUrl: "" }
+        ]
+      },
+      select: {
+        avatarUrl: true
+      }
+    });
+
+    const DEFAULT_AVATARS = [
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80",
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80",
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80",
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=100&q=80",
+      "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=100&q=80"
+    ];
+
+    const realAvatars = dbUsers.map(u => u.avatarUrl).filter(Boolean) as string[];
+    const combined = [...realAvatars, ...DEFAULT_AVATARS];
+    const unique = Array.from(new Set(combined));
+    const shuffled = unique.sort(() => 0.5 - Math.random()).slice(0, 3);
+
+    res.json(shuffled);
+  } catch (e) {
+    console.error(e);
+    res.json([]);
+  }
+});
+
 const missionInputSchema = z.object({
   type: z.enum([
     "LINK_VISIT",
@@ -497,41 +532,6 @@ router.get("/:id", authOptional, async (req: AuthedRequest, res) => {
     });
   }
   res.json({ ...c, mySubmissions });
-});
-
-router.get("/active-avatars", authOptional, async (req: AuthedRequest, res) => {
-  try {
-    const dbUsers = await prisma.user.findMany({
-      where: {
-        NOT: [
-          { avatarUrl: null },
-          { avatarUrl: "" }
-        ]
-      },
-      select: {
-        avatarUrl: true
-      }
-    });
-
-    const DEFAULT_AVATARS = [
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80",
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80",
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80",
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=100&q=80",
-      "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=100&q=80"
-    ];
-
-    const realAvatars = dbUsers.map(u => u.avatarUrl).filter(Boolean) as string[];
-    const combined = [...realAvatars, ...DEFAULT_AVATARS];
-    const unique = Array.from(new Set(combined));
-    const shuffled = unique.sort(() => 0.5 - Math.random()).slice(0, 3);
-
-    res.json(shuffled);
-  } catch (e) {
-    console.error(e);
-    res.json([]);
-  }
 });
 
 router.get("/:id/export", authRequired, async (req: AuthedRequest, res) => {
