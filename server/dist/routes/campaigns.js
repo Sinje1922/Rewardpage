@@ -45,8 +45,10 @@ const missionInputSchema = z.object({
         "YOUTUBE_WATCH",
         "YOUTUBE_SUBSCRIBE",
         "YOUTUBE_LIKE",
+        "TELEGRAM_JOIN",
         "TELEGRAM_CHANNEL",
         "TELEGRAM_GROUP",
+        "DISCORD_JOIN",
         "INSTAGRAM_FOLLOW",
         "INSTAGRAM_LIKE"
     ]),
@@ -69,6 +71,7 @@ const campaignFieldsSchema = z.object({
     rewardsConfig: z.array(z.object({ amount: z.number().nonnegative(), currency: z.string(), customCurrency: z.string().optional() })).optional(),
     startsAt: z.string().datetime().optional().nullable(),
     endsAt: z.string().datetime().optional().nullable(),
+    drawAt: z.string().datetime().optional().nullable(),
 });
 const createCampaignSchema = campaignFieldsSchema.extend({
     missions: z.array(missionInputSchema).min(1, "미션을 1개 이상 구성해 주세요."),
@@ -124,6 +127,7 @@ router.post("/", authRequired, requireRoles("MANAGER", "ADMIN"), async (req, res
                     autoApprove: b.autoApprove ?? true,
                     startsAt: b.startsAt ? new Date(b.startsAt) : null,
                     endsAt: b.endsAt ? new Date(b.endsAt) : null,
+                    drawAt: b.drawAt ? new Date(b.drawAt) : null,
                     status: req.user.role === "ADMIN" ? "ACTIVE" : "DRAFT",
                 },
             });
@@ -176,6 +180,19 @@ router.patch("/:id", authRequired, async (req, res) => {
         return;
     }
     const b = parsed.data;
+    // MANAGER는 오직 캠페인 제목(title)과 설명(description)만 수정 가능
+    if (req.user.role === "MANAGER") {
+        if (b.missions !== undefined) {
+            res.status(403).json({ error: "매니저는 미션을 수정할 수 없습니다. 관리자에게 문의하세요." });
+            return;
+        }
+        const keys = Object.keys(b).filter(k => b[k] !== undefined);
+        const invalidKeys = keys.filter(k => k !== "title" && k !== "description");
+        if (invalidKeys.length > 0) {
+            res.status(403).json({ error: "매니저는 캠페인의 제목과 내용(설명)만 수정할 수 있습니다." });
+            return;
+        }
+    }
     const isAdmin = req.user.role === "ADMIN";
     if (b.missions !== undefined) {
         if (!isAdmin && c.status !== "DRAFT" && c.status !== "PENDING_ADMIN") {
@@ -211,7 +228,8 @@ router.patch("/:id", authRequired, async (req, res) => {
         b.rewardCurrency !== undefined ||
         b.rewardsConfig !== undefined ||
         b.startsAt !== undefined ||
-        b.endsAt !== undefined;
+        b.endsAt !== undefined ||
+        b.drawAt !== undefined;
     if (hasMeta) {
         await prisma.campaign.update({
             where: { id: c.id },
@@ -229,6 +247,7 @@ router.patch("/:id", authRequired, async (req, res) => {
                 ...(b.rewardsConfig !== undefined && { rewardsConfig: JSON.stringify(b.rewardsConfig) }),
                 ...(b.startsAt !== undefined && { startsAt: b.startsAt ? new Date(b.startsAt) : null }),
                 ...(b.endsAt !== undefined && { endsAt: b.endsAt ? new Date(b.endsAt) : null }),
+                ...(b.drawAt !== undefined && { drawAt: b.drawAt ? new Date(b.drawAt) : null }),
             },
         });
     }
@@ -241,20 +260,11 @@ router.patch("/:id", authRequired, async (req, res) => {
     });
     res.json(full);
 });
-router.post("/:id/missions", authRequired, async (req, res) => {
+router.post("/:id/missions", authRequired, requireRoles("ADMIN"), async (req, res) => {
     const cid = String(req.params.id);
     const c = await prisma.campaign.findUnique({ where: { id: cid } });
     if (!c) {
         res.status(404).json({ error: "Not found" });
-        return;
-    }
-    if (!isOperator(req.user.role)) {
-        res.status(403).json({ error: "운영자만 미션을 만들 수 있습니다." });
-        return;
-    }
-    // MANAGER는 본인 캠페인에만 미션 추가 가능
-    if (req.user.role === "MANAGER" && c.creatorId !== req.user.id) {
-        res.status(403).json({ error: "본인이 생성한 캠페인에만 미션을 추가할 수 있습니다." });
         return;
     }
     const parsed = missionInputSchema.safeParse(req.body);
@@ -459,6 +469,38 @@ router.get("/:id", authOptional, async (req, res) => {
     }
     res.json({ ...c, mySubmissions });
 });
+router.get("/active-avatars", authOptional, async (req, res) => {
+    try {
+        const dbUsers = await prisma.user.findMany({
+            where: {
+                NOT: [
+                    { avatarUrl: null },
+                    { avatarUrl: "" }
+                ]
+            },
+            select: {
+                avatarUrl: true
+            }
+        });
+        const DEFAULT_AVATARS = [
+            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80",
+            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80",
+            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80",
+            "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80",
+            "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=100&q=80",
+            "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=100&q=80"
+        ];
+        const realAvatars = dbUsers.map(u => u.avatarUrl).filter(Boolean);
+        const combined = [...realAvatars, ...DEFAULT_AVATARS];
+        const unique = Array.from(new Set(combined));
+        const shuffled = unique.sort(() => 0.5 - Math.random()).slice(0, 3);
+        res.json(shuffled);
+    }
+    catch (e) {
+        console.error(e);
+        res.json([]);
+    }
+});
 router.get("/:id/export", authRequired, async (req, res) => {
     const cid = String(req.params.id);
     if (!isOperator(req.user.role)) {
@@ -539,4 +581,20 @@ function formatPayloadForCsv(type, payloadStr) {
         return payloadStr;
     }
 }
+router.delete("/:id", authRequired, requireRoles("ADMIN"), async (req, res) => {
+    const cid = String(req.params.id);
+    const c = await prisma.campaign.findUnique({ where: { id: cid } });
+    if (!c) {
+        res.status(404).json({ error: "캠페인을 찾을 수 없습니다." });
+        return;
+    }
+    try {
+        await prisma.campaign.delete({ where: { id: cid } });
+        res.json({ success: true, message: "캠페인이 성공적으로 삭제되었습니다." });
+    }
+    catch (err) {
+        console.error("Campaign Delete Error:", err);
+        res.status(500).json({ error: "캠페인 삭제 중 서버 오류가 발생했습니다." });
+    }
+});
 export default router;

@@ -265,6 +265,7 @@ const { t } = useI18n();
 const router = useRouter();
 const list = ref<Campaign[]>([]);
 const loading = ref(true);
+const activeAvatars = ref<string[]>([]);
 
 onMounted(async () => {
   try {
@@ -274,6 +275,13 @@ onMounted(async () => {
     console.error(err);
   } finally {
     loading.value = false;
+  }
+
+  try {
+    const { data } = await api.get<string[]>("/campaigns/active-avatars");
+    activeAvatars.value = data;
+  } catch (err) {
+    console.error("Failed to load active avatars:", err);
   }
 
   // Wait until DOM is fully updated and ref is correctly bound
@@ -438,7 +446,18 @@ const checkRewardOverflow = (campaignId: string, event: MouseEvent, campaign: Ca
 
           <div class="active-community">
             <div class="avatar-stack-modern">
-              <div v-for="i in 3" :key="i" class="avatar-pill"></div>
+              <template v-if="activeAvatars.length > 0">
+                <img 
+                  v-for="(url, idx) in activeAvatars" 
+                  :key="idx" 
+                  :src="getFileUrl(url)" 
+                  class="avatar-pill img" 
+                  alt="Active Member" 
+                />
+              </template>
+              <template v-else>
+                <div v-for="i in 3" :key="i" class="avatar-pill fallback"></div>
+              </template>
               <div class="avatar-count">+36K</div>
             </div>
             <span class="community-text">{{ $t("home.activeMembers") }}</span>
@@ -840,6 +859,7 @@ const checkRewardOverflow = (campaignId: string, event: MouseEvent, campaign: Ca
   background: #e2e8f0;
   border: 4px solid white;
   margin-right: -15px;
+  object-fit: cover;
 }
 .avatar-count {
   width: 64px;
