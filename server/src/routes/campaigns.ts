@@ -105,10 +105,11 @@ const campaignFieldsSchema = z.object({
   rewardImageUrl: z.string().optional(),
   winnerCount: z.number().int().positive().optional(),
   lotteryMode: z.enum(["SIMPLE", "WEIGHTED"]).optional(),
+  rewardDistMode: z.enum(["COMBINED", "SEPARATE"]).optional(),
   autoApprove: z.boolean().optional(),
   totalRewardPoints: z.number().int().nonnegative().optional(),
   rewardCurrency: z.string().optional(),
-  rewardsConfig: z.array(z.object({ amount: z.number().nonnegative(), currency: z.string(), customCurrency: z.string().optional() })).optional(),
+  rewardsConfig: z.array(z.object({ amount: z.number().nonnegative(), currency: z.string(), winnerCount: z.number().int().positive().optional(), customCurrency: z.string().optional() })).optional(),
   startsAt: z.string().datetime().optional().nullable(),
   endsAt: z.string().datetime().optional().nullable(),
   drawAt: z.string().datetime().optional().nullable(),
@@ -168,6 +169,7 @@ router.post("/", authRequired, requireRoles("MANAGER", "ADMIN"), async (req: Aut
           rewardCurrency: b.rewardCurrency ?? "POINT",
           rewardsConfig: JSON.stringify(b.rewardsConfig ?? []),
           lotteryMode: b.lotteryMode ?? "SIMPLE",
+          rewardDistMode: b.rewardDistMode ?? "COMBINED",
           autoApprove: b.autoApprove ?? true,
           startsAt: b.startsAt ? new Date(b.startsAt) : null,
           endsAt: b.endsAt ? new Date(b.endsAt) : null,
@@ -271,6 +273,7 @@ router.patch("/:id", authRequired, async (req: AuthedRequest, res) => {
     b.rewardImageUrl !== undefined ||
     b.winnerCount !== undefined ||
     b.lotteryMode !== undefined ||
+    b.rewardDistMode !== undefined ||
     b.autoApprove !== undefined ||
     b.totalRewardPoints !== undefined ||
     b.rewardCurrency !== undefined ||
@@ -290,6 +293,7 @@ router.patch("/:id", authRequired, async (req: AuthedRequest, res) => {
         ...(b.rewardImageUrl !== undefined && { rewardImageUrl: b.rewardImageUrl }),
         ...(b.winnerCount !== undefined && { winnerCount: b.winnerCount }),
         ...(b.lotteryMode !== undefined && { lotteryMode: b.lotteryMode }),
+        ...(b.rewardDistMode !== undefined && { rewardDistMode: b.rewardDistMode }),
         ...(b.autoApprove !== undefined && { autoApprove: b.autoApprove }),
         ...(b.totalRewardPoints !== undefined && { totalRewardPoints: b.totalRewardPoints }),
         ...(b.rewardCurrency !== undefined && { rewardCurrency: b.rewardCurrency }),

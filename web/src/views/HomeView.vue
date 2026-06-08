@@ -41,6 +41,7 @@ type Campaign = {
   rewardImageUrl?: string;
   status: string;
   winnerCount: number;
+  rewardDistMode?: string;
   totalRewardPoints: number;
   rewardCurrency: string;
   rewardsConfig: string;
@@ -252,12 +253,20 @@ const getCurrencyEmoji = (currency: string) => {
   if (c === 'USDT') return '💵';
   if (c === 'METAQ') return '💎';
   if (c === 'BRL') return '🇧🇷';
+  if (c === 'COUPON') return '🎟️';
   return '🎁';
 };
 
 const formatRewardText = (r: any, c: Campaign) => {
-  const perPerson = Math.floor(r.amount / (c.winnerCount || 1));
-  return `${r.currency === 'POINT' || r.currency === 'P' ? '포인트' : r.currency} ${perPerson.toLocaleString()}${r.currency === 'POINT' || r.currency === 'P' ? 'P' : ' ' + r.currency}`;
+  const divisor = c.rewardDistMode === 'SEPARATE' ? (r.winnerCount || 1) : (c.winnerCount || 1);
+  const perPerson = Math.floor(r.amount / divisor);
+  if (r.currency === 'POINT' || r.currency === 'P') {
+    return `포인트 ${perPerson.toLocaleString()}P`;
+  }
+  if (r.currency === 'COUPON') {
+    return `뽑기 쿠폰 ${perPerson.toLocaleString()}개`;
+  }
+  return `${r.currency} ${perPerson.toLocaleString()}${r.currency === 'OTHER' ? '개' : ' ' + r.currency}`;
 };
 
 
@@ -865,20 +874,18 @@ const checkRewardOverflow = (campaignId: string, event: MouseEvent, campaign: Ca
   width: 64px;
   height: 48px;
   border-radius: 24px;
-  background: #f1f5f9;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.95rem;
   font-weight: 800;
-  color: #64748b;
+  color: #000000;
   margin-left: 10px;
-  border: 1px solid #e2e8f0;
 }
 .community-text {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #64748b;
+  color: rgb(0, 0, 0);
 }
 
 /* Visual Canvas */

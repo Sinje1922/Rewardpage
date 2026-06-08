@@ -21,21 +21,22 @@ model campaign {
   description       String    @default("") @db.LongText
   companyName       String    @default("")
   companyLogoUrl    String    @default("")
-  rewardImageUrl    String    @default("")
   status            String    @default("DRAFT")
   creatorId         String
   startsAt          DateTime?
   endsAt            DateTime?
-  drawAt            DateTime?
   winnerCount       Int       @default(1)
   lotteryMode       String    @default("SIMPLE")
   autoApprove       Boolean   @default(true)
   totalRewardPoints Int       @default(0)
-  rewardCurrency    String    @default("POINT")
-  rewardsConfig     String    @default("[]") @db.LongText
   createdAt         DateTime  @default(now())
   drawnAt           DateTime?
-  creator           user?     @relation(fields: [creatorId], references: [id], map: "Campaign_creatorId_fk")
+  rewardCurrency    String    @default("POINT")
+  rewardsConfig     String    @default("[]") @db.LongText
+  rewardImageUrl    String    @default("")
+  drawAt            DateTime?
+  rewardDistMode    String    @default("COMBINED")
+  creator           user      @relation(fields: [creatorId], references: [id], map: "Campaign_creatorId_fk")
   missions          mission[]
   winners           winner[]
 
@@ -52,9 +53,9 @@ model mission {
   config      String       @default("{}") @db.LongText
   createdAt   DateTime     @default(now())
   campaign    campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade, map: "Mission_campaignId_fk")
-  submissions  submission[]
+  submissions submission[]
 
-  @@index([campaignId], map: "Mission_campaignId_fkey")
+  @@index([campaignId], map: "Mission_campaignId_fk")
 }
 
 model submission {
@@ -68,64 +69,64 @@ model submission {
   user      user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Submission_userId_fkey")
 
   @@unique([userId, missionId], map: "Submission_userId_missionId_key")
-  @@index([missionId], map: "Submission_missionId_fkey")
+  @@index([missionId], map: "Submission_missionId_fk")
 }
 
 model user {
-  id            String       @id @default(cuid())
-  email         String       @unique(map: "User_email_key")
-  passwordHash  String?
-  role          String       @default("USER")
-  blocked       Boolean      @default(false)
-  pointBalance  Int          @default(0)
-  country       String?
-  locale        String?
-  lastIp        String?
-  birthYear     Int?
-  walletAddress String?
-  nickname      String?
-  avatarUrl     String?
-  createdAt     DateTime     @default(now())
-  birthDate     DateTime?
-  gender        String?
-  region        String?
-  telegramHandle String?
-  telegramId     String?
-  discordId      String?
-  discordHandle  String?
-  youtubeHandle  String?
-  youtubeAccessToken String? @db.LongText
-  youtubeRefreshToken String? @db.LongText
-  youtubeTokenExpiry BigInt?
-  instagramHandle String?
-  updatedAt     DateTime     @default(now()) @updatedAt
-  submissions   submission[]
-  campaigns     campaign[]
-  winners       winner[]
-  chatMessages  chatmessage[]
-  managerRequests managerrequest[]
+  id                  String           @id @default(cuid())
+  email               String           @unique(map: "User_email_key")
+  passwordHash        String?
+  role                String           @default("USER")
+  blocked             Boolean          @default(false)
+  pointBalance        Int              @default(0)
+  country             String?
+  locale              String?
+  lastIp              String?
+  birthYear           Int?
+  walletAddress       String?
+  nickname            String?
+  avatarUrl           String?
+  createdAt           DateTime         @default(now())
+  birthDate           DateTime?
+  gender              String?
+  region              String?
+  discordId           String?
+  instagramHandle     String?
+  telegramHandle      String?
+  updatedAt           DateTime         @default(now()) @updatedAt
+  youtubeHandle       String?
+  discordHandle       String?
+  youtubeAccessToken  String?          @db.LongText
+  youtubeRefreshToken String?          @db.LongText
+  youtubeTokenExpiry  BigInt?
+  telegramId          String?
+  campaigns           campaign[]
+  chatMessages        chatmessage[]
+  managerRequests     managerrequest[]
+  submissions         submission[]
+  winners             winner[]
 }
 
 model winner {
-  id         String   @id @default(cuid())
-  campaignId String
-  userId     String
-  rank       Int
-  points     Int      @default(0)
-  currency   String   @default("POINT")
+  id            String   @id @default(cuid())
+  campaignId    String
+  userId        String
+  rank          Int
+  points        Int      @default(0)
+  createdAt     DateTime @default(now())
+  currency      String   @default("POINT")
   rewardsConfig String   @default("[]") @db.LongText
-  createdAt  DateTime @default(now())
-  campaign   campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade, map: "Winner_campaignId_fkey")
-  user       user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Winner_userId_fk")
+  campaign      campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade, map: "Winner_campaignId_fkey")
+  user          user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Winner_userId_fk")
 
   @@unique([campaignId, userId], map: "Winner_campaignId_userId_key")
-  @@index([userId], map: "Winner_userId_fkey")
+  @@index([userId], map: "Winner_userId_fk")
 }
 
 model chatmessage {
   id        String   @id @default(cuid())
   userId    String?
-  sender    String   // "user" | "bot"
+  sender    String
   text      String   @db.LongText
   locale    String   @default("ko")
   createdAt DateTime @default(now())
@@ -135,19 +136,19 @@ model chatmessage {
 }
 
 model managerrequest {
-  id          String   @id @default(cuid())
-  companyName String                       // 회사명
-  contactName String                       // 담당자명
-  email       String                       // 연락처 이메일
-  phone       String?                      // 연락처 전화번호
-  businessType String                      // 업종
-  message     String   @db.LongText            // 캠페인 목적 및 설명
-  userId      String                       // 가입된 유저의 ID (방안 A이므로 필수)
-  status      String   @default("PENDING") // PENDING | APPROVED | REJECTED
-  adminNote   String?  @db.LongText            // 관리자 메모
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
-  user        user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "ManagerRequest_userId_fk")
+  id           String   @id @default(cuid())
+  companyName  String
+  contactName  String
+  email        String
+  phone        String?
+  businessType String
+  message      String   @db.LongText
+  userId       String
+  status       String   @default("PENDING")
+  adminNote    String?  @db.LongText
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+  user         user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "ManagerRequest_userId_fk")
 
   @@index([userId], map: "ManagerRequest_userId_fkey")
 }

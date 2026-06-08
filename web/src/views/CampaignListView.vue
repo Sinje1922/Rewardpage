@@ -21,6 +21,7 @@ type Campaign = {
   rewardImageUrl?: string;
   status: string;
   winnerCount: number;
+  rewardDistMode?: string;
   totalRewardPoints: number;
   rewardCurrency: string;
   rewardsConfig: string;
@@ -258,12 +259,20 @@ const getCurrencyEmoji = (currency: string) => {
   if (c === 'USDT') return '💵';
   if (c === 'METAQ') return '💎';
   if (c === 'BRL') return '🇧🇷';
+  if (c === 'COUPON') return '🎟️';
   return '🎁';
 };
 
 const formatRewardText = (r: any, c: Campaign) => {
-  const perPerson = Math.floor(r.amount / (c.winnerCount || 1));
-  return `${r.currency === 'POINT' || r.currency === 'P' ? '포인트' : r.currency} ${perPerson.toLocaleString()}${r.currency === 'POINT' || r.currency === 'P' ? 'P' : ' ' + r.currency}`;
+  const divisor = c.rewardDistMode === 'SEPARATE' ? (r.winnerCount || 1) : (c.winnerCount || 1);
+  const perPerson = Math.floor(r.amount / divisor);
+  if (r.currency === 'POINT' || r.currency === 'P') {
+    return `포인트 ${perPerson.toLocaleString()}P`;
+  }
+  if (r.currency === 'COUPON') {
+    return `뽑기 쿠폰 ${perPerson.toLocaleString()}개`;
+  }
+  return `${r.currency} ${perPerson.toLocaleString()}${r.currency === 'OTHER' ? '개' : ' ' + r.currency}`;
 };
 
 const isFilterPanelOpen = ref(false);

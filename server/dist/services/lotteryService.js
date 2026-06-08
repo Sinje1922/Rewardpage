@@ -39,64 +39,133 @@ export async function runCampaignDraw(campaignId) {
             weightsVal.push(n);
         }
     }
-    let picked = [];
-    if (c.lotteryMode === "WEIGHTED") {
-        picked = pickWeightedUnique(weightsUser, weightsVal, c.winnerCount);
-    }
-    else {
-        picked = pickUniformUnique(completedAll, c.winnerCount);
-    }
-    if (picked.length === 0)
-        return { winners: [], msg: "NO_ELIGIBLE_PARTICIPANTS" };
     let rewards = [];
     try {
         rewards = JSON.parse(c.rewardsConfig || "[]");
     }
     catch (e) {
-        rewards = [{ amount: c.totalRewardPoints, currency: c.rewardCurrency }];
+        rewards = [{ amount: c.totalRewardPoints, currency: c.rewardCurrency, winnerCount: c.winnerCount }];
     }
     if (rewards.length === 0) {
-        rewards = [{ amount: c.totalRewardPoints, currency: c.rewardCurrency }];
+        rewards = [{ amount: c.totalRewardPoints, currency: c.rewardCurrency, winnerCount: c.winnerCount }];
     }
-    const rewardsPerWinner = rewards.map((r) => ({
-        amount: Math.floor(r.amount / picked.length),
-        currency: r.currency,
-        ...(r.customCurrency && { customCurrency: r.customCurrency }),
-    }));
-    const totalPointsPerWinner = rewardsPerWinner
-        .filter((r) => r.currency === "POINT")
-        .reduce((sum, r) => sum + r.amount, 0);
-    const rewardsJsonPerWinner = JSON.stringify(rewardsPerWinner);
-    await prisma.$transaction(async (tx) => {
-        // 1. Atomic check & row lock using updateMany to verify campaign isn't already drawn
-        const updateResult = await tx.campaign.updateMany({
-            where: { id: c.id, status: { not: "DRAWN" } },
-            data: { status: "DRAWN", drawnAt: new Date() },
-        });
-        if (updateResult.count === 0) {
-            throw new Error("ALREADY_DRAWN");
-        }
-        // 2. Safely create winners and award points
-        for (let i = 0; i < picked.length; i++) {
-            const userId = picked[i];
-            await tx.winner.create({
-                data: {
-                    campaignId: c.id,
-                    userId,
-                    rank: i + 1,
-                    points: totalPointsPerWinner,
-                    currency: "POINT",
-                    rewardsConfig: rewardsJsonPerWinner,
-                },
-            });
-            if (totalPointsPerWinner > 0) {
-                await tx.user.update({
-                    where: { id: userId },
-                    data: { pointBalance: { increment: totalPointsPerWinner } },
-                });
+    if (c.rewardDistMode === "SEPARATE") {
+        const winnerRewardsMap = new Map();
+        let hasAnyWinner = false;
+        for (const r of rewards) {
+            const k = r.winnerCount || 1;
+            let pickedForReward = [];
+            if (c.lotteryMode === "WEIGHTED") {
+                pickedForReward = pickWeightedUnique(weightsUser, weightsVal, k);
+            }
+            else {
+                pickedForReward = pickUniformUnique(completedAll, k);
+            }
+            if (pickedForReward.length > 0) {
+                hasAnyWinner = true;
+                const wonAmount = Math.floor(r.amount / pickedForReward.length);
+                if (wonAmount > 0) {
+                    for (const userId of pickedForReward) {
+                        if (!winnerRewardsMap.has(userId)) {
+                            winnerRewardsMap.set(userId, []);
+                        }
+                        winnerRewardsMap.get(userId).push({
+                            amount: wonAmount,
+                            currency: r.currency,
+                            ...(r.customCurrency && { customCurrency: r.customCurrency }),
+                            winnerCount: r.winnerCount || 1,
+                        });
+                    }
+                }
             }
         }
-    });
+        if (!hasAnyWinner) {
+            return { winners: [], msg: "NO_ELIGIBLE_PARTICIPANTS" };
+        }
+        await prisma.$transaction(async (tx) => {
+            // 1. Atomic check & row lock using updateMany to verify campaign isn't already drawn
+            const updateResult = await tx.campaign.updateMany({
+                where: { id: c.id, status: { not: "DRAWN" } },
+                data: { status: "DRAWN", drawnAt: new Date() },
+            });
+            if (updateResult.count === 0) {
+                throw new Error("ALREADY_DRAWN");
+            }
+            // 2. Safely create winners and award points
+            let rank = 1;
+            for (const [userId, wonList] of winnerRewardsMap) {
+                const totalPoints = wonList
+                    .filter((w) => w.currency === "POINT")
+                    .reduce((sum, w) => sum + w.amount, 0);
+                await tx.winner.create({
+                    data: {
+                        campaignId: c.id,
+                        userId,
+                        rank: rank++,
+                        points: totalPoints,
+                        currency: "POINT",
+                        rewardsConfig: JSON.stringify(wonList),
+                    },
+                });
+                if (totalPoints > 0) {
+                    await tx.user.update({
+                        where: { id: userId },
+                        data: { pointBalance: { increment: totalPoints } },
+                    });
+                }
+            }
+        });
+    }
+    else {
+        let picked = [];
+        if (c.lotteryMode === "WEIGHTED") {
+            picked = pickWeightedUnique(weightsUser, weightsVal, c.winnerCount);
+        }
+        else {
+            picked = pickUniformUnique(completedAll, c.winnerCount);
+        }
+        if (picked.length === 0)
+            return { winners: [], msg: "NO_ELIGIBLE_PARTICIPANTS" };
+        const rewardsPerWinner = rewards.map((r) => ({
+            amount: Math.floor(r.amount / picked.length),
+            currency: r.currency,
+            ...(r.customCurrency && { customCurrency: r.customCurrency }),
+        }));
+        const totalPointsPerWinner = rewardsPerWinner
+            .filter((r) => r.currency === "POINT")
+            .reduce((sum, r) => sum + r.amount, 0);
+        const rewardsJsonPerWinner = JSON.stringify(rewardsPerWinner);
+        await prisma.$transaction(async (tx) => {
+            // 1. Atomic check & row lock using updateMany to verify campaign isn't already drawn
+            const updateResult = await tx.campaign.updateMany({
+                where: { id: c.id, status: { not: "DRAWN" } },
+                data: { status: "DRAWN", drawnAt: new Date() },
+            });
+            if (updateResult.count === 0) {
+                throw new Error("ALREADY_DRAWN");
+            }
+            // 2. Safely create winners and award points
+            for (let i = 0; i < picked.length; i++) {
+                const userId = picked[i];
+                await tx.winner.create({
+                    data: {
+                        campaignId: c.id,
+                        userId,
+                        rank: i + 1,
+                        points: totalPointsPerWinner,
+                        currency: "POINT",
+                        rewardsConfig: rewardsJsonPerWinner,
+                    },
+                });
+                if (totalPointsPerWinner > 0) {
+                    await tx.user.update({
+                        where: { id: userId },
+                        data: { pointBalance: { increment: totalPointsPerWinner } },
+                    });
+                }
+            }
+        });
+    }
     return {
         winners: await prisma.winner.findMany({
             where: { campaignId: c.id },

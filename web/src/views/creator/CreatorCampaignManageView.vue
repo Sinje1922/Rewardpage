@@ -34,6 +34,7 @@ type CampaignDetail = {
   status: string
   lotteryMode: string
   winnerCount: number
+  rewardDistMode?: string
   totalRewardPoints: number
   rewardCurrency: string
   rewardsConfig: string
@@ -193,9 +194,10 @@ const draftCompanyLogo = ref('')
 const draftTitle = ref('')
 const draftDescription = ref('')
 const draftWinnerCount = ref(1)
+const draftRewardDistMode = ref<'COMBINED' | 'SEPARATE'>('COMBINED')
 const draftLotteryMode = ref<'SIMPLE' | 'WEIGHTED'>('SIMPLE')
 const draftAutoApprove = ref(true)
-const draftRewards = ref<{ amount: number; currency: string; customCurrency?: string }[]>([{ amount: 0, currency: 'POINT' }])
+const draftRewards = ref<{ amount: number; currency: string; customCurrency?: string; winnerCount?: number }[]>([{ amount: 0, currency: 'POINT', winnerCount: 1 }])
 const draftStartsAt = ref('')
 const draftEndsAt = ref('')
 const draftDrawAt = ref('')
@@ -213,15 +215,17 @@ function syncDraftFromCamp() {
   draftTitle.value = c.title
   draftDescription.value = c.description ?? ''
   draftWinnerCount.value = c.winnerCount
+  draftRewardDistMode.value = (c.rewardDistMode as 'COMBINED' | 'SEPARATE') || 'COMBINED'
   draftLotteryMode.value = (c.lotteryMode as 'SIMPLE' | 'WEIGHTED') || 'SIMPLE'
   draftAutoApprove.value = c.autoApprove ?? true
   try {
-    draftRewards.value = JSON.parse(c.rewardsConfig || "[]")
+    const parsed = JSON.parse(c.rewardsConfig || "[]")
+    draftRewards.value = parsed.map((r: any) => ({ ...r, winnerCount: r.winnerCount || 1 }))
     if (draftRewards.value.length === 0) {
-      draftRewards.value = [{ amount: c.totalRewardPoints ?? 0, currency: c.rewardCurrency ?? 'POINT' }]
+      draftRewards.value = [{ amount: c.totalRewardPoints ?? 0, currency: c.rewardCurrency ?? 'POINT', winnerCount: 1 }]
     }
   } catch (e) {
-    draftRewards.value = [{ amount: c.totalRewardPoints ?? 0, currency: c.rewardCurrency ?? 'POINT' }]
+    draftRewards.value = [{ amount: c.totalRewardPoints ?? 0, currency: c.rewardCurrency ?? 'POINT', winnerCount: 1 }]
   }
   draftStartsAt.value = c.startsAt ? toLocalInput(c.startsAt) : ''
   draftEndsAt.value = c.endsAt ? toLocalInput(c.endsAt) : ''
@@ -315,7 +319,7 @@ function clearDraftLogo() {
 }
 
 function addDraftReward() {
-  draftRewards.value.push({ amount: 0, currency: 'POINT' })
+  draftRewards.value.push({ amount: 0, currency: 'POINT', winnerCount: 1 })
 }
 
 function removeDraftReward(index: number) {
@@ -349,12 +353,17 @@ async function saveDraft() {
       payload.description = draftDescription.value
     } else {
       const missions = missionRows.value.map((r, i) => rowToPayload(r, i))
+      const finalWinnerCount = draftRewardDistMode.value === 'SEPARATE'
+        ? draftRewards.value.reduce((sum, r) => sum + (r.winnerCount || 1), 0)
+        : draftWinnerCount.value
+
       Object.assign(payload, {
         title: draftTitle.value.trim(),
         description: draftDescription.value,
         companyName: draftCompanyName.value.trim(),
         companyLogoUrl: draftCompanyLogo.value.trim(),
-        winnerCount: draftWinnerCount.value,
+        winnerCount: finalWinnerCount,
+        rewardDistMode: draftRewardDistMode.value,
         lotteryMode: draftLotteryMode.value,
         autoApprove: draftAutoApprove.value,
         totalRewardPoints: draftRewards.value[0]?.amount || 0,
@@ -597,7 +606,8 @@ async function downloadCsv() {
         <template v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'">
           <span v-for="(r, idx) in JSON.parse(camp.rewardsConfig)" :key="idx">
             {{ Number(idx) > 0 ? ', ' : '' }}
-            <strong>{{ r.amount.toLocaleString() }}</strong>{{ r.currency === 'POINT' ? 'P' : ' ' + r.currency }}
+            <strong>{{ r.amount.toLocaleString() }}</strong>{{ r.currency === 'POINT' ? 'P' : r.currency === 'COUPON' ? '개 (뽑기 쿠폰)' : ' ' + r.currency }}
+            <span v-if="camp.rewardDistMode === 'SEPARATE'" style="font-size: 0.85em; opacity: 0.8"> ({{ r.winnerCount }}명 당첨)</span>
           </span>
         </template>
         <template v-else>
@@ -731,8 +741,21 @@ async function downloadCsv() {
         </div>
 
         <div class="field">
+          <label>보상 배분 방식</label>
+          <select v-model="draftRewardDistMode">
+            <option value="COMBINED">분배형 (모든 보상을 당첨자들에게 균등 분배)</option>
+            <option value="SEPARATE">개별형 (보상별 당첨자를 따로 추첨 및 설정)</option>
+          </select>
+        </div>
+        <div class="field" v-if="draftRewardDistMode === 'COMBINED'">
           <label>{{ $t('ops.winnerCount') }}</label>
           <input v-model.number="draftWinnerCount" type="number" min="1" />
+        </div>
+        <div class="field" v-else>
+          <label>{{ $t('ops.winnerCount') }}</label>
+          <div style="font-size: 0.9rem; color: var(--muted); padding: 0.5rem 0;">
+            * 개별형 설정 시 각 보상 항목별로 지정된 당첨 인원이 개별 적용됩니다.
+          </div>
         </div>
         <div class="field">
           <label>{{ $t('ops.lotteryMode') }}</label>
@@ -748,15 +771,20 @@ async function downloadCsv() {
         <div class="field">
           <label>{{ $t('ops.totalReward') }}</label>
           <div v-for="(r, idx) in draftRewards" :key="idx" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem">
-            <div style="display: flex; gap: 0.5rem">
+            <div style="display: flex; gap: 0.5rem; align-items: center">
               <input v-model.number="r.amount" type="number" min="0" style="flex: 1" />
               <select v-model="r.currency" style="width: 120px">
                 <option value="POINT">{{ $t('common.point') || 'POINT' }}</option>
                 <option value="USDT">USDT</option>
                 <option value="BRL">BRL ({{ $t('common.brl') || 'Real' }})</option>
                 <option value="METAQ">METAQ ({{ $t('common.metaq') || 'Coin' }})</option>
+                <option value="COUPON">뽑기 쿠폰</option>
                 <option value="OTHER">기타 보상</option>
               </select>
+              <div v-if="draftRewardDistMode === 'SEPARATE'" style="display: flex; align-items: center; gap: 0.25rem">
+                <input v-model.number="r.winnerCount" type="number" min="1" placeholder="당첨자 수" style="width: 90px" required />
+                <span style="font-size: 0.85rem">명</span>
+              </div>
               <button v-if="draftRewards.length > 1" type="button" class="btn outline" @click="removeDraftReward(idx)">✕</button>
             </div>
             <div v-if="r.currency === 'OTHER'" style="display: flex; gap: 0.5rem">
@@ -765,10 +793,17 @@ async function downloadCsv() {
           </div>
           <button type="button" class="btn btn-sm" @click="addDraftReward">+ {{ $t('ops.addReward') || 'Add Reward' }}</button>
           
-          <div v-if="draftWinnerCount > 0" class="reward-hint" style="margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.8">
-            <p v-for="(r, idx) in draftRewards" :key="idx" style="margin: 0">
-              • {{ r.currency === 'OTHER' ? (r.customCurrency || '기타 보상') : (r.currency === 'POINT' ? $t('common.point') : r.currency) }}: {{ Math.floor(r.amount / draftWinnerCount).toLocaleString() }}{{ r.currency === 'OTHER' ? '개' : '/' + ($t('common.person') || 'person') }}
-            </p>
+          <div class="reward-hint" style="margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.8">
+            <template v-if="draftRewardDistMode === 'SEPARATE'">
+              <p v-for="(r, idx) in draftRewards" :key="idx" style="margin: 0">
+                • {{ r.currency === 'OTHER' ? (r.customCurrency || '기타 보상') : r.currency === 'COUPON' ? '뽑기 쿠폰' : (r.currency === 'POINT' ? $t('common.point') : r.currency) }}: 1인당 {{ Math.floor(r.amount / (r.winnerCount || 1)).toLocaleString() }}{{ r.currency === 'OTHER' || r.currency === 'COUPON' ? '개' : '' }} (당첨자: {{ r.winnerCount || 1 }}명)
+              </p>
+            </template>
+            <template v-else-if="draftWinnerCount > 0">
+              <p v-for="(r, idx) in draftRewards" :key="idx" style="margin: 0">
+                • {{ r.currency === 'OTHER' ? (r.customCurrency || '기타 보상') : r.currency === 'COUPON' ? '뽑기 쿠폰' : (r.currency === 'POINT' ? $t('common.point') : r.currency) }}: 1인당 {{ Math.floor(r.amount / draftWinnerCount).toLocaleString() }}{{ r.currency === 'OTHER' || r.currency === 'COUPON' ? '개' : '/' + ($t('common.person') || 'person') }} (공동 당첨자: {{ draftWinnerCount }}명)
+              </p>
+            </template>
           </div>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem">

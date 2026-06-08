@@ -17,9 +17,10 @@ const companyLogoUrl = ref('')
 const title = ref('')
 const description = ref('')
 const winnerCount = ref(1)
+const rewardDistMode = ref<'COMBINED' | 'SEPARATE'>('COMBINED')
 const lotteryMode = ref<'SIMPLE' | 'WEIGHTED'>('SIMPLE')
 const autoApprove = ref(true)
-const rewards = ref<{ amount: number; currency: string; customCurrency?: string }[]>([{ amount: 0, currency: 'POINT' }])
+const rewards = ref<{ amount: number; currency: string; customCurrency?: string; winnerCount?: number }[]>([{ amount: 0, currency: 'POINT', winnerCount: 1 }])
 const startsAt = ref('')
 const endsAt = ref('')
 const drawAt = ref('')
@@ -180,7 +181,7 @@ function clearRewardImage() {
 }
 
 function addReward() {
-  rewards.value.push({ amount: 0, currency: 'POINT' })
+  rewards.value.push({ amount: 0, currency: 'POINT', winnerCount: 1 })
 }
 
 function removeReward(index: number) {
@@ -190,7 +191,12 @@ function removeReward(index: number) {
 }
 
 const isStep1Valid = computed(() => !!title.value.trim())
-const isStep2Valid = computed(() => winnerCount.value > 0 && rewards.value.some(r => r.amount > 0))
+const isStep2Valid = computed(() => {
+  if (rewardDistMode.value === 'SEPARATE') {
+    return rewards.value.some(r => r.amount > 0) && rewards.value.every(r => !r.amount || (r.winnerCount && r.winnerCount > 0))
+  }
+  return winnerCount.value > 0 && rewards.value.some(r => r.amount > 0)
+})
 const isStep3Valid = computed(() => missionRows.value.length > 0)
 const isStep4Valid = computed(() => true)
 
@@ -250,18 +256,33 @@ const otherRewardsList = computed(() => {
   return rewards.value.filter(r => r.currency === 'OTHER' && r.amount > 0)
 })
 
+const displayWinnerCount = computed(() => {
+  if (rewardDistMode.value === 'SEPARATE') {
+    return rewards.value.reduce((sum, r) => sum + (r.winnerCount || 1), 0)
+  }
+  return winnerCount.value
+})
+
 const getCurrencyEmoji = (currency: string) => {
   const c = (currency || '').toUpperCase()
   if (c === 'POINT' || c === 'P') return '🪙'
   if (c === 'USDT') return '💵'
   if (c === 'METAQ') return '💎'
   if (c === 'BRL') return '🇧🇷'
+  if (c === 'COUPON') return '🎟️'
   return '🎁'
 }
 
 const formatRewardText = (r: any) => {
-  const perPerson = Math.floor(r.amount / (winnerCount.value || 1))
-  return `${r.currency === 'POINT' || r.currency === 'P' ? '포인트' : r.currency} ${perPerson.toLocaleString()}${r.currency === 'POINT' || r.currency === 'P' ? 'P' : ' ' + r.currency}`
+  const divisor = rewardDistMode.value === 'SEPARATE' ? (r.winnerCount || 1) : (winnerCount.value || 1)
+  const perPerson = Math.floor(r.amount / divisor)
+  if (r.currency === 'POINT' || r.currency === 'P') {
+    return `포인트 ${perPerson.toLocaleString()}P`;
+  }
+  if (r.currency === 'COUPON') {
+    return `뽑기 쿠폰 ${perPerson.toLocaleString()}개`;
+  }
+  return `${r.currency} ${perPerson.toLocaleString()}${r.currency === 'OTHER' ? '개' : ' ' + r.currency}`
 }
 
 
@@ -366,6 +387,7 @@ function saveToLocalStorage() {
     title: title.value,
     description: description.value,
     winnerCount: winnerCount.value,
+    rewardDistMode: rewardDistMode.value,
     lotteryMode: lotteryMode.value,
     autoApprove: autoApprove.value,
     startsAt: startsAt.value,
@@ -387,13 +409,14 @@ function restoreForm() {
   title.value = data.title || ''
   description.value = data.description || ''
   winnerCount.value = data.winnerCount || 1
+  rewardDistMode.value = data.rewardDistMode || 'COMBINED'
   lotteryMode.value = data.lotteryMode || 'SIMPLE'
   autoApprove.value = data.autoApprove !== undefined ? data.autoApprove : true
   startsAt.value = data.startsAt || ''
   endsAt.value = data.endsAt || ''
   drawAt.value = data.drawAt || ''
   rewardImageUrl.value = data.rewardImageUrl || ''
-  rewards.value = data.rewards || [{ amount: 0, currency: 'POINT' }]
+  rewards.value = (data.rewards || [{ amount: 0, currency: 'POINT' }]).map((r: any) => ({ ...r, winnerCount: r.winnerCount || 1 }))
   missionRows.value = data.missionRows || [emptyMissionRow(0)]
   
   showRestoreModal.value = false
@@ -458,13 +481,18 @@ async function save() {
   }
   const missions = missionRows.value.map((r, i) => rowToPayload(r, i))
   try {
+    const finalWinnerCount = rewardDistMode.value === 'SEPARATE'
+      ? rewards.value.reduce((sum, r) => sum + (r.winnerCount || 1), 0)
+      : winnerCount.value
+
     const { data } = await api.post<{ id: string }>('/campaigns', {
       title: title.value.trim(),
       description: description.value,
       companyName: companyName.value.trim(),
       companyLogoUrl: companyLogoUrl.value.trim(),
       rewardImageUrl: rewardImageUrl.value.trim(),
-      winnerCount: winnerCount.value,
+      winnerCount: finalWinnerCount,
+      rewardDistMode: rewardDistMode.value,
       lotteryMode: lotteryMode.value,
       autoApprove: autoApprove.value,
       totalRewardPoints: rewards.value[0]?.amount || 0, // Legacy fallback
@@ -625,8 +653,21 @@ const checkRewardOverflow = (event: MouseEvent) => {
         <section class="card">
           <h2 class="section-title">{{ $t('ops.logisticsSection') || 'Logistics' }}</h2>
           <div class="field">
+            <label>보상 배분 방식</label>
+            <select v-model="rewardDistMode">
+              <option value="COMBINED">분배형 (모든 보상을 당첨자들에게 균등 분배)</option>
+              <option value="SEPARATE">개별형 (보상별 당첨자를 따로 추첨 및 설정)</option>
+            </select>
+          </div>
+          <div class="field" v-if="rewardDistMode === 'COMBINED'">
             <label>{{ $t('ops.winnerCount') }}</label>
             <input v-model.number="winnerCount" type="number" min="1" required />
+          </div>
+          <div class="field" v-else>
+            <label>{{ $t('ops.winnerCount') }}</label>
+            <div style="font-size: 0.9rem; color: var(--muted); padding: 0.5rem 0;">
+              * 개별형 설정 시 각 보상 항목별로 지정된 당첨 인원이 개별 적용됩니다.
+            </div>
           </div>
           <div class="field">
             <label>{{ $t('ops.lotteryMode') }}</label>
@@ -658,15 +699,20 @@ const checkRewardOverflow = (event: MouseEvent) => {
           <div class="field reward-box">
             <label>{{ $t('ops.totalReward') }}</label>
             <div v-for="(r, idx) in rewards" :key="idx" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem">
-              <div style="display: flex; gap: 0.5rem">
+              <div style="display: flex; gap: 0.5rem; align-items: center">
                 <input v-model.number="r.amount" type="number" min="0" step="1" placeholder="1000" style="flex: 1" />
                 <select v-model="r.currency" style="width: 120px">
                   <option value="POINT">{{ $t('common.point') || 'POINT' }}</option>
                   <option value="USDT">USDT</option>
                   <option value="BRL">BRL ({{ $t('common.brl') || 'Real' }})</option>
                   <option value="METAQ">METAQ ({{ $t('common.metaq') || 'Coin' }})</option>
+                  <option value="COUPON">뽑기 쿠폰</option>
                   <option value="OTHER">기타 보상</option>
                 </select>
+                <div v-if="rewardDistMode === 'SEPARATE'" style="display: flex; align-items: center; gap: 0.25rem">
+                  <input v-model.number="r.winnerCount" type="number" min="1" placeholder="당첨자 수" style="width: 90px" required />
+                  <span style="font-size: 0.85rem">명</span>
+                </div>
                 <button v-if="rewards.length > 1" type="button" class="btn outline" @click="removeReward(idx)">✕</button>
               </div>
               <div v-if="r.currency === 'OTHER'" style="display: flex; gap: 0.5rem">
@@ -675,10 +721,17 @@ const checkRewardOverflow = (event: MouseEvent) => {
             </div>
             <button type="button" class="btn btn-sm" style="margin-bottom: 1rem" @click="addReward">+ {{ $t('ops.addReward') || 'Add Reward' }}</button>
             
-            <div v-if="winnerCount > 0" class="reward-hint">
-              <p v-for="(r, idx) in rewards" :key="idx">
-                • {{ r.currency === 'OTHER' ? (r.customCurrency || '기타 보상') : r.currency }}: {{ Math.floor(r.amount / winnerCount).toLocaleString() }}{{ r.currency === 'OTHER' ? '개' : '/' + ($t('common.person') || 'person') }}
-              </p>
+            <div class="reward-hint">
+              <template v-if="rewardDistMode === 'SEPARATE'">
+                <p v-for="(r, idx) in rewards" :key="idx">
+                  • {{ r.currency === 'OTHER' ? (r.customCurrency || '기타 보상') : r.currency }}: 1인당 {{ Math.floor(r.amount / (r.winnerCount || 1)).toLocaleString() }}{{ r.currency === 'OTHER' ? '개' : '' }} (당첨자: {{ r.winnerCount || 1 }}명)
+                </p>
+              </template>
+              <template v-else-if="winnerCount > 0">
+                <p v-for="(r, idx) in rewards" :key="idx">
+                  • {{ r.currency === 'OTHER' ? (r.customCurrency || '기타 보상') : r.currency }}: 1인당 {{ Math.floor(r.amount / winnerCount).toLocaleString() }}{{ r.currency === 'OTHER' ? '개' : '/' + ($t('common.person') || 'person') }} (공동 당첨자: {{ winnerCount }}명)
+                </p>
+              </template>
             </div>
           </div>
 
@@ -824,7 +877,7 @@ const checkRewardOverflow = (event: MouseEvent) => {
               <div class="card-footer-row">
                 <div class="participants-count-wrap">
                   <span class="part-icon">👤</span>
-                  <span class="part-text">{{ winnerCount || 0 }}명</span>
+                  <span class="part-text">{{ displayWinnerCount || 0 }}명</span>
                 </div>
                 <button type="button" class="action-pill-btn">
                   {{ locale === 'ko' ? '참여하기' : 'Join' }} <span class="chevron">></span>
@@ -872,10 +925,13 @@ const checkRewardOverflow = (event: MouseEvent) => {
                       <div class="detail-reward-badges">
                         <div v-for="(r, idx) in rewards" :key="idx" class="reward-chip" :class="r.currency.toLowerCase()">
                           <span class="reward-icon">
-                            {{ r.currency === 'POINT' ? '🪙' : r.currency === 'USDT' ? '💵' : r.currency === 'METAQ' ? '💎' : '🎁' }}
+                            {{ r.currency === 'POINT' ? '🪙' : r.currency === 'USDT' ? '💵' : r.currency === 'METAQ' ? '💎' : r.currency === 'COUPON' ? '🎟️' : '🎁' }}
                           </span>
                           <span class="reward-amount">
-                            {{ r.currency === 'OTHER' ? (r.amount.toLocaleString() + '개 (' + (r.customCurrency || '기타 보상') + ')') : (r.amount.toLocaleString() + (r.currency === 'POINT' ? 'P' : ' ' + r.currency)) }}
+                            {{ r.currency === 'OTHER' ? (r.amount.toLocaleString() + '개 (' + (r.customCurrency || '기타 보상') + ')') : r.currency === 'COUPON' ? (r.amount.toLocaleString() + '개 (뽑기 쿠폰)') : (r.amount.toLocaleString() + (r.currency === 'POINT' ? 'P' : ' ' + r.currency)) }}
+                          </span>
+                          <span v-if="rewardDistMode === 'SEPARATE'" class="reward-winner-count" style="margin-left: 4px; font-size: 0.85em; opacity: 0.8;">
+                            ({{ r.winnerCount }}명)
                           </span>
                         </div>
                       </div>
@@ -886,7 +942,8 @@ const checkRewardOverflow = (event: MouseEvent) => {
                         {{ locale === 'ko' ? '1인당 획득 예상 보상: ' : 'Estimated Reward Per Winner: ' }}
                         <span v-for="(r, idx) in rewards" :key="idx" class="per-person-item">
                           {{ Number(idx) > 0 ? ' + ' : '' }}
-                          {{ r.currency === 'OTHER' ? (Math.floor(r.amount / (winnerCount || 1)).toLocaleString() + '개 (' + (r.customCurrency || '기타 보상') + ')') : (Math.floor(r.amount / (winnerCount || 1)).toLocaleString() + (r.currency === 'POINT' ? 'P' : ' ' + r.currency)) }}
+                          {{ r.currency === 'OTHER' ? (Math.floor(r.amount / (rewardDistMode === 'SEPARATE' ? (r.winnerCount || 1) : (winnerCount || 1))).toLocaleString() + '개 (' + (r.customCurrency || '기타 보상') + ')') : r.currency === 'COUPON' ? (Math.floor(r.amount / (rewardDistMode === 'SEPARATE' ? (r.winnerCount || 1) : (winnerCount || 1))).toLocaleString() + '개 (뽑기 쿠폰)') : (Math.floor(r.amount / (rewardDistMode === 'SEPARATE' ? (r.winnerCount || 1) : (winnerCount || 1))).toLocaleString() + (r.currency === 'POINT' ? 'P' : ' ' + r.currency)) }}
+                          <span v-if="rewardDistMode === 'SEPARATE'" style="font-size: 0.85em; opacity: 0.8"> ({{ r.winnerCount }}명 당첨)</span>
                         </span>
                       </p>
                       <p class="period-text mt-2" v-if="startsAt || endsAt">

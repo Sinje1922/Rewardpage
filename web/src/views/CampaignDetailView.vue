@@ -22,6 +22,7 @@ type CampaignDetail = {
   companyLogoUrl: string
   status: string
   winnerCount: number
+  rewardDistMode?: string
   totalRewardPoints: number
   rewardCurrency: string
   rewardsConfig: string
@@ -446,8 +447,11 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
         <span v-if="camp.missions" class="meta-item">{{ $t('detail.missionsCountLabel', { count: camp.missions.length }) }}</span>
         <div v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'" class="detail-reward-badges">
             <div v-for="(r, idx) in JSON.parse(camp.rewardsConfig)" :key="idx" class="reward-chip" :class="r.currency.toLowerCase()">
-              <span class="reward-icon">{{ r.currency === 'POINT' ? '🪙' : r.currency === 'USDT' ? '💵' : r.currency === 'METAQ' ? '💎' : '🎁' }}</span>
-              <span class="reward-amount">{{ r.currency === 'OTHER' ? (r.amount.toLocaleString() + '개 (' + (r.customCurrency || $t('common.otherReward')) + ')') : (r.amount.toLocaleString() + (r.currency === 'POINT' ? 'P' : ' ' + r.currency)) }}</span>
+              <span class="reward-icon">{{ r.currency === 'POINT' ? '🪙' : r.currency === 'USDT' ? '💵' : r.currency === 'METAQ' ? '💎' : r.currency === 'COUPON' ? '🎟️' : '🎁' }}</span>
+              <span class="reward-amount">{{ r.currency === 'OTHER' ? (r.amount.toLocaleString() + '개 (' + (r.customCurrency || $t('common.otherReward')) + ')') : r.currency === 'COUPON' ? (r.amount.toLocaleString() + '개 (뽑기 쿠폰)') : (r.amount.toLocaleString() + (r.currency === 'POINT' ? 'P' : ' ' + r.currency)) }}</span>
+              <span v-if="camp.rewardDistMode === 'SEPARATE'" class="reward-winner-count" style="margin-left: 4px; font-size: 0.85em; opacity: 0.8;">
+                ({{ r.winnerCount }}명)
+              </span>
             </div>
         </div>
         <span v-else-if="camp.totalRewardPoints > 0" class="badge accent-badge">
@@ -463,7 +467,8 @@ const sortedMissions = computed(() => [...(camp.value?.missions ?? [])].sort((a,
           {{ $t('campaign.rewardPerPersonPrefix') || 'Each' }}
           <template v-if="camp.rewardsConfig && camp.rewardsConfig !== '[]'">
             <span v-for="(r, idx) in JSON.parse(camp.rewardsConfig)" :key="idx" class="per-person-item">
-              {{ Number(idx) > 0 ? ' + ' : '' }}{{ r.currency === 'OTHER' ? (Math.floor(r.amount / camp.winnerCount).toLocaleString() + '개 (' + (r.customCurrency || $t('common.otherReward')) + ')') : (Math.floor(r.amount / camp.winnerCount).toLocaleString() + (r.currency === 'POINT' ? 'P' : ' ' + r.currency)) }}
+              {{ Number(idx) > 0 ? ' + ' : '' }}{{ r.currency === 'OTHER' ? (Math.floor(r.amount / (camp.rewardDistMode === 'SEPARATE' ? (r.winnerCount || 1) : (camp.winnerCount || 1))).toLocaleString() + '개 (' + (r.customCurrency || $t('common.otherReward')) + ')') : r.currency === 'COUPON' ? (Math.floor(r.amount / (camp.rewardDistMode === 'SEPARATE' ? (r.winnerCount || 1) : (camp.winnerCount || 1))).toLocaleString() + '개 (뽑기 쿠폰)') : (Math.floor(r.amount / (camp.rewardDistMode === 'SEPARATE' ? (r.winnerCount || 1) : (camp.winnerCount || 1))).toLocaleString() + (r.currency === 'POINT' ? 'P' : ' ' + r.currency)) }}
+              <span v-if="camp.rewardDistMode === 'SEPARATE'" style="font-size: 0.85em; opacity: 0.8"> ({{ r.winnerCount }}명 당첨)</span>
             </span>
           </template>
           <template v-else>
