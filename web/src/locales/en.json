@@ -462,7 +462,9 @@
     "missionQuizAnswerRequired": "Mission {n}: Please select the correct answer.",
     "missionLinkRequired": "Mission {n}: Please enter a link URL.",
     "logisticsRequired": "Please complete Step 2 (Winner count and rewards)",
-    "missionsRequired": "Please add at least one mission"
+    "missionsRequired": "Please add at least one mission",
+    "endsAtEarly": "The campaign end date cannot be earlier than the start date.",
+    "drawAtEarly": "The draw date cannot be earlier than the campaign end date."
   },
   "chatbot": {
     "title": "Pickku AI Helper",

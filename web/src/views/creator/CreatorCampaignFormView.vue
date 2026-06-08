@@ -305,6 +305,14 @@ function nextStep() {
       err.value = t('error.logisticsRequired') || 'Please complete Step 2 (Winner count and rewards)'
       return
     }
+    if (startsAt.value && endsAt.value && new Date(endsAt.value) < new Date(startsAt.value)) {
+      err.value = t('error.endsAtEarly') || 'Campaign end date cannot be earlier than startsAt'
+      return
+    }
+    if (endsAt.value && drawAt.value && new Date(drawAt.value) < new Date(endsAt.value)) {
+      err.value = t('error.drawAtEarly') || 'Draw date cannot be earlier than endsAt'
+      return
+    }
   }
   if (currentStep.value === 3) {
     if (!isStep3Valid.value) {
@@ -465,6 +473,16 @@ async function save() {
   }
   if (!isStep2Valid.value) {
     err.value = t('error.logisticsRequired') || 'Please complete Step 2 (Winner count and rewards)'
+    currentStep.value = 2
+    return
+  }
+  if (startsAt.value && endsAt.value && new Date(endsAt.value) < new Date(startsAt.value)) {
+    err.value = t('error.endsAtEarly') || 'Campaign end date cannot be earlier than startsAt'
+    currentStep.value = 2
+    return
+  }
+  if (endsAt.value && drawAt.value && new Date(drawAt.value) < new Date(endsAt.value)) {
+    err.value = t('error.drawAtEarly') || 'Draw date cannot be earlier than endsAt'
     currentStep.value = 2
     return
   }

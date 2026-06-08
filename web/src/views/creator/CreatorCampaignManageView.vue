@@ -338,6 +338,14 @@ async function saveDraft() {
       err.value = v
       return
     }
+    if (draftStartsAt.value && draftEndsAt.value && new Date(draftEndsAt.value) < new Date(draftStartsAt.value)) {
+      err.value = t('error.endsAtEarly') || 'Campaign end date cannot be earlier than startsAt'
+      return
+    }
+    if (draftEndsAt.value && draftDrawAt.value && new Date(draftDrawAt.value) < new Date(draftEndsAt.value)) {
+      err.value = t('error.drawAtEarly') || 'Draw date cannot be earlier than endsAt'
+      return
+    }
   }
   
   if (!draftTitle.value.trim()) {

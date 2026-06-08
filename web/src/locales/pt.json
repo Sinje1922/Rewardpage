@@ -477,7 +477,9 @@
     "missionQuizAnswerRequired": "Missão {n}: Selecione a resposta correta.",
     "missionLinkRequired": "Missão {n}: Insira uma URL de link.",
     "logisticsRequired": "Por favor, complete o Passo 2 (Vencedores e recompensas)",
-    "missionsRequired": "Por favor, adicione pelo menos uma missão"
+    "missionsRequired": "Por favor, adicione pelo menos uma missão",
+    "endsAtEarly": "A data de término da campanha não pode ser anterior à data de início.",
+    "drawAtEarly": "A data do sorteio não pode ser anterior à data de término da campanha."
   },
   "chatbot": {
     "title": "Assistente de IA da Pickku",

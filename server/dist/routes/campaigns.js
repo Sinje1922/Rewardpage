@@ -142,6 +142,14 @@ router.post("/", authRequired, requireRoles("MANAGER", "ADMIN"), async (req, res
         return;
     }
     const b = parsed.data;
+    if (b.startsAt && b.endsAt && new Date(b.endsAt) < new Date(b.startsAt)) {
+        res.status(400).json({ error: "캠페인 종료 날짜는 게시 시작 날짜보다 빠를 수 없습니다." });
+        return;
+    }
+    if (b.endsAt && b.drawAt && new Date(b.drawAt) < new Date(b.endsAt)) {
+        res.status(400).json({ error: "추첨 예정 일시는 캠페인 종료 날짜보다 빠를 수 없습니다." });
+        return;
+    }
     try {
         const camp = await prisma.$transaction(async (tx) => {
             const row = await tx.campaign.create({
@@ -214,6 +222,17 @@ router.patch("/:id", authRequired, async (req, res) => {
         return;
     }
     const b = parsed.data;
+    const startsAtVal = b.startsAt !== undefined ? b.startsAt : (c.startsAt ? c.startsAt.toISOString() : null);
+    const endsAtVal = b.endsAt !== undefined ? b.endsAt : (c.endsAt ? c.endsAt.toISOString() : null);
+    const drawAtVal = b.drawAt !== undefined ? b.drawAt : (c.drawAt ? c.drawAt.toISOString() : null);
+    if (startsAtVal && endsAtVal && new Date(endsAtVal) < new Date(startsAtVal)) {
+        res.status(400).json({ error: "캠페인 종료 날짜는 게시 시작 날짜보다 빠를 수 없습니다." });
+        return;
+    }
+    if (endsAtVal && drawAtVal && new Date(drawAtVal) < new Date(endsAtVal)) {
+        res.status(400).json({ error: "추첨 예정 일시는 캠페인 종료 날짜보다 빠를 수 없습니다." });
+        return;
+    }
     // MANAGER는 오직 캠페인 제목(title)과 설명(description)만 수정 가능
     if (req.user.role === "MANAGER") {
         if (b.missions !== undefined) {

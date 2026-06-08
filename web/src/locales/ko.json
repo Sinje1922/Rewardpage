@@ -462,7 +462,9 @@
     "missionQuizAnswerRequired": "미션 {n}: 정답 보기를 선택해 주세요.",
     "missionLinkRequired": "미션 {n}: 링크 URL을 입력해 주세요.",
     "logisticsRequired": "운영 및 보상 설정을 완료해 주세요 (당첨 인원 및 보상)",
-    "missionsRequired": "최소 한 개 이상의 미션을 추가해 주세요"
+    "missionsRequired": "최소 한 개 이상의 미션을 추가해 주세요",
+    "endsAtEarly": "캠페인 종료 날짜는 게시 시작 날짜보다 빠를 수 없습니다.",
+    "drawAtEarly": "추첨 예정 일시는 캠페인 종료 날짜보다 빠를 수 없습니다."
   },
   "chatbot": {
     "title": "Pickku AI 헬퍼",
