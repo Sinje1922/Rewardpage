@@ -32,6 +32,7 @@ type CampaignDetail = {
   companyName: string
   companyLogoUrl: string
   status: string
+  creatorId: string
   lotteryMode: string
   winnerCount: number
   rewardDistMode?: string
@@ -240,6 +241,74 @@ function toLocalInput(iso: string) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
+const requiredBalancesDiff = computed(() => {
+  const diffs = { POINT: 0, USDT: 0, BRL: 0, METAQ: 0, COUPON: 0 }
+  if (!camp.value) return diffs
+
+  let oldRewards: any[] = []
+  try {
+    oldRewards = JSON.parse(camp.value.rewardsConfig || "[]")
+  } catch {
+    oldRewards = []
+  }
+
+  const oldReqs = { POINT: 0, USDT: 0, BRL: 0, METAQ: 0, COUPON: 0 }
+  for (const r of oldRewards) {
+    const currency = r.currency
+    const amount = Number(r.amount) || 0
+    if (currency === 'POINT') oldReqs.POINT += Math.floor(amount)
+    else if (currency === 'COUPON') oldReqs.COUPON += Math.floor(amount)
+    else if (currency === 'USDT') oldReqs.USDT += amount
+    else if (currency === 'BRL') oldReqs.BRL += amount
+    else if (currency === 'METAQ') oldReqs.METAQ += amount
+  }
+
+  const newReqs = { POINT: 0, USDT: 0, BRL: 0, METAQ: 0, COUPON: 0 }
+  for (const r of draftRewards.value) {
+    const currency = r.currency
+    const amount = Number(r.amount) || 0
+    if (currency === 'POINT') newReqs.POINT += Math.floor(amount)
+    else if (currency === 'COUPON') newReqs.COUPON += Math.floor(amount)
+    else if (currency === 'USDT') newReqs.USDT += amount
+    else if (currency === 'BRL') newReqs.BRL += amount
+    else if (currency === 'METAQ') newReqs.METAQ += amount
+  }
+
+  diffs.POINT = newReqs.POINT - oldReqs.POINT
+  diffs.COUPON = newReqs.COUPON - oldReqs.COUPON
+  diffs.USDT = newReqs.USDT - oldReqs.USDT
+  diffs.BRL = newReqs.BRL - oldReqs.BRL
+  diffs.METAQ = newReqs.METAQ - oldReqs.METAQ
+
+  return diffs
+})
+
+const balanceErrors = computed(() => {
+  const errors: string[] = []
+  if (!auth.user || !camp.value) return errors
+  if (camp.value.creatorId !== auth.user.id) return errors
+
+  const diff = requiredBalancesDiff.value
+  const user = auth.user
+
+  if (diff.POINT > 0 && diff.POINT > (user.pointBalance || 0)) {
+    errors.push(`포인트 잔액이 부족합니다. (추가 필요: ${diff.POINT.toLocaleString()}P / 보유: ${(user.pointBalance || 0).toLocaleString()}P)`)
+  }
+  if (diff.COUPON > 0 && diff.COUPON > (user.couponBalance || 0)) {
+    errors.push(`티켓 잔액이 부족합니다. (추가 필요: ${diff.COUPON.toLocaleString()}장 / 보유: ${(user.couponBalance || 0).toLocaleString()}장)`)
+  }
+  if (diff.USDT > 0 && diff.USDT > (user.usdtBalance || 0)) {
+    errors.push(`USDT 잔액이 부족합니다. (추가 필요: ${diff.USDT.toLocaleString()} / 보유: ${(user.usdtBalance || 0).toLocaleString()})`)
+  }
+  if (diff.BRL > 0 && diff.BRL > (user.brlBalance || 0)) {
+    errors.push(`BRL 잔액이 부족합니다. (추가 필요: ${diff.BRL.toLocaleString()} / 보유: ${(user.brlBalance || 0).toLocaleString()})`)
+  }
+  if (diff.METAQ > 0 && diff.METAQ > (user.metaqBalance || 0)) {
+    errors.push(`METAQ 잔액이 부족합니다. (추가 필요: ${diff.METAQ.toLocaleString()} / 보유: ${(user.metaqBalance || 0).toLocaleString()})`)
+  }
+  return errors
+})
+
 async function reload() {
   const id = route.params.id as string
   const { data } = await api.get<CampaignDetail>(`/campaigns/${id}`)
@@ -318,6 +387,11 @@ function clearDraftLogo() {
   draftCompanyLogo.value = ''
 }
 
+function checkWalletRequirement(_reward: { amount: number; currency: string; customCurrency?: string; winnerCount?: number }, _event: Event) {
+  // MetaMask 연동 없이도 토큰 보상 설정 가능 (DB 잔액 기반)
+  // 실제 지갑 연동은 출금 신청 시에만 필요
+}
+
 function addDraftReward() {
   draftRewards.value.push({ amount: 0, currency: 'POINT', winnerCount: 1 })
 }
@@ -331,6 +405,7 @@ function removeDraftReward(index: number) {
 async function saveDraft() {
   err.value = ''
   
+
   // 매니저는 오직 제목과 설명만 패치하므로 미션 유효성 검사 불필요
   if (auth.user?.role !== 'MANAGER') {
     const v = validateRows(missionRows.value)
@@ -350,6 +425,11 @@ async function saveDraft() {
   
   if (!draftTitle.value.trim()) {
     err.value = t('ops.titleRequired')
+    return
+  }
+  if (balanceErrors.value.length > 0) {
+    err.value = balanceErrors.value.join(' | ')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
     return
   }
   const id = route.params.id as string
@@ -776,12 +856,24 @@ async function downloadCsv() {
           <input v-model="draftAutoApprove" type="checkbox" />
           {{ $t('ops.autoApprove') }}
         </label>
+        <!-- 보유 잔액 정보 -->
+        <div class="creator-balance-info" v-if="auth.user && camp && camp.creatorId === auth.user.id">
+          <div class="balance-info-header">내 보유 잔액</div>
+          <div class="balance-chips">
+            <span class="balance-chip">🪙 포인트: {{ (auth.user.pointBalance || 0).toLocaleString() }}P</span>
+            <span class="balance-chip">🎟️ 티켓: {{ (auth.user.couponBalance || 0).toLocaleString() }}장</span>
+            <span class="balance-chip">💵 USDT: {{ (auth.user.usdtBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 4 }) }}</span>
+            <span class="balance-chip">🇧🇷 BRL: {{ (auth.user.brlBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 4 }) }}</span>
+            <span class="balance-chip">💎 METAQ: {{ (auth.user.metaqBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 4 }) }}</span>
+          </div>
+        </div>
+
         <div class="field">
           <label>{{ $t('ops.totalReward') }}</label>
           <div v-for="(r, idx) in draftRewards" :key="idx" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem">
-            <div style="display: flex; gap: 0.5rem; align-items: center">
-              <input v-model.number="r.amount" type="number" min="0" style="flex: 1" />
-              <select v-model="r.currency" style="width: 120px">
+            <div style="display: flex; gap: 0.5rem; align-items: center" :class="{ 'has-error': r.currency !== 'OTHER' && r.currency !== 'COUPON' && balanceErrors.some(e => e.includes(r.currency)) }">
+              <input v-model.number="r.amount" type="number" min="0" step="any" style="flex: 1" />
+              <select v-model="r.currency" style="width: 120px" @change="checkWalletRequirement(r, $event)">
                 <option value="POINT">{{ $t('common.point') || 'POINT' }}</option>
                 <option value="USDT">USDT</option>
                 <option value="BRL">BRL ({{ $t('common.brl') || 'Real' }})</option>
@@ -800,6 +892,17 @@ async function downloadCsv() {
             </div>
           </div>
           <button type="button" class="btn btn-sm" @click="addDraftReward">+ {{ $t('ops.addReward') || 'Add Reward' }}</button>
+
+          <!-- 잔액 부족 경고 -->
+          <div v-if="balanceErrors.length > 0" class="balance-error-box" style="margin-top: 1rem">
+            <div v-for="err in balanceErrors" :key="err" class="error-msg">
+              ⚠️ {{ err }}
+            </div>
+            <p class="store-redirect-notice">
+              잔액이 부족합니다. 상점에서 충전한 후 변경 사항을 저장해 주세요.
+              <RouterLink to="/store" class="btn btn-sm btn-recharge-direct">상점 바로가기 ➔</RouterLink>
+            </p>
+          </div>
           
           <div class="reward-hint" style="margin-top: 0.5rem; font-size: 0.85rem; opacity: 0.8">
             <template v-if="draftRewardDistMode === 'SEPARATE'">
@@ -1374,5 +1477,100 @@ async function downloadCsv() {
     justify-content: space-between;
     min-width: 0;
   }
+}
+
+/* Balance Dashboard styles */
+.creator-balance-info {
+  background: rgba(99, 102, 241, 0.04);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+:root.dark .creator-balance-info {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+.balance-info-header {
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #4f46e5;
+  margin-bottom: 0.75rem;
+}
+:root.dark .balance-info-header {
+  color: #818cf8;
+}
+.balance-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.balance-chip {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 99px;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #334155;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+}
+:root.dark .balance-chip {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+/* Balance Error Box */
+.balance-error-box {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px dashed rgba(239, 68, 68, 0.3);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-top: 1.25rem;
+}
+.balance-error-box .error-msg {
+  color: #ef4444;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+.balance-error-box .error-msg:last-of-type {
+  margin-bottom: 1rem;
+}
+.store-redirect-notice {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+:root.dark .store-redirect-notice {
+  color: #94a3b8;
+}
+.btn-recharge-direct {
+  background: #ef4444 !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2) !important;
+  border: none !important;
+  padding: 0.4rem 1rem !important;
+  font-size: 0.85rem !important;
+  font-weight: 800 !important;
+  margin-top: 0.25rem;
+  text-decoration: none;
+  border-radius: 8px;
+}
+.btn-recharge-direct:hover {
+  background: #dc2626 !important;
+  transform: translateY(-1px);
+}
+.has-error {
+  border: 2px solid #ef4444 !important;
+  border-radius: 12px;
+  padding: 0.25rem;
 }
 </style>

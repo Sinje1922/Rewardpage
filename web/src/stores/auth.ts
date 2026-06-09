@@ -9,6 +9,10 @@ export type User = {
   email: string; 
   role: string; 
   pointBalance: number; 
+  usdtBalance: number;
+  brlBalance: number;
+  metaqBalance: number;
+  couponBalance: number;
   nickname?: string; 
   avatarUrl?: string;
   birthDate?: string;

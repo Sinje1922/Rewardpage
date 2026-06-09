@@ -14,6 +14,7 @@ import uploadRouter from "./routes/upload.js";
 import verifyRouter from "./routes/verify.js";
 import oauthRouter from "./routes/oauth.js";
 import managerRequestsRouter from "./routes/managerRequests.js";
+import blockchainRouter from "./routes/blockchain.js";
 import { startLotteryWorker } from "./workers/lotteryWorker.js";
 import { startTelegramBot } from "./lib/telegram.js";
 
@@ -85,6 +86,7 @@ app.use("/api/submissions", submissionsRouter);
 app.use("/api/upload", uploadRouter);
 app.use("/api/verify", verifyRouter);
 app.use("/api/oauth", oauthRouter);
+app.use("/api/blockchain", blockchainRouter);
 
 const port = Number(process.env.PORT ?? 4000);
 const host = "0.0.0.0";

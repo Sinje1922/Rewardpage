@@ -4,10 +4,12 @@ import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { api, getFileUrl } from '../../api/client'
 import { uploadCompanyLogo } from '../../api/upload'
+import { useAuthStore } from '../../stores/auth'
 import MissionListEditor from '../../components/ops/MissionListEditor.vue'
 import RichEditor from '../../components/common/RichEditor.vue'
 import { emptyMissionRow, rowToPayload, validateRows, type MissionRowState } from '../../utils/missionRow'
 
+const auth = useAuthStore()
 const { t, locale } = useI18n()
 const router = useRouter()
 const currentStep = ref(1)
@@ -180,6 +182,12 @@ function clearRewardImage() {
   rewardImageUrl.value = ''
 }
 
+function checkWalletRequirement(_reward: { amount: number; currency: string; customCurrency?: string; winnerCount?: number }, _event: Event) {
+  // MetaMask 연동 없이도 토큰 보상 설정 가능 (DB 잔액 기반)
+  // 실제 지갑 연동은 출금 신청 시에만 필요
+}
+
+
 function addReward() {
   rewards.value.push({ amount: 0, currency: 'POINT', winnerCount: 1 })
 }
@@ -191,7 +199,53 @@ function removeReward(index: number) {
 }
 
 const isStep1Valid = computed(() => !!title.value.trim())
+const requiredBalances = computed(() => {
+  const reqs = { POINT: 0, USDT: 0, BRL: 0, METAQ: 0, COUPON: 0 }
+  for (const r of rewards.value) {
+    const currency = r.currency
+    const amount = Number(r.amount) || 0
+    if (currency === 'POINT') {
+      reqs.POINT += Math.floor(amount)
+    } else if (currency === 'COUPON') {
+      reqs.COUPON += Math.floor(amount)
+    } else if (currency === 'USDT') {
+      reqs.USDT += amount
+    } else if (currency === 'BRL') {
+      reqs.BRL += amount
+    } else if (currency === 'METAQ') {
+      reqs.METAQ += amount
+    }
+  }
+  return reqs
+})
+
+const balanceErrors = computed(() => {
+  const errors: string[] = []
+  if (!auth.user) return errors
+
+  const req = requiredBalances.value
+  const user = auth.user
+
+  if (req.POINT > (user.pointBalance || 0)) {
+    errors.push(`포인트 잔액이 부족합니다. (필요: ${req.POINT.toLocaleString()}P / 보유: ${(user.pointBalance || 0).toLocaleString()}P)`)
+  }
+  if (req.COUPON > (user.couponBalance || 0)) {
+    errors.push(`티켓 잔액이 부족합니다. (필요: ${req.COUPON.toLocaleString()}장 / 보유: ${(user.couponBalance || 0).toLocaleString()}장)`)
+  }
+  if (req.USDT > (user.usdtBalance || 0)) {
+    errors.push(`USDT 잔액이 부족합니다. (필요: ${req.USDT.toLocaleString()} / 보유: ${(user.usdtBalance || 0).toLocaleString()})`)
+  }
+  if (req.BRL > (user.brlBalance || 0)) {
+    errors.push(`BRL 잔액이 부족합니다. (필요: ${req.BRL.toLocaleString()} / 보유: ${(user.brlBalance || 0).toLocaleString()})`)
+  }
+  if (req.METAQ > (user.metaqBalance || 0)) {
+    errors.push(`METAQ 잔액이 부족합니다. (필요: ${req.METAQ.toLocaleString()} / 보유: ${(user.metaqBalance || 0).toLocaleString()})`)
+  }
+  return errors
+})
+
 const isStep2Valid = computed(() => {
+  if (balanceErrors.value.length > 0) return false
   if (rewardDistMode.value === 'SEPARATE') {
     return rewards.value.some(r => r.amount > 0) && rewards.value.every(r => !r.amount || (r.winnerCount && r.winnerCount > 0))
   }
@@ -463,9 +517,108 @@ onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 
+// ─── 에스크로 Lock 플로우 ─────────────────────────────────────────────────────
+
+const escrowLocking = ref(false)
+
+// ERC-20 approve ABI (최소)
+const ERC20_APPROVE_ABI = [
+  'function approve(address spender, uint256 amount) returns (bool)',
+  'function allowance(address owner, address spender) view returns (uint256)',
+  'function decimals() view returns (uint8)',
+]
+
+// CampaignEscrow lockFunds ABI (최소)
+const ESCROW_LOCK_ABI = [
+  'function lockFunds(bytes32 campaignId, address token, uint256 amount)',
+]
+
+
+
+/**
+ * MetaMask를 통해 에스크로 컨트랙트에 토큰 approve 및 lock
+ * 캠페인 저장 전 호출 — 성공 시 campaignId를 반환
+ */
+async function escrowTokensOnChain(
+  tempCampaignId: string, // 서버에서 발급받은 실제 캠페인 ID
+  tokenRewards: { currency: string; totalAmount: number }[]
+): Promise<boolean> {
+  const ethereum = (window as any).ethereum
+  if (!ethereum) {
+    err.value = '메타마스크가 설치되어 있지 않습니다.'
+    return false
+  }
+
+  try {
+    escrowLocking.value = true
+
+    // 블록체인 설정 조회 (컨트랙트 주소, 토큰 주소)
+    const { data: chainInfo } = await api.get('/blockchain/info')
+    if (!chainInfo.escrowAddress) {
+      // 에스크로 컨트랙트 미설정 → 그냥 진행 (개발 환경)
+      console.warn('[Escrow] 에스크로 컨트랙트 미설정 — Lock 건너뜀')
+      return true
+    }
+
+    const escrowAddress = chainInfo.escrowAddress
+
+    // MetaMask 계정 요청
+    await ethereum.request({ method: 'eth_requestAccounts' })
+
+    // ethers.js를 import (dynamic import for browser)
+    // @ts-ignore
+    const { ethers } = await import('https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.min.js')
+
+    const provider = new ethers.BrowserProvider(ethereum)
+    const signer = await provider.getSigner()
+    const campaignKey = ethers.keccak256(ethers.toUtf8Bytes(tempCampaignId))
+
+    for (const reward of tokenRewards) {
+      const currency = reward.currency as 'USDT' | 'METAQ'
+      const tokenAddress = currency === 'USDT' ? chainInfo.usdtAddress : chainInfo.metaqAddress
+
+      if (!tokenAddress) {
+        err.value = `${currency} 토큰 컨트랙트 주소를 찾을 수 없습니다.`
+        return false
+      }
+
+      const tokenContract = new ethers.Contract(tokenAddress, ERC20_APPROVE_ABI, signer)
+      const decimals = await tokenContract.decimals()
+      const amount = ethers.parseUnits(reward.totalAmount.toFixed(Number(decimals)), decimals)
+
+      // 1. approve — 에스크로 컨트랙트가 토큰을 가져갈 수 있도록 허용
+      err.value = `${currency} 토큰 approve 중... (메타마스크 서명 요청)`
+      const approveTx = await tokenContract.approve(escrowAddress, amount)
+      await approveTx.wait()
+      console.log(`[Escrow] ${currency} approve 완료`)
+
+      // 2. lockFunds — 에스크로 컨트랙트에 토큰 잠금
+      err.value = `${currency} 토큰 에스크로 잠금 중... (메타마스크 서명 요청)`
+      const escrowContract = new ethers.Contract(escrowAddress, ESCROW_LOCK_ABI, signer)
+      const lockTx = await escrowContract.lockFunds(campaignKey, tokenAddress, amount)
+      await lockTx.wait()
+      console.log(`[Escrow] ${currency} Lock 완료! TX: ${lockTx.hash}`)
+    }
+
+    err.value = ''
+    return true
+  } catch (e: any) {
+    console.error('[Escrow] Lock 실패:', e)
+    if (e.code === 4001 || e.code === 'ACTION_REJECTED') {
+      err.value = '메타마스크 서명을 취소했습니다. 토큰 보상을 설정하려면 서명이 필요합니다.'
+    } else {
+      err.value = `에스크로 잠금 실패: ${e.message || e}`
+    }
+    return false
+  } finally {
+    escrowLocking.value = false
+  }
+}
+
 async function save() {
   err.value = ''
   
+
   if (!isStep1Valid.value) {
     err.value = t('ops.titleRequired')
     currentStep.value = 1
@@ -503,6 +656,7 @@ async function save() {
       ? rewards.value.reduce((sum, r) => sum + (r.winnerCount || 1), 0)
       : winnerCount.value
 
+    // Step 1: 서버에 캠페인 생성 (campaignId 발급)
     const { data } = await api.post<{ id: string }>('/campaigns', {
       title: title.value.trim(),
       description: description.value,
@@ -513,14 +667,41 @@ async function save() {
       rewardDistMode: rewardDistMode.value,
       lotteryMode: lotteryMode.value,
       autoApprove: autoApprove.value,
-      totalRewardPoints: rewards.value[0]?.amount || 0, // Legacy fallback
-      rewardCurrency: rewards.value[0]?.currency || "POINT", // Legacy fallback
+      totalRewardPoints: rewards.value[0]?.amount || 0,
+      rewardCurrency: rewards.value[0]?.currency || "POINT",
       rewardsConfig: rewards.value,
       startsAt: startsAt.value ? new Date(startsAt.value).toISOString() : null,
       endsAt: endsAt.value ? new Date(endsAt.value).toISOString() : null,
       drawAt: drawAt.value ? new Date(drawAt.value).toISOString() : null,
       missions,
     })
+
+    // Step 2: USDT/METAQ 토큰 보상이 있으면 에스크로 Lock (MetaMask 서명)
+    const tokenRewardsSummary = rewards.value
+      .filter(r => ['USDT', 'METAQ'].includes(r.currency) && r.amount > 0)
+      .reduce((acc: { currency: string; totalAmount: number }[], r) => {
+        const existing = acc.find(a => a.currency === r.currency)
+        if (existing) {
+          existing.totalAmount += r.amount
+        } else {
+          acc.push({ currency: r.currency, totalAmount: r.amount })
+        }
+        return acc
+      }, [])
+
+    if (tokenRewardsSummary.length > 0) {
+      const lockSuccess = await escrowTokensOnChain(data.id, tokenRewardsSummary)
+      if (!lockSuccess) {
+        // 에스크로 Lock 실패 시 캠페인 삭제 (롤백)
+        try {
+          await api.delete(`/campaigns/${data.id}`)
+        } catch {
+          console.warn('[Escrow] 캠페인 롤백 실패 — 수동 삭제 필요:', data.id)
+        }
+        return // err.value는 escrowTokensOnChain에서 이미 설정됨
+      }
+    }
+
     localStorage.removeItem('temp_campaign_form')
     isSubmitting.value = true
     await router.replace(`/ops/campaigns/${data.id}`)
@@ -538,6 +719,7 @@ async function save() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
+
 
 const isRewardOverflowing = ref(false)
 
@@ -714,12 +896,24 @@ const checkRewardOverflow = (event: MouseEvent) => {
             </div>
           </div>
 
+          <!-- 보유 잔액 정보 -->
+          <div class="creator-balance-info" v-if="auth.user">
+            <div class="balance-info-header">내 보유 잔액</div>
+            <div class="balance-chips">
+              <span class="balance-chip">🪙 포인트: {{ (auth.user.pointBalance || 0).toLocaleString() }}P</span>
+              <span class="balance-chip">🎟️ 티켓: {{ (auth.user.couponBalance || 0).toLocaleString() }}장</span>
+              <span class="balance-chip">💵 USDT: {{ (auth.user.usdtBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 4 }) }}</span>
+              <span class="balance-chip">🇧🇷 BRL: {{ (auth.user.brlBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 4 }) }}</span>
+              <span class="balance-chip">💎 METAQ: {{ (auth.user.metaqBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 4 }) }}</span>
+            </div>
+          </div>
+
           <div class="field reward-box">
             <label>{{ $t('ops.totalReward') }}</label>
             <div v-for="(r, idx) in rewards" :key="idx" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem">
-              <div style="display: flex; gap: 0.5rem; align-items: center">
-                <input v-model.number="r.amount" type="number" min="0" step="1" placeholder="1000" style="flex: 1" />
-                <select v-model="r.currency" style="width: 120px">
+              <div style="display: flex; gap: 0.5rem; align-items: center" :class="{ 'has-error': r.currency !== 'OTHER' && r.currency !== 'COUPON' && balanceErrors.some(e => e.includes(r.currency)) }">
+                <input v-model.number="r.amount" type="number" min="0" step="any" placeholder="1000" style="flex: 1" />
+                <select v-model="r.currency" style="width: 120px" @change="checkWalletRequirement(r, $event)">
                   <option value="POINT">{{ $t('common.point') || 'POINT' }}</option>
                   <option value="USDT">USDT</option>
                   <option value="BRL">BRL ({{ $t('common.brl') || 'Real' }})</option>
@@ -738,6 +932,17 @@ const checkRewardOverflow = (event: MouseEvent) => {
               </div>
             </div>
             <button type="button" class="btn btn-sm" style="margin-bottom: 1rem" @click="addReward">+ {{ $t('ops.addReward') || 'Add Reward' }}</button>
+            
+            <!-- 잔액 부족 경고 -->
+            <div v-if="balanceErrors.length > 0" class="balance-error-box">
+              <div v-for="err in balanceErrors" :key="err" class="error-msg">
+                ⚠️ {{ err }}
+              </div>
+              <p class="store-redirect-notice">
+                잔액이 부족합니다. 상점에서 충전한 후 캠페인을 개설해 주세요.
+                <RouterLink to="/store" class="btn btn-sm btn-recharge-direct">상점 바로가기 ➔</RouterLink>
+              </p>
+            </div>
             
             <div class="reward-hint">
               <template v-if="rewardDistMode === 'SEPARATE'">
@@ -2114,6 +2319,101 @@ const checkRewardOverflow = (event: MouseEvent) => {
 .modal-fade-enter-from,
 .modal-fade-leave-to {
   opacity: 0;
+}
+
+/* Balance Dashboard styles */
+.creator-balance-info {
+  background: rgba(99, 102, 241, 0.04);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+:root.dark .creator-balance-info {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+.balance-info-header {
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #4f46e5;
+  margin-bottom: 0.75rem;
+}
+:root.dark .balance-info-header {
+  color: #818cf8;
+}
+.balance-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.balance-chip {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 99px;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #334155;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+}
+:root.dark .balance-chip {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+/* Balance Error Box */
+.balance-error-box {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px dashed rgba(239, 68, 68, 0.3);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-top: 1.25rem;
+}
+.balance-error-box .error-msg {
+  color: #ef4444;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+.balance-error-box .error-msg:last-of-type {
+  margin-bottom: 1rem;
+}
+.store-redirect-notice {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+:root.dark .store-redirect-notice {
+  color: #94a3b8;
+}
+.btn-recharge-direct {
+  background: #ef4444 !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2) !important;
+  border: none !important;
+  padding: 0.4rem 1rem !important;
+  font-size: 0.85rem !important;
+  font-weight: 800 !important;
+  margin-top: 0.25rem;
+  text-decoration: none;
+  border-radius: 8px;
+}
+.btn-recharge-direct:hover {
+  background: #dc2626 !important;
+  transform: translateY(-1px);
+}
+.has-error {
+  border: 2px solid #ef4444 !important;
+  border-radius: 12px;
+  padding: 0.25rem;
 }
 </style>
 

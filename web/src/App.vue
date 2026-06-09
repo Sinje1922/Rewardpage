@@ -127,17 +127,13 @@ watch(() => auth.token, (newVal) => {
             <RouterLink to="/campaigns" class="nav-item">{{ $t('nav.campaigns') }}</RouterLink>
             <RouterLink to="/my-page" class="nav-item">{{ $t('nav.myPage') }}</RouterLink>
             <RouterLink v-if="auth.isOperator" to="/ops" class="nav-item">{{ $t('nav.ops') }}</RouterLink>
+            <RouterLink v-if="auth.isOperator" to="/store" class="nav-item">{{ $t('nav.store') }}</RouterLink>
             <RouterLink v-if="auth.isAdmin" to="/admin" class="nav-item">{{ $t('nav.admin') }}</RouterLink>
           </nav>
         </div>
 
         <!-- Right: Utils -->
         <div class="utils-area">
-          <div v-if="auth.user" class="points-pill">
-            <span class="coin">🪙</span>
-            <span class="balance">{{ auth.user.pointBalance.toLocaleString() }}</span>
-            <span class="unit">P</span>
-          </div>
           <!-- Right: Utils -->
           <div v-if="auth.token" class="bell-container">
             <button class="icon-btn bell-btn pc-only" @click="showNotifications = !showNotifications">
@@ -227,6 +223,10 @@ watch(() => auth.token, (newVal) => {
       <RouterLink v-if="auth.token && auth.isOperator" to="/ops" class="b-nav-item">
         <span class="icon">🛠️</span>
         <span class="label">{{ $t('nav.ops') }}</span>
+      </RouterLink>
+      <RouterLink v-if="auth.token && auth.isOperator" to="/store" class="b-nav-item">
+        <span class="icon">🏪</span>
+        <span class="label">{{ $t('nav.store') }}</span>
       </RouterLink>
       <RouterLink v-if="auth.token && auth.isAdmin" to="/admin" class="b-nav-item">
         <span class="icon">⚙️</span>

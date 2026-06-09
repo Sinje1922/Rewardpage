@@ -7,6 +7,32 @@ import { isOperator } from "../lib/roles.js";
 
 const router = Router();
 
+function calculateRequiredBalances(rewardsConfig: any[]) {
+  const reqs = {
+    POINT: 0,
+    USDT: 0,
+    BRL: 0,
+    METAQ: 0,
+    COUPON: 0,
+  };
+  for (const r of rewardsConfig) {
+    const currency = r.currency;
+    const amount = Number(r.amount) || 0;
+    if (currency === "POINT") {
+      reqs.POINT += Math.floor(amount);
+    } else if (currency === "USDT") {
+      reqs.USDT += amount;
+    } else if (currency === "BRL") {
+      reqs.BRL += amount;
+    } else if (currency === "METAQ") {
+      reqs.METAQ += amount;
+    } else if (currency === "COUPON") {
+      reqs.COUPON += Math.floor(amount);
+    }
+  }
+  return reqs;
+}
+
 /** 공개 캠페인 또는 운영자만 비공개(초안 등) 열람 */
 function canSeeCampaign(role: string | undefined, status: string) {
   if (status === "ACTIVE" || status === "CLOSED" || status === "DRAWN") return true;
@@ -163,8 +189,56 @@ router.post("/", authRequired, requireRoles("MANAGER", "ADMIN"), async (req: Aut
     res.status(400).json({ error: "추첨 예정 일시는 캠페인 종료 날짜보다 빠를 수 없습니다." });
     return;
   }
+
+  const rewardsConfig = b.rewardsConfig || [];
+  const required = calculateRequiredBalances(rewardsConfig);
+
+  const creator = await prisma.user.findUnique({
+    where: { id: req.user!.id },
+    select: { pointBalance: true, usdtBalance: true, brlBalance: true, metaqBalance: true, couponBalance: true, walletAddress: true }
+  });
+
+  if (!creator) {
+    res.status(404).json({ error: "사용자를 찾을 수 없습니다." });
+    return;
+  }
+
+  const hasTokenReward = rewardsConfig.some((r: any) => ["USDT", "METAQ"].includes(r.currency));
+  if (hasTokenReward && !creator.walletAddress) {
+    res.status(400).json({ error: "토큰 보상(USDT, METAQ)을 설정하려면 메타마스크 지갑 연동이 필수입니다." });
+    return;
+  }
+
+  if (
+    creator.pointBalance < required.POINT ||
+    creator.usdtBalance < required.USDT ||
+    creator.brlBalance < required.BRL ||
+    creator.metaqBalance < required.METAQ ||
+    creator.couponBalance < required.COUPON
+  ) {
+    res.status(400).json({ error: "보유하신 재화의 잔액이 부족합니다. 상점에서 충전 후 시도해 주세요." });
+    return;
+  }
+
   try {
     const camp = await prisma.$transaction(async (tx) => {
+      // 차감 트랜잭션
+      if (required.POINT > 0) {
+        await tx.user.update({ where: { id: req.user!.id }, data: { pointBalance: { decrement: required.POINT } } });
+      }
+      if (required.USDT > 0) {
+        await tx.user.update({ where: { id: req.user!.id }, data: { usdtBalance: { decrement: required.USDT } } });
+      }
+      if (required.BRL > 0) {
+        await tx.user.update({ where: { id: req.user!.id }, data: { brlBalance: { decrement: required.BRL } } });
+      }
+      if (required.METAQ > 0) {
+        await tx.user.update({ where: { id: req.user!.id }, data: { metaqBalance: { decrement: required.METAQ } } });
+      }
+      if (required.COUPON > 0) {
+        await tx.user.update({ where: { id: req.user!.id }, data: { couponBalance: { decrement: required.COUPON } } });
+      }
+
       const row = await tx.campaign.create({
         data: {
           title: b.title,
@@ -265,6 +339,61 @@ router.patch("/:id", authRequired, async (req: AuthedRequest, res) => {
 
   const isAdmin = req.user!.role === "ADMIN";
 
+  const finalRewardsConfig = b.rewardsConfig !== undefined ? b.rewardsConfig : JSON.parse(c.rewardsConfig || "[]");
+  const hasTokenReward = finalRewardsConfig.some((r: any) => ["USDT", "METAQ"].includes(r.currency));
+  if (hasTokenReward) {
+    const creator = await prisma.user.findUnique({
+      where: { id: c.creatorId },
+      select: { walletAddress: true }
+    });
+    if (!creator || !creator.walletAddress) {
+      res.status(400).json({ error: "토큰 보상(USDT, METAQ)을 설정하려면 메타마스크 지갑 연동이 필수입니다." });
+      return;
+    }
+  }
+
+  let refundOrDeduct: { POINT: number; USDT: number; BRL: number; METAQ: number; COUPON: number } | null = null;
+  if (b.rewardsConfig !== undefined) {
+    let oldRewards: any[] = [];
+    try {
+      oldRewards = JSON.parse(c.rewardsConfig || "[]");
+    } catch {
+      oldRewards = [];
+    }
+    const oldReqs = calculateRequiredBalances(oldRewards);
+    const newReqs = calculateRequiredBalances(b.rewardsConfig);
+
+    const diff = {
+      POINT: newReqs.POINT - oldReqs.POINT,
+      USDT: newReqs.USDT - oldReqs.USDT,
+      BRL: newReqs.BRL - oldReqs.BRL,
+      METAQ: newReqs.METAQ - oldReqs.METAQ,
+      COUPON: newReqs.COUPON - oldReqs.COUPON,
+    };
+
+    if (diff.POINT > 0 || diff.USDT > 0 || diff.BRL > 0 || diff.METAQ > 0 || diff.COUPON > 0) {
+      const creator = await prisma.user.findUnique({
+        where: { id: c.creatorId },
+        select: { pointBalance: true, usdtBalance: true, brlBalance: true, metaqBalance: true, couponBalance: true }
+      });
+      if (!creator) {
+        res.status(404).json({ error: "캠페인 생성자를 찾을 수 없습니다." });
+        return;
+      }
+      if (
+        (diff.POINT > 0 && creator.pointBalance < diff.POINT) ||
+        (diff.USDT > 0 && creator.usdtBalance < diff.USDT) ||
+        (diff.BRL > 0 && creator.brlBalance < diff.BRL) ||
+        (diff.METAQ > 0 && creator.metaqBalance < diff.METAQ) ||
+        (diff.COUPON > 0 && creator.couponBalance < diff.COUPON)
+      ) {
+        res.status(400).json({ error: "변경할 보상에 대한 보유 재화 잔액이 부족합니다." });
+        return;
+      }
+    }
+    refundOrDeduct = diff;
+  }
+
   if (b.missions !== undefined) {
     if (!isAdmin && c.status !== "DRAFT" && c.status !== "PENDING_ADMIN") {
       res.status(400).json({
@@ -304,26 +433,84 @@ router.patch("/:id", authRequired, async (req: AuthedRequest, res) => {
     b.endsAt !== undefined ||
     b.drawAt !== undefined;
 
-  if (hasMeta) {
-    await prisma.campaign.update({
-      where: { id: c.id },
-      data: {
-        ...(b.title !== undefined && { title: b.title }),
-        ...(b.description !== undefined && { description: b.description }),
-        ...(b.companyName !== undefined && { companyName: b.companyName }),
-        ...(b.companyLogoUrl !== undefined && { companyLogoUrl: b.companyLogoUrl }),
-        ...(b.rewardImageUrl !== undefined && { rewardImageUrl: b.rewardImageUrl }),
-        ...(b.winnerCount !== undefined && { winnerCount: b.winnerCount }),
-        ...(b.lotteryMode !== undefined && { lotteryMode: b.lotteryMode }),
-        ...(b.rewardDistMode !== undefined && { rewardDistMode: b.rewardDistMode }),
-        ...(b.autoApprove !== undefined && { autoApprove: b.autoApprove }),
-        ...(b.totalRewardPoints !== undefined && { totalRewardPoints: b.totalRewardPoints }),
-        ...(b.rewardCurrency !== undefined && { rewardCurrency: b.rewardCurrency }),
-        ...(b.rewardsConfig !== undefined && { rewardsConfig: JSON.stringify(b.rewardsConfig) }),
-        ...(b.startsAt !== undefined && { startsAt: b.startsAt ? new Date(b.startsAt) : null }),
-        ...(b.endsAt !== undefined && { endsAt: b.endsAt ? new Date(b.endsAt) : null }),
-        ...(b.drawAt !== undefined && { drawAt: b.drawAt ? new Date(b.drawAt) : null }),
-      },
+  if (hasMeta || refundOrDeduct) {
+    await prisma.$transaction(async (tx) => {
+      if (refundOrDeduct) {
+        const creatorId = c.creatorId;
+        if (refundOrDeduct.POINT !== 0) {
+          await tx.user.update({
+            where: { id: creatorId },
+            data: {
+              pointBalance: refundOrDeduct.POINT > 0 
+                ? { decrement: refundOrDeduct.POINT } 
+                : { increment: Math.abs(refundOrDeduct.POINT) }
+            }
+          });
+        }
+        if (refundOrDeduct.USDT !== 0) {
+          await tx.user.update({
+            where: { id: creatorId },
+            data: {
+              usdtBalance: refundOrDeduct.USDT > 0 
+                ? { decrement: refundOrDeduct.USDT } 
+                : { increment: Math.abs(refundOrDeduct.USDT) }
+            }
+          });
+        }
+        if (refundOrDeduct.BRL !== 0) {
+          await tx.user.update({
+            where: { id: creatorId },
+            data: {
+              brlBalance: refundOrDeduct.BRL > 0 
+                ? { decrement: refundOrDeduct.BRL } 
+                : { increment: Math.abs(refundOrDeduct.BRL) }
+            }
+          });
+        }
+        if (refundOrDeduct.METAQ !== 0) {
+          await tx.user.update({
+            where: { id: creatorId },
+            data: {
+              metaqBalance: refundOrDeduct.METAQ > 0 
+                ? { decrement: refundOrDeduct.METAQ } 
+                : { increment: Math.abs(refundOrDeduct.METAQ) }
+            }
+          });
+        }
+        if (refundOrDeduct.COUPON !== 0) {
+          await tx.user.update({
+            where: { id: creatorId },
+            data: {
+              couponBalance: refundOrDeduct.COUPON > 0 
+                ? { decrement: refundOrDeduct.COUPON } 
+                : { increment: Math.abs(refundOrDeduct.COUPON) }
+            }
+          });
+        }
+      }
+
+      if (hasMeta) {
+        await tx.campaign.update({
+          where: { id: c.id },
+          data: {
+            ...(b.title !== undefined && { title: b.title }),
+            ...(b.description !== undefined && { description: b.description }),
+            ...(b.companyName !== undefined && { companyName: b.companyName }),
+            ...(b.companyLogoUrl !== undefined && { companyLogoUrl: b.companyLogoUrl }),
+            ...(b.rewardImageUrl !== undefined && { rewardImageUrl: b.rewardImageUrl }),
+            ...(b.winnerCount !== undefined && { winnerCount: b.winnerCount }),
+            ...(b.lotteryMode !== undefined && { lotteryMode: b.lotteryMode }),
+            ...(b.rewardDistMode !== undefined && { rewardDistMode: b.rewardDistMode }),
+            ...(b.autoApprove !== undefined && { autoApprove: b.autoApprove }),
+            ...(b.totalRewardPoints !== undefined && { totalRewardPoints: b.totalRewardPoints }),
+            ...(b.rewardCurrency !== undefined && { rewardCurrency: b.rewardCurrency }),
+            ...(b.rewardsConfig !== undefined && { rewardsConfig: JSON.stringify(b.rewardsConfig) }),
+            ...(b.startsAt !== undefined && { startsAt: b.startsAt ? new Date(b.startsAt) : null }),
+            ...(b.endsAt !== undefined && { endsAt: b.endsAt ? new Date(b.endsAt) : null }),
+            ...(b.drawAt !== undefined && { drawAt: b.drawAt ? new Date(b.drawAt) : null }),
+          },
+        });
+      }
     });
   }
 
@@ -650,7 +837,36 @@ router.delete("/:id", authRequired, requireRoles("ADMIN"), async (req: AuthedReq
   }
 
   try {
-    await prisma.campaign.delete({ where: { id: cid } });
+    await prisma.$transaction(async (tx) => {
+      if (c.status !== "DRAWN") {
+        let oldRewards: any[] = [];
+        try {
+          oldRewards = JSON.parse(c.rewardsConfig || "[]");
+        } catch {
+          oldRewards = [];
+        }
+        const refund = calculateRequiredBalances(oldRewards);
+
+        const creatorId = c.creatorId;
+        if (refund.POINT > 0) {
+          await tx.user.update({ where: { id: creatorId }, data: { pointBalance: { increment: refund.POINT } } });
+        }
+        if (refund.USDT > 0) {
+          await tx.user.update({ where: { id: creatorId }, data: { usdtBalance: { increment: refund.USDT } } });
+        }
+        if (refund.BRL > 0) {
+          await tx.user.update({ where: { id: creatorId }, data: { brlBalance: { increment: refund.BRL } } });
+        }
+        if (refund.METAQ > 0) {
+          await tx.user.update({ where: { id: creatorId }, data: { metaqBalance: { increment: refund.METAQ } } });
+        }
+        if (refund.COUPON > 0) {
+          await tx.user.update({ where: { id: creatorId }, data: { couponBalance: { increment: refund.COUPON } } });
+        }
+      }
+
+      await tx.campaign.delete({ where: { id: cid } });
+    });
     res.json({ success: true, message: "캠페인이 성공적으로 삭제되었습니다." });
   } catch (err: any) {
     console.error("Campaign Delete Error:", err);

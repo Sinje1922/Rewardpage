@@ -8,7 +8,8 @@
     "admin": "Admin",
     "login": "Login",
     "logout": "Logout",
-    "myPage": "My Page"
+    "myPage": "My Page",
+    "store": "Shop"
   },
   "home": {
     "badge": "pickku",
@@ -435,7 +436,13 @@
     "tgLinkedAlert": "Telegram linking completed!",
     "unlinkConfirm": "Are you sure you want to unlink {type}?",
     "unlinkSuccess": "Unlinked successfully.",
-    "unlinkFail": "Failed to unlink."
+    "unlinkFail": "Failed to unlink.",
+    "metamaskNotDetected": "MetaMask not detected. Please install MetaMask extension.",
+    "metamaskSuccess": "Successfully linked MetaMask wallet!",
+    "metamaskFail": "MetaMask linking failed: ",
+    "metamaskUnlinkConfirm": "Do you want to unlink MetaMask wallet?",
+    "metamaskUnlinked": "Wallet linking has been removed.",
+    "metamaskRequiredAlert": "MetaMask linking is required to set token rewards (USDT, METAQ). Would you like to go to My Page to link your wallet?"
   },
   "legal": {
     "faqTitle": "Frequently Asked Questions (FAQ)",
@@ -474,5 +481,24 @@
     "chipRewards": "🎁 How do rewards work?",
     "chipRaffle": "🎫 How is drawing done?",
     "chipWithdrawal": "🪙 Payouts and fees"
+  },
+  "wallet": {
+    "title": "Wallet",
+    "subtitle": "Check your balances and request deposits or withdrawals",
+    "deposit": "Deposit",
+    "withdraw": "Withdraw",
+    "history": "History",
+    "depositComingSoon": "Deposit Coming Soon",
+    "depositComingSoonDesc": "We're working on supporting bank transfer, MetaMask, PIX, and more.",
+    "withdrawComingSoon": "Withdrawal Coming Soon",
+    "withdrawComingSoonDesc": "You will soon be able to withdraw USDT, METAQ, BRL, and POINT. For urgent requests, please contact support.",
+    "bankTransfer": "Bank Transfer",
+    "comingSoon": "Soon",
+    "toMetamask": "To MetaMask Wallet",
+    "convertToBrl": "Convert to BRL",
+    "contactForWithdraw": "📬 For withdrawal requests, please contact us through official channels while this feature is being developed.",
+    "transactionHistory": "Transaction History",
+    "noHistory": "No transactions yet",
+    "historyComingSoon": "Your deposit and withdrawal history will appear here"
   }
 }

@@ -25,10 +25,23 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/wallet',
+      name: 'wallet',
+      component: () => import('../views/WalletView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+
       path: '/request-manager',
       name: 'request-manager',
       component: () => import('../views/ManagerRequestView.vue'),
       meta: { requiresAuth: true },
+    },
+    {
+      path: '/store',
+      name: 'store',
+      component: () => import('../views/StoreView.vue'),
+      meta: { requiresAuth: true, roles: ['MANAGER', 'ADMIN'] },
     },
     { path: '/creator', redirect: '/ops' },
     {

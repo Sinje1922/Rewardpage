@@ -79,6 +79,10 @@ model user {
   role                String           @default("USER")
   blocked             Boolean          @default(false)
   pointBalance        Int              @default(0)
+  usdtBalance         Float            @default(0)
+  brlBalance          Float            @default(0)
+  metaqBalance        Float            @default(0)
+  couponBalance       Int              @default(0)
   country             String?
   locale              String?
   lastIp              String?

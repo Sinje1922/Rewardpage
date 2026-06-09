@@ -8,7 +8,8 @@
     "admin": "관리자",
     "login": "로그인",
     "logout": "로그아웃",
-    "myPage": "마이페이지"
+    "myPage": "마이페이지",
+    "store": "상점"
   },
   "home": {
     "badge": "pickku",
@@ -435,7 +436,13 @@
     "tgLinkedAlert": "텔레그램 연동이 완료되었습니다!",
     "unlinkConfirm": "{type} 연동을 해제하시겠습니까?",
     "unlinkSuccess": "연동이 해제되었습니다.",
-    "unlinkFail": "연동 해제에 실패했습니다."
+    "unlinkFail": "연동 해제에 실패했습니다.",
+    "metamaskNotDetected": "메타마스크가 감지되지 않았습니다. 메타마스크 확장 프로그램을 설치해 주세요.",
+    "metamaskSuccess": "메타마스크 지갑 연동에 성공했습니다!",
+    "metamaskFail": "메타마스크 연동에 실패했습니다: ",
+    "metamaskUnlinkConfirm": "메타마스크 지갑 연동을 해제하시겠습니까?",
+    "metamaskUnlinked": "지갑 연동이 해제되었습니다.",
+    "metamaskRequiredAlert": "토큰 보상(USDT, METAQ)을 설정하려면 메타마스크 지갑 연동이 필수입니다. 지갑을 연동할 수 있는 마이페이지로 이동하시겠습니까?"
   },
   "legal": {
     "faqTitle": "자주 묻는 질문 (FAQ)",
@@ -474,5 +481,24 @@
     "chipRewards": "🎁 보상 방식이 궁금해요",
     "chipRaffle": "🎫 추첨은 어떻게 진행되나요?",
     "chipWithdrawal": "🪙 포인트 출금과 수수료"
+  },
+  "wallet": {
+    "title": "입출금 지갑",
+    "subtitle": "보유 자산을 확인하고 입출금을 신청하세요",
+    "deposit": "입금",
+    "withdraw": "출금",
+    "history": "내역",
+    "depositComingSoon": "입금 기능 준비 중",
+    "depositComingSoonDesc": "곧 은행 이체, MetaMask, PIX 등 다양한 입금 방법을 지원할 예정입니다.",
+    "withdrawComingSoon": "출금 기능 준비 중",
+    "withdrawComingSoonDesc": "USDT, METAQ, BRL, POINT 모두 출금 신청이 가능해질 예정입니다. 현재 출금이 필요하신 경우 고객센터로 문의해 주세요.",
+    "bankTransfer": "은행 이체",
+    "comingSoon": "준비 중",
+    "toMetamask": "MetaMask 지갑으로",
+    "convertToBrl": "BRL 환전",
+    "contactForWithdraw": "📬 출금 문의: 현재 출금 기능이 구현 중입니다. 출금이 필요하신 경우 공식 채널을 통해 문의해 주세요.",
+    "transactionHistory": "거래 내역",
+    "noHistory": "거래 내역이 없습니다",
+    "historyComingSoon": "입출금 내역이 여기에 표시됩니다"
   }
 }

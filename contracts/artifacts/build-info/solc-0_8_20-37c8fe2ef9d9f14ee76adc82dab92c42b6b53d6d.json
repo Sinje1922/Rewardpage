@@ -1,0 +1,46 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_20-37c8fe2ef9d9f14ee76adc82dab92c42b6b53d6d",
+  "solcVersion": "0.8.20",
+  "solcLongVersion": "0.8.20+commit.a1b79de6",
+  "compilerType": "solc",
+  "userSourceNameMap": {
+    "contracts/CampaignEscrow.sol": "project/contracts/CampaignEscrow.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "shanghai",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/CampaignEscrow.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.20;\n\n/**\n * @title CampaignEscrow\n * @dev 캠페인 보상 토큰(USDT, METAQ)을 에스크로로 관리하는 컨트랙트\n *\n * 흐름:\n *   1. 캠페인 생성자가 토큰을 approve() 후 lockFunds() 호출 → 토큰 잠금\n *   2. 추첨 완료 후 서버 오퍼레이터가 distributeRewards() 호출 → 당첨자들에게 자동 분배\n *   3. 참가자 부족 시 오퍼레이터가 refundCreator() 호출 → 잔액 환불\n */\n\ninterface IERC20 {\n    function transferFrom(address from, address to, uint256 amount) external returns (bool);\n    function transfer(address to, uint256 amount) external returns (bool);\n    function balanceOf(address account) external view returns (uint256);\n    function allowance(address owner, address spender) external view returns (uint256);\n}\n\ncontract CampaignEscrow {\n    // ─── 상태 ───────────────────────────────────────────────────\n    address public owner;        // 컨트랙트 소유자 (배포자)\n    address public operator;     // 서버 오퍼레이터 지갑 (distributeRewards 호출 권한)\n\n    enum CampaignState { NONE, LOCKED, DISTRIBUTED, REFUNDED }\n\n    struct Campaign {\n        address creator;         // 캠페인 생성자 지갑\n        address token;           // 보상 토큰 컨트랙트 주소\n        uint256 totalAmount;     // 총 잠금 금액\n        uint256 lockedAt;        // 잠금 시각 (block.timestamp)\n        CampaignState state;\n    }\n\n    // campaignId (bytes32) → Campaign\n    mapping(bytes32 => Campaign) public campaigns;\n\n    // ─── 이벤트 ────────────────────────────────────────────────\n    event FundsLocked(bytes32 indexed campaignId, address indexed creator, address token, uint256 amount);\n    event RewardsDistributed(bytes32 indexed campaignId, uint256 winnerCount, uint256 totalDistributed);\n    event CreatorRefunded(bytes32 indexed campaignId, address indexed creator, uint256 amount);\n    event OperatorUpdated(address indexed oldOperator, address indexed newOperator);\n\n    // ─── 수정자 ────────────────────────────────────────────────\n    modifier onlyOwner() {\n        require(msg.sender == owner, \"Not owner\");\n        _;\n    }\n\n    modifier onlyOperator() {\n        require(msg.sender == operator || msg.sender == owner, \"Not operator\");\n        _;\n    }\n\n    modifier campaignExists(bytes32 campaignId) {\n        require(campaigns[campaignId].state != CampaignState.NONE, \"Campaign not found\");\n        _;\n    }\n\n    // ─── 생성자 ────────────────────────────────────────────────\n    constructor(address _operator) {\n        owner = msg.sender;\n        operator = _operator;\n    }\n\n    // ─── 오퍼레이터 관리 ────────────────────────────────────────\n    function setOperator(address _operator) external onlyOwner {\n        emit OperatorUpdated(operator, _operator);\n        operator = _operator;\n    }\n\n    // ─── 핵심 함수 ──────────────────────────────────────────────\n\n    /**\n     * @notice 캠페인 생성자가 토큰을 에스크로에 잠금\n     * @dev 사전에 token.approve(escrowAddress, amount) 호출 필요\n     * @param campaignId 플랫폼 내부 캠페인 ID (bytes32)\n     * @param token BEP-20 토큰 컨트랙트 주소 (USDT or METAQ)\n     * @param amount 잠글 총 토큰 양 (소수점 포함, e.g. USDT 18 decimals)\n     */\n    function lockFunds(\n        bytes32 campaignId,\n        address token,\n        uint256 amount\n    ) external {\n        require(campaigns[campaignId].state == CampaignState.NONE, \"Campaign already exists\");\n        require(token != address(0), \"Invalid token address\");\n        require(amount > 0, \"Amount must be > 0\");\n\n        // transferFrom으로 토큰을 컨트랙트로 이전\n        bool success = IERC20(token).transferFrom(msg.sender, address(this), amount);\n        require(success, \"Token transfer failed\");\n\n        campaigns[campaignId] = Campaign({\n            creator: msg.sender,\n            token: token,\n            totalAmount: amount,\n            lockedAt: block.timestamp,\n            state: CampaignState.LOCKED\n        });\n\n        emit FundsLocked(campaignId, msg.sender, token, amount);\n    }\n\n    /**\n     * @notice 추첨 완료 후 당첨자들에게 토큰 분배 (오퍼레이터 전용)\n     * @param campaignId 캠페인 ID\n     * @param winners 당첨자 지갑 주소 배열\n     * @param amounts 각 당첨자에게 지급할 토큰 양 배열\n     */\n    function distributeRewards(\n        bytes32 campaignId,\n        address[] calldata winners,\n        uint256[] calldata amounts\n    ) external onlyOperator campaignExists(campaignId) {\n        Campaign storage c = campaigns[campaignId];\n        require(c.state == CampaignState.LOCKED, \"Not in LOCKED state\");\n        require(winners.length == amounts.length, \"Length mismatch\");\n        require(winners.length > 0, \"No winners\");\n\n        // 총 분배량 검증 (잠금 금액을 초과할 수 없음)\n        uint256 totalToDistribute = 0;\n        for (uint256 i = 0; i < amounts.length; i++) {\n            totalToDistribute += amounts[i];\n        }\n        require(totalToDistribute <= c.totalAmount, \"Exceeds locked amount\");\n\n        // 각 당첨자에게 전송\n        IERC20 token = IERC20(c.token);\n        for (uint256 i = 0; i < winners.length; i++) {\n            if (amounts[i] > 0 && winners[i] != address(0)) {\n                bool success = token.transfer(winners[i], amounts[i]);\n                require(success, \"Transfer to winner failed\");\n            }\n        }\n\n        // 잔액이 남아있으면 창작자에게 환불\n        uint256 remaining = c.totalAmount - totalToDistribute;\n        if (remaining > 0) {\n            bool refundSuccess = token.transfer(c.creator, remaining);\n            require(refundSuccess, \"Refund transfer failed\");\n        }\n\n        c.state = CampaignState.DISTRIBUTED;\n        emit RewardsDistributed(campaignId, winners.length, totalToDistribute);\n    }\n\n    /**\n     * @notice 참가자 전무 또는 취소 시 창작자에게 전액 환불 (오퍼레이터 전용)\n     * @param campaignId 캠페인 ID\n     */\n    function refundCreator(bytes32 campaignId) external onlyOperator campaignExists(campaignId) {\n        Campaign storage c = campaigns[campaignId];\n        require(c.state == CampaignState.LOCKED, \"Not in LOCKED state\");\n\n        uint256 amount = c.totalAmount;\n        c.state = CampaignState.REFUNDED;\n\n        bool success = IERC20(c.token).transfer(c.creator, amount);\n        require(success, \"Refund transfer failed\");\n\n        emit CreatorRefunded(campaignId, c.creator, amount);\n    }\n\n    /**\n     * @notice 캠페인 상태 조회\n     */\n    function getCampaign(bytes32 campaignId) external view returns (\n        address creator,\n        address token,\n        uint256 totalAmount,\n        uint256 lockedAt,\n        CampaignState state\n    ) {\n        Campaign storage c = campaigns[campaignId];\n        return (c.creator, c.token, c.totalAmount, c.lockedAt, c.state);\n    }\n\n    /**\n     * @notice campaignId 문자열을 bytes32로 변환하는 헬퍼\n     */\n    function stringToBytes32(string memory source) external pure returns (bytes32) {\n        return keccak256(abi.encodePacked(source));\n    }\n}\n"
+      }
+    }
+  }
+}

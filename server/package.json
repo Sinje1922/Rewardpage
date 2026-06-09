@@ -25,6 +25,7 @@
     "cors": "^2.8.6",
     "discord.js": "^14.26.3",
     "dotenv": "^17.4.2",
+    "ethers": "^6.16.0",
     "express": "^5.2.1",
     "geoip-lite": "^2.0.1",
     "google-auth-library": "^10.6.2",

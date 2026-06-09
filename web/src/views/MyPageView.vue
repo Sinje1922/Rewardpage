@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { api, API_BASE } from '../api/client'
 import { useAuthStore } from '../stores/auth'
 
@@ -21,9 +21,11 @@ type WinRow = {
 const { t } = useI18n()
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
-// Main Tabs: profile, activity
-const activeTab = ref<'profile' | 'activity'>('profile')
+// Main Tabs: profile, activity, wallet
+const activeTab = ref<'profile' | 'activity' | 'wallet'>('profile')
+const walletSubTab = ref<'deposit' | 'withdraw' | 'history'>('deposit')
 
 // Sub Tabs (for Activity): active, won, closed
 const subTab = ref<'active' | 'won' | 'closed'>('active')
@@ -53,7 +55,22 @@ const activityErr = ref('')
 
 onMounted(async () => {
   await loadAllData()
+  const tab = route.query.tab as string
+  if (['profile', 'activity', 'wallet'].includes(tab)) {
+    activeTab.value = tab as any
+  }
 })
+
+watch(() => route.query.tab, (newTab) => {
+  if (newTab && ['profile', 'activity', 'wallet'].includes(newTab as string)) {
+    activeTab.value = newTab as any
+  }
+})
+
+function changeTab(tab: 'profile' | 'activity' | 'wallet') {
+  activeTab.value = tab
+  router.push({ query: { ...route.query, tab } })
+}
 
 async function loadAllData() {
   loading.value = true
@@ -251,6 +268,62 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
   }
 }
 
+async function connectMetaMask() {
+  if (saving.value) return
+  const ethereum = (window as any).ethereum
+  if (!ethereum) {
+    alert(t('mypage.metamaskNotDetected') || '메타마스크가 감지되지 않았습니다. 메타마스크 확장 프로그램을 설치해 주세요.')
+    window.open('https://metamask.io/download/', '_blank')
+    return
+  }
+
+  try {
+    saving.value = true
+    const accounts = await ethereum.request({ method: 'eth_requestAccounts' })
+    if (!accounts || !accounts[0]) {
+      throw new Error('No accounts returned from MetaMask.')
+    }
+    const address = accounts[0]
+    
+    // 백엔드 프로필 API를 호출해 walletAddress 등록
+    const res = await api.patch('/me/profile', {
+      walletAddress: address
+    })
+    
+    walletAddress.value = res.data.walletAddress
+    if (auth.user) {
+      auth.user.walletAddress = res.data.walletAddress
+    }
+    alert(t('mypage.metamaskSuccess') || '메타마스크 지갑 연동에 성공했습니다!')
+  } catch (err: any) {
+    console.error('MetaMask connection failed:', err)
+    alert((t('mypage.metamaskFail') || '메타마스크 연동에 실패했습니다: ') + (err.message || err))
+  } finally {
+    saving.value = false
+  }
+}
+
+async function unlinkMetaMask() {
+  if (!confirm(t('mypage.metamaskUnlinkConfirm') || '메타마스크 지갑 연동을 해제하시겠습니까?')) return
+  
+  try {
+    saving.value = true
+    await api.patch('/me/profile', {
+      walletAddress: null
+    })
+    walletAddress.value = ''
+    if (auth.user) {
+      auth.user.walletAddress = undefined
+    }
+    alert(t('mypage.metamaskUnlinked') || '지갑 연동이 해제되었습니다.')
+  } catch (err: any) {
+    console.error('MetaMask unlink failed:', err)
+    alert(t('mypage.unlinkFail'))
+  } finally {
+    saving.value = false
+  }
+}
+
 </script>
 
 <template>
@@ -263,6 +336,48 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
           <!-- Profile Section -->
           <div v-if="activeTab === 'profile'" key="profile" class="dashboard-card">
             <h2 class="card-title">{{ $t('mypage.title') }}</h2>
+
+            <!-- 내 보유 자산 대시보드 -->
+            <div class="mypage-balance-dashboard">
+              <h3 class="dashboard-subtitle">💳 보유 자산</h3>
+              <div class="balance-grid">
+                <div class="balance-card-mini point">
+                  <span class="icon">🪙</span>
+                  <div class="details">
+                    <span class="lbl">포인트</span>
+                    <span class="val">{{ (auth.user?.pointBalance || 0).toLocaleString() }}P</span>
+                  </div>
+                </div>
+                <div class="balance-card-mini usdt">
+                  <span class="icon">💵</span>
+                  <div class="details">
+                    <span class="lbl">USDT</span>
+                    <span class="val">{{ (auth.user?.usdtBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 4 }) }}</span>
+                  </div>
+                </div>
+                <div class="balance-card-mini brl">
+                  <span class="icon">🇧🇷</span>
+                  <div class="details">
+                    <span class="lbl">BRL</span>
+                    <span class="val">{{ (auth.user?.brlBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 4 }) }}</span>
+                  </div>
+                </div>
+                <div class="balance-card-mini metaq">
+                  <span class="icon">💎</span>
+                  <div class="details">
+                    <span class="lbl">METAQ</span>
+                    <span class="val">{{ (auth.user?.metaqBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 4 }) }}</span>
+                  </div>
+                </div>
+                <div class="balance-card-mini coupon">
+                  <span class="icon">🎟️</span>
+                  <div class="details">
+                    <span class="lbl">티켓</span>
+                    <span class="val">{{ (auth.user?.couponBalance || 0).toLocaleString() }}장</span>
+                  </div>
+                </div>
+              </div>
+            </div>
             
             <div class="profile-form">
               <!-- Profile Image Upload Area -->
@@ -313,12 +428,10 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
 
                 <div class="form-group">
                   <label>{{ $t('mypage.walletAddress') }}</label>
-                  <input 
-                    v-model="walletAddress" 
-                    type="text" 
-                    :placeholder="$t('mypage.walletHint')"
-                    class="form-input"
-                  />
+                  <div class="readonly-box font-mono" style="word-break: break-all; min-height: 46px; display: flex; align-items: center;">
+                    <span v-if="walletAddress">{{ walletAddress }}</span>
+                    <span v-else style="color: var(--muted); font-style: italic;">🦊 메타마스크를 연동해 주세요.</span>
+                  </div>
                 </div>
 
                 <div class="form-grid-split">
@@ -442,6 +555,25 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
                       </div>
                     </div>
 
+                    <!-- MetaMask -->
+                    <div class="sns-auth-card" :class="{ linked: !!walletAddress }">
+                      <div class="sns-info">
+                        <span class="sns-icon metamask">🦊</span>
+                        <div class="sns-text">
+                          <span class="sns-name">MetaMask</span>
+                          <span class="sns-status">{{ walletAddress ? walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4) : $t('common.unlinked') }}</span>
+                        </div>
+                      </div>
+                      <div class="auth-actions">
+                        <button v-if="walletAddress" type="button" class="auth-action-btn unlink" @click="unlinkMetaMask">
+                          {{ $t('common.unlink') }}
+                        </button>
+                        <button type="button" class="auth-action-btn metamask" @click="connectMetaMask" style="background: #e2761b; color: white;">
+                          {{ walletAddress ? $t('common.relink') : $t('common.authBtn') }}
+                        </button>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
 
@@ -465,9 +597,8 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
               </div>
             </div>
           </div>
-
           <!-- Activity Section with Sub Tabs -->
-          <div v-else key="activity" class="dashboard-card">
+          <div v-else-if="activeTab === 'activity'" key="activity" class="dashboard-card">
             <h2 class="card-title">{{ $t('nav.myActivity') }}</h2>
             
             <div class="sub-tabs">
@@ -546,6 +677,174 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
               </transition>
             </div>
           </div>
+
+          <!-- Wallet Section -->
+          <div v-else-if="activeTab === 'wallet'" key="wallet" class="dashboard-card">
+            <h2 class="card-title">{{ $t('wallet.title') }}</h2>
+            <p class="section-hint" style="margin-bottom: 2rem;">{{ $t('wallet.subtitle') }}</p>
+
+            <!-- 보유 자산 그리드 (마이페이지 디자인과 통일) -->
+            <div class="mypage-balance-dashboard" style="margin-bottom: 2rem; padding: 0; border: none; background: transparent;">
+              <div class="balance-grid">
+                <div class="balance-card-mini point">
+                  <span class="icon">🪙</span>
+                  <div class="details">
+                    <span class="lbl">POINT</span>
+                    <span class="val">{{ (auth.user?.pointBalance || 0).toLocaleString() }}P</span>
+                  </div>
+                </div>
+                <div class="balance-card-mini usdt">
+                  <span class="icon">💵</span>
+                  <div class="details">
+                    <span class="lbl">USDT</span>
+                    <span class="val">{{ (auth.user?.usdtBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 4 }) }}</span>
+                  </div>
+                </div>
+                <div class="balance-card-mini brl">
+                  <span class="icon">🇧🇷</span>
+                  <div class="details">
+                    <span class="lbl">BRL</span>
+                    <span class="val">{{ (auth.user?.brlBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 4 }) }}</span>
+                  </div>
+                </div>
+                <div class="balance-card-mini metaq">
+                  <span class="icon">💎</span>
+                  <div class="details">
+                    <span class="lbl">METAQ</span>
+                    <span class="val">{{ (auth.user?.metaqBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 4 }) }}</span>
+                  </div>
+                </div>
+                <div class="balance-card-mini coupon">
+                  <span class="icon">🎟️</span>
+                  <div class="details">
+                    <span class="lbl">TICKET</span>
+                    <span class="val">{{ (auth.user?.couponBalance || 0).toLocaleString() }}장</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 지갑 기능용 서브 탭 -->
+            <div class="wallet-tab-buttons">
+              <button
+                class="wallet-subtab-btn"
+                :class="{ active: walletSubTab === 'deposit' }"
+                @click="walletSubTab = 'deposit'"
+              >
+                <span>⬇️</span> {{ $t('wallet.deposit') }}
+              </button>
+              <button
+                class="wallet-subtab-btn"
+                :class="{ active: walletSubTab === 'withdraw' }"
+                @click="walletSubTab = 'withdraw'"
+              >
+                <span>⬆️</span> {{ $t('wallet.withdraw') }}
+              </button>
+              <button
+                class="wallet-subtab-btn"
+                :class="{ active: walletSubTab === 'history' }"
+                @click="walletSubTab = 'history'"
+              >
+                <span>📋</span> {{ $t('wallet.history') }}
+              </button>
+            </div>
+
+            <!-- 입금 패널 -->
+            <div v-if="walletSubTab === 'deposit'" class="wallet-subpanel">
+              <div class="coming-soon-panel">
+                <div class="coming-soon-icon">🚧</div>
+                <h3 class="coming-soon-title">{{ $t('wallet.depositComingSoon') }}</h3>
+                <p class="coming-soon-desc">{{ $t('wallet.depositComingSoonDesc') }}</p>
+
+                <div class="preview-methods">
+                  <div class="method-card disabled">
+                    <div class="method-icon">🏦</div>
+                    <div class="method-info">
+                      <div class="method-name">{{ $t('wallet.bankTransfer') }}</div>
+                      <div class="method-desc">BRL</div>
+                    </div>
+                    <div class="method-badge soon">{{ $t('wallet.comingSoon') }}</div>
+                  </div>
+                  <div class="method-card disabled">
+                    <div class="method-icon">🦊</div>
+                    <div class="method-info">
+                      <div class="method-name">MetaMask</div>
+                      <div class="method-desc">USDT · METAQ</div>
+                    </div>
+                    <div class="method-badge soon">{{ $t('wallet.comingSoon') }}</div>
+                  </div>
+                  <div class="method-card disabled">
+                    <div class="method-icon">🪙</div>
+                    <div class="method-info">
+                      <div class="method-name">PIX</div>
+                      <div class="method-desc">BRL</div>
+                    </div>
+                    <div class="method-badge soon">{{ $t('wallet.comingSoon') }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 출금 패널 -->
+            <div v-if="walletSubTab === 'withdraw'" class="wallet-subpanel">
+              <div class="coming-soon-panel">
+                <div class="coming-soon-icon">🚧</div>
+                <h3 class="coming-soon-title">{{ $t('wallet.withdrawComingSoon') }}</h3>
+                <p class="coming-soon-desc">{{ $t('wallet.withdrawComingSoonDesc') }}</p>
+
+                <div class="preview-methods">
+                  <div class="method-card disabled">
+                    <div class="method-icon">💵</div>
+                    <div class="method-info">
+                      <div class="method-name">USDT</div>
+                      <div class="method-desc">{{ $t('wallet.toMetamask') }}</div>
+                    </div>
+                    <div class="method-badge soon">{{ $t('wallet.comingSoon') }}</div>
+                  </div>
+                  <div class="method-card disabled">
+                    <div class="method-icon">💎</div>
+                    <div class="method-info">
+                      <div class="method-name">METAQ</div>
+                      <div class="method-desc">{{ $t('wallet.toMetamask') }}</div>
+                    </div>
+                    <div class="method-badge soon">{{ $t('wallet.comingSoon') }}</div>
+                  </div>
+                  <div class="method-card disabled">
+                    <div class="method-icon">🇧🇷</div>
+                    <div class="method-info">
+                      <div class="method-name">BRL</div>
+                      <div class="method-desc">PIX · {{ $t('wallet.bankTransfer') }}</div>
+                    </div>
+                    <div class="method-badge soon">{{ $t('wallet.comingSoon') }}</div>
+                  </div>
+                  <div class="method-card disabled">
+                    <div class="method-icon">🪙</div>
+                    <div class="method-info">
+                      <div class="method-name">POINT</div>
+                      <div class="method-desc">{{ $t('wallet.convertToBrl') }}</div>
+                    </div>
+                    <div class="method-badge soon">{{ $t('wallet.comingSoon') }}</div>
+                  </div>
+                </div>
+
+                <div class="contact-notice">
+                  <p>{{ $t('wallet.contactForWithdraw') }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 내역 패널 -->
+            <div v-if="walletSubTab === 'history'" class="wallet-subpanel">
+              <div class="history-header">
+                <h3>{{ $t('wallet.transactionHistory') }}</h3>
+              </div>
+              <div class="history-empty">
+                <div class="empty-icon">📭</div>
+                <p>{{ $t('wallet.noHistory') }}</p>
+                <span class="empty-sub">{{ $t('wallet.historyComingSoon') }}</span>
+              </div>
+            </div>
+          </div>
         </transition>
       </main>
 
@@ -557,26 +856,51 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
           </div>
           <p class="user-nickname" v-if="auth.user?.nickname">{{ auth.user.nickname }}</p>
           <p class="user-email" :class="{ 'small-email': auth.user?.nickname }">{{ auth.user?.email }}</p>
-          <div class="points-badge">
-            <span class="point-val">{{ auth.user?.pointBalance.toLocaleString() }}</span>
-            <span class="point-unit">P</span>
+          <div class="sidebar-balances">
+            <div class="sidebar-balance-item">
+              <span>🪙 포인트:</span>
+              <strong>{{ (auth.user?.pointBalance || 0).toLocaleString() }}P</strong>
+            </div>
+            <div class="sidebar-balance-item">
+              <span>💵 USDT:</span>
+              <strong>{{ (auth.user?.usdtBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }) }}</strong>
+            </div>
+            <div class="sidebar-balance-item">
+              <span>🇧🇷 BRL:</span>
+              <strong>{{ (auth.user?.brlBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }) }}</strong>
+            </div>
+            <div class="sidebar-balance-item">
+              <span>💎 METAQ:</span>
+              <strong>{{ (auth.user?.metaqBalance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 }) }}</strong>
+            </div>
+            <div class="sidebar-balance-item">
+              <span>🎟️ 티켓:</span>
+              <strong>{{ (auth.user?.couponBalance || 0).toLocaleString() }}장</strong>
+            </div>
           </div>
         </div>
 
         <nav class="sidebar-nav">
           <button 
-            @click="activeTab = 'profile'" 
+            @click="changeTab('profile')" 
             :class="['nav-item', { active: activeTab === 'profile' }]"
           >
             <span class="ico">👤</span>
             <span class="lbl">{{ $t('mypage.title') }}</span>
           </button>
           <button 
-            @click="activeTab = 'activity'" 
+            @click="changeTab('activity')" 
             :class="['nav-item', { active: activeTab === 'activity' }]"
           >
             <span class="ico">📜</span>
             <span class="lbl">{{ $t('nav.myActivity') }}</span>
+          </button>
+          <button 
+            @click="changeTab('wallet')" 
+            :class="['nav-item', { active: activeTab === 'wallet' }]"
+          >
+            <span class="ico">💳</span>
+            <span class="lbl">{{ $t('wallet.title') }}</span>
           </button>
         </nav>
       </aside>
@@ -585,7 +909,118 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
   </div>
 </template>
 
+
 <style scoped>
+/* MyPage Assets Dashboard */
+.mypage-balance-dashboard {
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.dashboard-subtitle {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-h);
+  margin: 0 0 1rem 0;
+}
+
+.balance-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 1024px) {
+  .balance-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .balance-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .balance-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.balance-card-mini {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.01);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.balance-card-mini:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.03);
+}
+
+.balance-card-mini .icon {
+  font-size: 1.5rem;
+}
+
+.balance-card-mini .details {
+  display: flex;
+  flex-direction: column;
+}
+
+.balance-card-mini .lbl {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.balance-card-mini .val {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-h);
+  word-break: break-all;
+}
+
+/* Sidebar Balances widget */
+.sidebar-balances {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  padding: 1rem;
+  border-radius: 18px;
+  margin-top: 1rem;
+  text-align: left;
+}
+
+.sidebar-balance-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--text-h);
+}
+
+.sidebar-balance-item span {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.sidebar-balance-item strong {
+  font-weight: 800;
+  color: var(--text-h);
+}
+
 .mypage-dashboard {
   max-width: 1200px;
   margin: 0 auto;
@@ -1067,6 +1502,31 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
 
 .nav-item .ico { font-size: 1.2rem; }
 
+.nav-item-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: transparent;
+  border: none;
+  border-radius: 18px;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+}
+
+.nav-item-link:hover {
+  background: var(--bg-deep);
+  color: var(--text-h);
+  transform: translateX(4px);
+}
+
+
 /* Sub Tabs (Activity) */
 .sub-tabs {
   display: flex;
@@ -1287,5 +1747,195 @@ async function unlinkSNS(type: 'telegram' | 'discord' | 'youtube') {
   .dashboard-card { padding: 1rem; border-radius: 1.25rem; }
   .card-title { font-size: 1.25rem; margin-bottom: 1.5rem; }
   .item-head { font-size: 1rem; }
+}
+
+/* ─── Wallet Tab ─────────────────────────────────────── */
+.wallet-tab-buttons {
+  display: flex;
+  gap: 0.4rem;
+  background: var(--bg-deep);
+  border-radius: 16px;
+  padding: 0.4rem;
+  margin-bottom: 1.75rem;
+}
+
+.wallet-subtab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s;
+  white-space: nowrap;
+}
+
+.wallet-subtab-btn:hover {
+  color: var(--text-h);
+  background: rgba(255,255,255,0.04);
+}
+
+.wallet-subtab-btn.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 14px var(--accent-soft);
+}
+
+.wallet-subpanel {
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Coming Soon 패널 */
+.coming-soon-panel {
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  text-align: center;
+}
+
+.coming-soon-icon {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+}
+
+.coming-soon-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text-h);
+  margin-bottom: 0.5rem;
+}
+
+.coming-soon-desc {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin-bottom: 1.75rem;
+  line-height: 1.6;
+}
+
+/* 지원 예정 메서드 카드 */
+.preview-methods {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.85rem;
+  text-align: left;
+}
+
+.method-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.1rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.method-card.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.method-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+.method-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.method-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.method-desc {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 0.1rem;
+}
+
+.method-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.18rem 0.45rem;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.method-badge.soon {
+  background: rgba(245,158,11,0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245,158,11,0.25);
+}
+
+/* 출금 연락 안내 */
+.contact-notice {
+  margin-top: 1.5rem;
+  padding: 0.9rem 1.25rem;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  color: var(--accent);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  text-align: left;
+}
+
+/* 내역 탭 */
+.history-header {
+  margin-bottom: 1.5rem;
+}
+.history-header h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+.history-empty {
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3.5rem 2rem;
+  text-align: center;
+}
+.empty-icon {
+  font-size: 2.8rem;
+  margin-bottom: 0.75rem;
+}
+.history-empty p {
+  color: var(--text-h);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+.empty-sub {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+@media (max-width: 950px) {
+  .wallet-tab-buttons { gap: 0.25rem; }
+  .wallet-subtab-btn { font-size: 0.82rem; padding: 0.65rem 0.5rem; }
+  .coming-soon-panel { padding: 2rem 1rem; }
+  .preview-methods { grid-template-columns: 1fr; }
 }
 </style>

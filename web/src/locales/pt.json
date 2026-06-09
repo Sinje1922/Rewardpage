@@ -8,7 +8,8 @@
     "admin": "Admin",
     "login": "Login",
     "logout": "Sair",
-    "myPage": "Minha Página"
+    "myPage": "Minha Página",
+    "store": "Loja"
   },
   "home": {
     "badge": "pickku",
@@ -450,7 +451,13 @@
     "tgLinkedAlert": "Vínculo com Telegram concluído!",
     "unlinkConfirm": "Tem certeza de que deseja desvincular {type}?",
     "unlinkSuccess": "Desvinculado com sucesso.",
-    "unlinkFail": "Falha ao desvincular."
+    "unlinkFail": "Falha ao desvincular.",
+    "metamaskNotDetected": "MetaMask não detectada. Instale a extensão MetaMask.",
+    "metamaskSuccess": "Carteira MetaMask vinculada com sucesso!",
+    "metamaskFail": "Falha ao vincular MetaMask: ",
+    "metamaskUnlinkConfirm": "Deseja desvincular a carteira MetaMask?",
+    "metamaskUnlinked": "O vínculo da carteira foi removido.",
+    "metamaskRequiredAlert": "O vínculo com a MetaMask é necessário para definir recompensas de token (USDT, METAQ). Gostaria de ir para a Minha Página para vincular sua carteira?"
   },
   "legal": {
     "faqTitle": "Perguntas Frequentes (FAQ)",
@@ -489,5 +496,24 @@
     "chipRewards": "🎁 Como funcionam os prêmios?",
     "chipRaffle": "🎫 Como funciona o sorteio?",
     "chipWithdrawal": "🪙 Saques e taxas"
+  },
+  "wallet": {
+    "title": "Carteira",
+    "subtitle": "Verifique seus saldos e solicite depósitos ou saques",
+    "deposit": "Depósito",
+    "withdraw": "Saque",
+    "history": "Histórico",
+    "depositComingSoon": "Depósito em Breve",
+    "depositComingSoonDesc": "Estamos trabalhando para suportar transferência bancária, MetaMask, PIX e mais.",
+    "withdrawComingSoon": "Saque em Breve",
+    "withdrawComingSoonDesc": "Em breve você poderá sacar USDT, METAQ, BRL e POINT. Para solicitações urgentes, entre em contato com o suporte.",
+    "bankTransfer": "Transferência Bancária",
+    "comingSoon": "Em breve",
+    "toMetamask": "Para Carteira MetaMask",
+    "convertToBrl": "Converter para BRL",
+    "contactForWithdraw": "📬 Para solicitações de saque, entre em contato conosco pelos canais oficiais enquanto este recurso está em desenvolvimento.",
+    "transactionHistory": "Histórico de Transações",
+    "noHistory": "Nenhuma transação ainda",
+    "historyComingSoon": "Seu histórico de depósitos e saques aparecerá aqui"
   }
 }
