@@ -14,6 +14,7 @@ const isDrawing = ref(false)
 const drawingText = ref('')
 const showDispensed = ref(false)
 const showResultModal = ref(false)
+const showProbabilityModal = ref(false)
 const lastResults = ref<any[]>([])
 const history = ref<any[]>([])
 
@@ -39,7 +40,14 @@ const translations: Record<string, Record<string, string>> = {
     status1: '기프트 상자를 흔들고 있습니다...',
     status2: '행운의 당첨 구슬이 굴러나옵니다!',
     noneReward: '아쉽게도 다음 기회에!',
-    pointUnit: '포인트'
+    pointUnit: '포인트',
+    probTitle: '뽑기 보상 확률 안내',
+    probSubtitle: '각 보상 항목 및 당첨 확률 정보입니다.',
+    probRewardName: '보상 항목',
+    probRewardType: '종류',
+    probWeight: '당첨 확률',
+    probNote: '* 모든 보상은 개별 독립적인 확률로 추첨됩니다.',
+    probBtn: '확률표 보기'
   },
   en: {
     tag: '💡 LUCKY OPPORTUNITY',
@@ -61,7 +69,14 @@ const translations: Record<string, Record<string, string>> = {
     status1: 'Shaking the lucky box...',
     status2: 'Drawn capsule is rolling out!',
     noneReward: 'Better luck next time!',
-    pointUnit: 'Points'
+    pointUnit: 'Points',
+    probTitle: 'Lucky Draw Probability Guide',
+    probSubtitle: 'Detailed probability guide for rewards.',
+    probRewardName: 'Reward Item',
+    probRewardType: 'Type',
+    probWeight: 'Probability',
+    probNote: '* All draws are conducted with independent probabilities.',
+    probBtn: 'Probabilities'
   },
   pt: {
     tag: '💡 CHANCE DE SORTE',
@@ -83,7 +98,14 @@ const translations: Record<string, Record<string, string>> = {
     status1: 'Sacudindo a caixa da sorte...',
     status2: 'A cápsula da sorte está rolando!',
     noneReward: 'Mais sorte na próxima vez!',
-    pointUnit: 'Pontos'
+    pointUnit: 'Pontos',
+    probTitle: 'Guia de Probabilidade do Sorteio',
+    probSubtitle: 'Detalhes de probabilidades de recompensa.',
+    probRewardName: 'Recompensa',
+    probRewardType: 'Tipo',
+    probWeight: 'Probabilidade',
+    probNote: '* Todos os sorteios têm probabilidades independentes.',
+    probBtn: 'Probabilidades'
   }
 }
 
@@ -217,6 +239,9 @@ const closeModal = () => {
       <span class="section-tag">{{ t('tag') }}</span>
       <h1 class="page-title">{{ t('title') }}</h1>
       <p class="section-desc">{{ t('desc') }}</p>
+      <button class="btn btn-prob" @click="showProbabilityModal = true">
+        📊 {{ t('probBtn') }}
+      </button>
     </div>
 
     <div class="gacha-grid-layout">
@@ -379,6 +404,82 @@ const closeModal = () => {
               🔄 {{ t('drawAgain') }}
             </button>
             <button class="btn confirm-action-btn" @click="closeModal">
+              {{ t('close') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Probability Guide Modal -->
+    <transition name="modal-fade">
+      <div v-if="showProbabilityModal" class="modal-overlay" @click.self="showProbabilityModal = false">
+        <div class="modal-content-card card probability-modal">
+          <div class="modal-header">
+            <span class="win-badge">📊 PROBABILITY</span>
+            <h2>{{ t('probTitle') }}</h2>
+            <p class="subtitle-text">{{ t('probSubtitle') }}</p>
+          </div>
+
+          <div class="modal-body-content">
+            <div class="table-container">
+              <table class="prob-table">
+                <thead>
+                  <tr>
+                    <th>{{ t('probRewardName') }}</th>
+                    <th>{{ t('probRewardType') }}</th>
+                    <th>{{ t('probWeight') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="prob-row">
+                    <td><span class="emoji">🪙</span> 500 {{ t('pointUnit') }}</td>
+                    <td><span class="badge badge-point">POINT</span></td>
+                    <td class="rate">5.0%</td>
+                  </tr>
+                  <tr class="prob-row">
+                    <td><span class="emoji">🪙</span> 100 {{ t('pointUnit') }}</td>
+                    <td><span class="badge badge-point">POINT</span></td>
+                    <td class="rate">25.0%</td>
+                  </tr>
+                  <tr class="prob-row">
+                    <td><span class="emoji">🪙</span> 50 {{ t('pointUnit') }}</td>
+                    <td><span class="badge badge-point">POINT</span></td>
+                    <td class="rate">35.0%</td>
+                  </tr>
+                  <tr class="prob-row">
+                    <td><span class="emoji">💵</span> 0.5 USDT</td>
+                    <td><span class="badge badge-usdt">USDT</span></td>
+                    <td class="rate">3.0%</td>
+                  </tr>
+                  <tr class="prob-row">
+                    <td><span class="emoji">💵</span> 0.1 USDT</td>
+                    <td><span class="badge badge-usdt">USDT</span></td>
+                    <td class="rate">15.0%</td>
+                  </tr>
+                  <tr class="prob-row">
+                    <td><span class="emoji">💎</span> 5 METAQ</td>
+                    <td><span class="badge badge-metaq">METAQ</span></td>
+                    <td class="rate">2.0%</td>
+                  </tr>
+                  <tr class="prob-row">
+                    <td><span class="emoji">💎</span> 1 METAQ</td>
+                    <td><span class="badge badge-metaq">METAQ</span></td>
+                    <td class="rate">10.0%</td>
+                  </tr>
+                  <tr class="prob-row italic-none">
+                    <td><span class="emoji">💨</span> {{ t('noneReward') }}</td>
+                    <td><span class="badge badge-none">NONE</span></td>
+                    <td class="rate">5.0%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="prob-note">{{ t('probNote') }}</p>
+          </div>
+
+          <div class="modal-actions-row">
+            <button class="btn confirm-action-btn" @click="showProbabilityModal = false">
               {{ t('close') }}
             </button>
           </div>
@@ -1224,5 +1325,112 @@ const closeModal = () => {
 @keyframes slideIn {
   from { transform: translateY(30px) scale(0.95); }
   to { transform: translateY(0) scale(1); }
+}
+
+.btn-prob {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  padding: 0.4rem 1rem;
+  min-height: auto;
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  border-color: var(--border);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: all 0.2s ease;
+}
+.btn-prob:hover {
+  background: var(--bg-deep);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.probability-modal {
+  max-width: 500px !important;
+}
+
+.subtitle-text {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.modal-body-content {
+  margin: 1rem 0 1.5rem;
+  text-align: left;
+}
+
+.table-container {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-deep);
+}
+
+.prob-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.prob-table th, .prob-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.prob-table th {
+  background: rgba(108, 92, 231, 0.08);
+  font-weight: 800;
+  color: var(--text-h);
+}
+
+:root.dark .prob-table th {
+  background: rgba(129, 140, 248, 0.12);
+}
+
+.prob-table tr:last-child td {
+  border-bottom: none;
+}
+
+.prob-row {
+  transition: background 0.15s ease;
+}
+.prob-row:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+:root.dark .prob-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.prob-row td {
+  font-weight: 600;
+}
+
+.prob-row td.rate {
+  font-weight: 800;
+  color: var(--accent);
+  text-align: right;
+}
+
+.emoji {
+  margin-right: 4px;
+}
+
+.badge-point { background: rgba(251, 191, 36, 0.12); color: #d97706; border: 1px solid rgba(251, 191, 36, 0.25); }
+.badge-usdt { background: rgba(34, 197, 94, 0.12); color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.25); }
+.badge-metaq { background: rgba(99, 102, 241, 0.12); color: #4f46e5; border: 1px solid rgba(99, 102, 241, 0.25); }
+.badge-none { background: rgba(0, 0, 0, 0.05); color: var(--muted); border: 1px solid var(--border); }
+
+:root.dark .badge-point { background: rgba(251, 191, 36, 0.08); color: #fbbf24; }
+:root.dark .badge-usdt { background: rgba(34, 197, 94, 0.08); color: #4ade80; }
+:root.dark .badge-metaq { background: rgba(99, 102, 241, 0.08); color: #a5b4fc; }
+
+.prob-note {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.75rem;
+  font-weight: 600;
 }
 </style>
