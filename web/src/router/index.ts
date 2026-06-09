@@ -31,6 +31,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/gacha',
+      name: 'gacha',
+      component: () => import('../views/GachaView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
 
       path: '/request-manager',
       name: 'request-manager',

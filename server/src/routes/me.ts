@@ -205,4 +205,127 @@ router.post("/recharge", async (req: AuthedRequest, res) => {
   }
 });
 
+router.post("/gacha", async (req: AuthedRequest, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { couponBalance: true }
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다." });
+      return;
+    }
+
+    const count = Math.floor(Number(req.body.count || 1));
+    if (count !== 1 && count !== 10) {
+      res.status(400).json({ error: "뽑기 횟수는 1회 또는 10회만 가능합니다." });
+      return;
+    }
+
+    const cost = count;
+    if (user.couponBalance < cost) {
+      res.status(400).json({ error: `쿠폰이 부족합니다. (필요: ${cost}장 / 보유: ${user.couponBalance}장)` });
+      return;
+    }
+
+    // Define prizes with weights
+    const prizes = [
+      { name: "50 포인트", type: "POINT", amount: 50, weight: 35, icon: "🪙" },
+      { name: "100 포인트", type: "POINT", amount: 100, weight: 25, icon: "🪙" },
+      { name: "500 포인트", type: "POINT", amount: 500, weight: 5, icon: "🪙" },
+      { name: "0.1 USDT", type: "USDT", amount: 0.1, weight: 15, icon: "💵" },
+      { name: "0.5 USDT", type: "USDT", amount: 0.5, weight: 3, icon: "💵" },
+      { name: "1 METAQ", type: "METAQ", amount: 1.0, weight: 10, icon: "💎" },
+      { name: "5 METAQ", type: "METAQ", amount: 5.0, weight: 2, icon: "💎" },
+      { name: "아쉽게도 다음 기회에!", type: "NONE", amount: 0, weight: 5, icon: "💨" },
+    ];
+
+    const totalWeight = prizes.reduce((acc, p) => acc + p.weight, 0);
+
+    const drawnResults = [];
+    let totalPoints = 0;
+    let totalUsdt = 0;
+    let totalMetaq = 0;
+
+    for (let i = 0; i < count; i++) {
+      let random = Math.random() * totalWeight;
+      let selectedPrize = prizes[prizes.length - 1];
+
+      for (const prize of prizes) {
+        if (random < prize.weight) {
+          selectedPrize = prize;
+          break;
+        }
+        random -= prize.weight;
+      }
+
+      drawnResults.push(selectedPrize);
+
+      if (selectedPrize.type === "POINT") {
+        totalPoints += selectedPrize.amount;
+      } else if (selectedPrize.type === "USDT") {
+        totalUsdt += selectedPrize.amount;
+      } else if (selectedPrize.type === "METAQ") {
+        totalMetaq += selectedPrize.amount;
+      }
+    }
+
+    // Perform database updates in a transaction
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      // Deduct coupons
+      await tx.user.update({
+        where: { id: req.user!.id },
+        data: { couponBalance: { decrement: cost } }
+      });
+
+      const updateData: any = {};
+      if (totalPoints > 0) {
+        updateData.pointBalance = { increment: totalPoints };
+      }
+      if (totalUsdt > 0) {
+        updateData.usdtBalance = { increment: totalUsdt };
+      }
+      if (totalMetaq > 0) {
+        updateData.metaqBalance = { increment: totalMetaq };
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        return await tx.user.update({
+          where: { id: req.user!.id },
+          data: updateData,
+          select: {
+            id: true,
+            pointBalance: true,
+            usdtBalance: true,
+            brlBalance: true,
+            metaqBalance: true,
+            couponBalance: true,
+          }
+        });
+      }
+
+      return await tx.user.findUnique({
+        where: { id: req.user!.id },
+        select: {
+          id: true,
+          pointBalance: true,
+          usdtBalance: true,
+          brlBalance: true,
+          metaqBalance: true,
+          couponBalance: true,
+        }
+      });
+    });
+
+    res.json({
+      results: drawnResults,
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error("Gacha error:", error);
+    res.status(500).json({ error: "뽑기 진행 중 오류가 발생했습니다." });
+  }
+});
+
 export default router;

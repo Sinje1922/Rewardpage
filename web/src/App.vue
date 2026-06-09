@@ -126,6 +126,7 @@ watch(() => auth.token, (newVal) => {
             <RouterLink to="/" class="nav-item">{{ $t('nav.home') }}</RouterLink>
             <RouterLink to="/campaigns" class="nav-item">{{ $t('nav.campaigns') }}</RouterLink>
             <RouterLink to="/my-page" class="nav-item">{{ $t('nav.myPage') }}</RouterLink>
+            <RouterLink to="/gacha" class="nav-item">{{ $t('nav.gacha') }}</RouterLink>
             <RouterLink v-if="auth.isOperator" to="/ops" class="nav-item">{{ $t('nav.ops') }}</RouterLink>
             <RouterLink v-if="auth.isOperator" to="/store" class="nav-item">{{ $t('nav.store') }}</RouterLink>
             <RouterLink v-if="auth.isAdmin" to="/admin" class="nav-item">{{ $t('nav.admin') }}</RouterLink>
@@ -215,6 +216,10 @@ watch(() => auth.token, (newVal) => {
       <RouterLink to="/campaigns" class="b-nav-item">
         <span class="icon">🏛️</span>
         <span class="label">{{ $t('nav.campaigns') }}</span>
+      </RouterLink>
+      <RouterLink to="/gacha" class="b-nav-item">
+        <span class="icon">🎟️</span>
+        <span class="label">{{ $t('nav.gacha') }}</span>
       </RouterLink>
       <RouterLink to="/my-page" class="b-nav-item">
         <span class="icon">👤</span>
