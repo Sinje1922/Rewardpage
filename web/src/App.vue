@@ -5,13 +5,10 @@ import { useAuthStore } from './stores/auth'
 import { api } from './api/client'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import DarkModeToggle from './components/DarkModeToggle.vue'
-import AiChatbot from './components/AiChatbot.vue'
 
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
-
-const showChatbot = ref(false)
 
 // Notification Center State
 const showNotifications = ref(false)
@@ -180,11 +177,6 @@ watch(() => auth.token, (newVal) => {
             </transition>
           </div>
 
-          <!-- AI Chatbot Toggle Button -->
-          <button class="icon-btn chatbot-btn" @click="showChatbot = !showChatbot" aria-label="AI Helper" title="AI Chatbot">
-            <span class="chatbot-icon">🤖</span>
-          </button>
-
           <LanguageSwitcher class="pc-only" />
           <div class="auth-wrapper">
              <button v-if="!auth.token" @click="router.push('/login')" class="btn-login">{{ $t('nav.login') }}</button>
@@ -271,7 +263,6 @@ watch(() => auth.token, (newVal) => {
       </div>
       <div class="footer-bottom">
         <span class="copyright">&copy; 2026 pickku. All rights reserved.</span>
-        <span class="version">MVP Version</span>
       </div>
     </footer>
 
@@ -279,7 +270,6 @@ watch(() => auth.token, (newVal) => {
       <LanguageSwitcher />
     </div>
     <DarkModeToggle />
-    <AiChatbot :isOpen="showChatbot" @close="showChatbot = false" />
   </div>
 </template>
 <style scoped>
@@ -436,36 +426,6 @@ watch(() => auth.token, (newVal) => {
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-}
-
-.chatbot-btn {
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  position: relative;
-}
-.chatbot-btn:hover {
-  transform: scale(1.08) rotate(8deg);
-  background: #f8fafc;
-  border-color: #cbd5e1;
-}
-:root.dark .chatbot-btn {
-  background: rgba(30, 41, 59, 0.8) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-}
-:root.dark .chatbot-btn:hover {
-  background: rgba(30, 41, 59, 1) !important;
-  border-color: rgba(255, 255, 255, 0.15) !important;
-}
-.chatbot-icon {
-  font-size: 1.25rem;
-  display: inline-block;
-  transition: transform 0.25s ease;
-}
-.chatbot-btn:hover .chatbot-icon {
-  animation: chatbot-bounce 0.5s ease infinite alternate;
-}
-@keyframes chatbot-bounce {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-3px); }
 }
 
 .btn-login {
@@ -705,35 +665,6 @@ watch(() => auth.token, (newVal) => {
     right: 1.25rem;
     z-index: 1000;
     display: flex;
-  }
-
-  /* Floating AI Chatbot on the bottom left for mobile viewports */
-  .chatbot-btn {
-    position: fixed;
-    bottom: 7.5rem; /* Matches the dark mode toggle height */
-    left: 1.25rem;
-    width: 3rem;
-    height: 3rem;
-    border-radius: 50%;
-    z-index: 1000;
-    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.25) !important;
-    background: #6366f1 !important;
-    border: none !important;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .chatbot-btn .chatbot-icon {
-    font-size: 1.35rem;
-    color: white;
-  }
-  :root.dark .chatbot-btn {
-    background: #4f46e5 !important;
-    box-shadow: 0 8px 32px rgba(79, 70, 229, 0.4) !important;
-  }
-  .chatbot-btn:hover {
-    transform: scale(1.1) rotate(8deg);
   }
 }
 
